@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: server
+  name: server
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: server
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: server
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.28
+          command:
+            [
+              "sh",
+              "-c",
+              'until nc -zv db 5432; do echo "waiting for db"; sleep 2; done;',
+            ]
+      containers:
+        - env:
+            - name: PGDATABASE
+              value: mydb
+            - name: PGPASSWORD
+              value: whatever
+            - name: PGHOST
+              value: db
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              value: postgres
+          image: murichristopher/blogo
+          name: server
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              hostPort: 8080
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: db
+  name: db
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: db
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: mydb
+            - name: POSTGRES_PASSWORD
+              value: whatever
+            - name: POSTGRES_USER
+              value: postgres
+          image: postgres:18
+          name: db
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: server
+  name: server
+  namespace: default
+spec:
+  type: NodePort
+  ports:
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+      nodePort: 30001
+  selector:
+    service: server
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: db
+  name: db
+  namespace: default
+spec:
+  ports:
+    - name: "5432"
+      port: 5432
+      targetPort: 5432
+  selector:
+    service: db
+status:
+  loadBalancer: {}
