@@ -1,17 +1,18 @@
 # syntax=docker/dockerfile:1
 
 # --- STAGE 1: Development ---
-FROM golang:1.19-bullseye AS development
+FROM golang:1.22-bookworm AS development
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y curl
+RUN go install github.com/air-verse/air@v1.52.3
 
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-CMD ["go", "run", "main.go"]
+CMD ["air"]
 
 # --- STAGE 2: Build ---
 FROM development AS builder
