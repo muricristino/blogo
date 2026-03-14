@@ -1,38 +1,26 @@
 package main
 
 import (
-	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
 )
 
-// A simple example of unit testing a function.
-// Adapted from: https://gobyexample.com/testing-and-benchmarking
+func TestRootEndpoint(t *testing.T) {
+	e := Blogo()
 
-func TestIntMinBasic(t *testing.T) {
-	ans := IntMin(2, -2)
-	if ans != -2 {
-		t.Errorf("IntMin(2, -2) = %d; want -2", ans)
-	}
-}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
 
-func TestIntMinTableDriven(t *testing.T) {
-	var tests = []struct {
-		a, b int
-		want int
-	}{
-		{0, 1, 0},
-		{1, 0, 0},
-		{2, -2, -2},
-		{0, -1, -1},
-		{-1, 0, -1},
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("esperado status %d, obtido %d", http.StatusOK, rec.Code)
 	}
-	for _, tt := range tests {
-		testname := fmt.Sprintf("%d,%d", tt.a, tt.b)
-		t.Run(testname, func(t *testing.T) {
-			ans := IntMin(tt.a, tt.b)
-			if ans != tt.want {
-				t.Errorf("got %d, want %d", ans, tt.want)
-			}
-		})
+
+	expected := "Hello, corcavado!\n"
+	if rec.Body.String() != expected {
+		t.Errorf("esperado corpo %q, obtido %q", expected, rec.Body.String())
 	}
 }
