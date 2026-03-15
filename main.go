@@ -16,10 +16,10 @@ import (
 
 var DB *gorm.DB
 
-func Blogo() *echo.Echo {
+func Blogo(database *gorm.DB) *echo.Echo {
 	e := echo.New()
 	e.Use(middleware.Logger())
-	handler.RegisterRoutes(e)
+	handler.RegisterRoutes(e, database)
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, corcavado!\n")
@@ -38,7 +38,6 @@ func Blogo() *echo.Echo {
 func main() {
 	var err error
 
-	// Montando a string de conexão (DSN) baseada nas variáveis de ambiente do docker-compose
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		os.Getenv("PGHOST"),
 		os.Getenv("PGUSER"),
@@ -48,15 +47,15 @@ func main() {
 		os.Getenv("PGSSLMODE"),
 	)
 
-	// Inicializando o GORM com o driver do Postgres (compatível com o seu CockroachDB)
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Printf("Falha ao conectar no banco de dados via GORM: %v", err)
 	} else {
 		log.Println("Conectado ao CockroachDB com sucesso via GORM!")
+		DB.AutoMigrate(&handler.User{})
 	}
 
-	e := Blogo()
+	e := Blogo(DB)
 
 	httpPort := os.Getenv("HTTP_PORT")
 	if httpPort == "" {
