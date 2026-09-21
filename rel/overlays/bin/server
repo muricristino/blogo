@@ -8,4 +8,7 @@ cd -P -- "$(dirname -- "$0")"
 # the two.
 ./blogo eval "Blogo.Release.migrate"
 
+# Only on an empty database — see Blogo.Release.seed_if_empty/0.
+./blogo eval "Blogo.Release.seed_if_empty"
+
 PHX_SERVER=true exec ./blogo start
