@@ -50,7 +50,7 @@ defmodule BlogoWeb.Blocks do
 
     ~H"""
     <figure>
-      <div class="card tbl-wrap" style="overflow:hidden">
+      <div class="card tbl-wrap">
         <table class="tbl">
           <thead>
             <tr>
@@ -80,7 +80,7 @@ defmodule BlogoWeb.Blocks do
   def block(%{block: %{"type" => "diagram"}} = assigns) do
     ~H"""
     <figure>
-      <div class="card dg-wrap" style="padding:22px 24px">
+      <div class="card dg-wrap">
         <.diagram form={@block["form"]} data={@block["data"] || %{}} label={@block["alt"] || ""} />
       </div>
       <figcaption :if={@block["caption"]} class="cap">{@block["caption"]}</figcaption>

@@ -1,13 +1,9 @@
-<div class="shell pad" style="padding-block:28px 40px">
-  <article
-    :if={@featured}
-    class="card"
-    style="display:grid;grid-template-columns:1fr 1fr;overflow:hidden;margin-bottom:34px"
-  >
-    <div style="padding:34px 36px;display:flex;flex-direction:column;gap:18px">
+<div class="shell pad home">
+  <article :if={@featured} class="card feat">
+    <div class="feat-text">
       <span class="kicker">Em destaque · {@featured.kind}</span>
-      <h1 class="h1" style="font-size:40px">{@featured.title}</h1>
-      <p class="dek" style="font-size:17px">{BlogoWeb.Blocks.inline(@featured.subtitle)}</p>
+      <h1 class="h1 feat-title">{@featured.title}</h1>
+      <p class="dek">{BlogoWeb.Blocks.inline(@featured.subtitle)}</p>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span :for={t <- @featured.topics} class="tag">{t}</span>
         <span class="small mono">{format_date(@featured.published_at)}</span>
@@ -15,7 +11,7 @@
       </div>
       <a
         href={~p"/#{@featured.slug}"}
-        style="display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px;text-decoration:none"
+        class="feat-cta"
       >
         Ler o ensaio
         <svg
@@ -32,7 +28,7 @@
         </svg>
       </a>
     </div>
-    <div style="border-left:1px solid var(--line);padding:30px;display:flex;flex-direction:column;justify-content:center;gap:12px;background:color-mix(in srgb,var(--accent) 4%,transparent)">
+    <div class="feat-fig">
       <.featured_curves />
       <p class="small">O mesmo modelo, dois conjuntos de teste.</p>
     </div>
