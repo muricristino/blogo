@@ -1,46 +1,14 @@
-# Base: serve em qualquer lugar com `docker compose -f deploy/docker-compose.yml up -d --build`.
-# O override do homelab troca o build pela imagem do GHCR e liga na rede do cloudflared.
+# blogo — scaffolded by webo around the repository's own Dockerfile.
+# Run: docker compose -f deploy/docker-compose.yml up -d --build
 name: blogo
-
 services:
   blogo:
     build:
       context: ..
       dockerfile: Dockerfile
-    container_name: blogo
     restart: unless-stopped
-    env_file:
-      - path: .env
-        required: false
+    # The tunnel reaches every app at port 3000 on the shared network, so the
+    # container has to listen there. Most images honour PORT; if yours does
+    # not, EXPOSE 3000 and serve on it.
     environment:
-      PHX_SERVER: "true"
-      PHX_HOST: ${PHX_HOST:-localhost}
-      PORT: "3000"
-      DATABASE_URL: ${DATABASE_URL:-ecto://blogo:blogo@db/blogo}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?defina SECRET_KEY_BASE no deploy/.env}
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "${BLOGO_BIND:-127.0.0.1}:3000:3000"
-
-  db:
-    image: postgres:17-alpine
-    container_name: blogo-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: blogo
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blogo}
-      POSTGRES_DB: blogo
-    volumes:
-      - blogo-db:/var/lib/postgresql/data
-    healthcheck:
-      # The app runs migrations on boot, so it must not start against a
-      # postgres that is still initialising.
-      test: ["CMD-SHELL", "pg_isready -U blogo -d blogo"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-volumes:
-  blogo-db:
+      - PORT=3000

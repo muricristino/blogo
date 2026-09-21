@@ -1,3 +1,4 @@
+# Scaffolded by webo — build on GitHub Actions, image on GHCR, deploy via webo-deploy.
 name: Deploy
 on:
   push:
