@@ -154,7 +154,10 @@ a{color:var(--accent);text-underline-offset:.2em}
 .cmt--reply{margin-left:52px}
 .composer-box{min-height:92px;border-radius:12px;border:1px solid var(--input-line, #e6ebf3);background:var(--field-bg);padding:12px 14px;color:var(--ink4);font-size:15.5px;line-height:1.6}
 .composer-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
-.dg{display:block;width:100%;height:auto}
+/* The svg carries the fill so a shape whose class goes missing inherits the
+   page colour instead of the SVG default, which is black. A stale stylesheet
+   should degrade to invisible, never to a black box. */
+.dg{display:block;width:100%;height:auto;fill:var(--page-bg);stroke:none}
 .d-node{fill:var(--page-bg);stroke:var(--line);stroke-width:1.25}
 .d-edge{stroke:var(--ink4);stroke-width:1.4;fill:none}
 .d-lab{fill:var(--ink);font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif}
@@ -231,3 +234,8 @@ a{color:var(--accent);text-underline-offset:.2em}
   .bar { gap: 10px; }
   .bar .navlink { padding-inline: 8px; font-size: 13px; }
 }
+
+.d-node--a{fill:color-mix(in srgb,var(--accent) 10%,transparent);stroke:var(--accent);stroke-width:1.25}
+.d-node--m{fill:none;stroke:var(--ink4);stroke-width:1.1;stroke-dasharray:4 4}
+.d-edge--a{stroke:var(--accent);stroke-width:1.6;fill:none}
+.d-arrow--a{fill:var(--accent)}
