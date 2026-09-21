@@ -14,9 +14,26 @@ defmodule Blogo.Release do
   end
 
   @doc """
-  Loads the seed files. Run by hand, once, on a fresh install — never on boot,
-  because the seeds upsert by slug and would overwrite anything edited in
-  production.
+  Loads the seed files when the database has no posts yet.
+
+  Guarded on emptiness rather than on a flag: the seeds upsert by slug, so on a
+  database with content they would overwrite edits made in production. On an
+  empty one there is nothing to lose, and a fresh install comes up with
+  something to read instead of an empty index.
+  """
+  def seed_if_empty do
+    load_app()
+
+    {:ok, empty?, _} =
+      Ecto.Migrator.with_repo(Blogo.Repo, fn repo ->
+        repo.aggregate(Blogo.Content.Post, :count) == 0
+      end)
+
+    if empty?, do: seed(), else: :ok
+  end
+
+  @doc """
+  Loads the seed files unconditionally. Prefer `seed_if_empty/0` on boot.
   """
   def seed do
     load_app()
