@@ -372,6 +372,40 @@ blocks = [
   }
 ]
 
+# The article's key figure: the one measurement the whole piece exists to show.
+# It repeats the distribution block from the body on purpose — the card promises
+# a result and the article delivers the same one, rather than a decoration.
+hero = %{
+  "form" => "distribuicao",
+  "alt" =>
+    "Jev separa positivos de negativos difíceis com AUC 0,956; no Laya os dois grupos se sobrepõem, com AUC 0,508",
+  "caption" => "As curvas são esquemáticas; os valores de AUC são medidos.",
+  "data" => %{
+    "rows" => [
+      %{
+        "title" => "Jev — negativos difíceis",
+        "neg" => "negativos",
+        "neg_c" => 85,
+        "neg_s" => 26,
+        "pos" => "positivos",
+        "pos_c" => 285,
+        "pos_s" => 28,
+        "auc" => "0,956"
+      },
+      %{
+        "title" => "Laya — negativos difíceis",
+        "neg" => "negativos",
+        "neg_c" => 165,
+        "neg_s" => 32,
+        "pos" => "positivos",
+        "pos_c" => 215,
+        "pos_s" => 32,
+        "auc" => "0,508"
+      }
+    ]
+  }
+}
+
 {:ok, _post} =
   Content.upsert_post(%{
     title: "Laya x Jev: o que um classificador tipado faz e o que ele não faz",
@@ -386,6 +420,7 @@ blocks = [
     meta_description:
       "Comparação medida entre Laya e Jev: AUC 0,956 contra 0,508 em negativos difíceis, " <>
         "teste de negação, custo por chamada e latência pareada.",
+    hero: hero,
     body: %{"blocks" => blocks},
     author_id: author.id
   })

@@ -20,6 +20,10 @@ defmodule Blogo.Content.Post do
     # re-renders every post instead of requiring a content migration.
     field :body, :map, default: %{}
 
+    # The article's key diagram, in the same shape as a diagram block. It is
+    # the figure on the card and the thumbnail in the list.
+    field :hero, :map
+
     belongs_to :author, Blogo.Content.Author
 
     timestamps(type: :utc_datetime)
@@ -38,6 +42,7 @@ defmodule Blogo.Content.Post do
       :topics,
       :meta_description,
       :body,
+      :hero,
       :author_id
     ])
     |> validate_required([:title, :slug, :author_id])
@@ -45,8 +50,28 @@ defmodule Blogo.Content.Post do
     |> validate_inclusion(:status, @statuses)
     |> unique_constraint(:slug)
     |> assoc_constraint(:author)
+    |> validate_hero()
+  end
+
+  # An article carries a diagram, and the rule is enforced at publication
+  # rather than at creation — a draft is allowed to be incomplete, a published
+  # article is not. See CLAUDE.md.
+  defp validate_hero(changeset) do
+    case get_field(changeset, :status) do
+      "published" ->
+        case get_field(changeset, :hero) do
+          %{"form" => form} when is_binary(form) -> changeset
+          _ -> add_error(changeset, :hero, "é obrigatório num artigo publicado")
+        end
+
+      _ ->
+        changeset
+    end
   end
 
   def blocks(%__MODULE__{body: %{"blocks" => blocks}}) when is_list(blocks), do: blocks
   def blocks(_), do: []
+
+  def hero?(%__MODULE__{hero: %{"form" => f}}) when is_binary(f), do: true
+  def hero?(_), do: false
 end

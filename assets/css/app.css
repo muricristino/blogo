@@ -334,3 +334,19 @@ a{color:var(--accent);text-underline-offset:.2em}
 
 .home { padding-block: 28px 40px; }
 .site-foot { padding-block: 26px; border-top: 1px solid var(--line); margin-top: 40px; }
+
+/* The article's own figure, on the card and in the list. In the thumbnail the
+   diagram is far below the size its labels were drawn for, so it reads as the
+   article's mark rather than as a readable figure — the alt text carries the
+   meaning there. */
+.hero{width:100%}
+.hero .small{margin-top:10px}
+/* In the thumbnail the figure is a sixth of the width it was drawn for, so the
+   labels are noise at that size. Hiding them leaves the geometry, which still
+   reads as this article's shape; the alt text carries the meaning. */
+.thumb .hero .dg{width:100%;height:auto}
+.thumb .hero text{display:none}
+/* At a sixth scale a 1px stroke and a 6px dot disappear. The thumbnail thickens
+   what is left so the shape survives the reduction. */
+.thumb .hero circle{r:18}
+.thumb .hero line,.thumb .hero path{stroke-width:5}

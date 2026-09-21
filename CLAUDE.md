@@ -61,6 +61,30 @@ load-bearing, an attribute whose absence fails silently. Someone will otherwise
 Not worth writing: what the code already says, or the justification for a choice
 nobody would question.
 
+## Every published article carries a diagram
+
+A post has a `hero`: one diagram, in the same shape as a body block, stored in
+`posts.hero`. It is the figure on the featured card, the mark in the list, and
+the article's own image. `Post.changeset/2` rejects a published post without
+one — a draft may be incomplete, a published article may not.
+
+The rule exists because the alternative already shipped: the card drew a
+hardcoded SVG and the list drew a hardcoded placeholder, so six articles showed
+the same two curves and the same grey mark. A figure that is the same for every
+article is decoration, and decoration on a card is a lie about what is inside.
+
+- **The hero is one of the seven forms in `BlogoWeb.Diagrams`.** No eighth form,
+  no raster image, no literal colour in the SVG.
+- **It carries the article's conclusion, not its topic.** `distribuicao` with
+  0,956 against 0,508 says what the Laya x Jev piece found; a drawing of two
+  robots would not.
+- **`alt` is mandatory and states the finding in words,** because the thumbnail
+  hides every label — at a sixth of its drawn size the text is noise, so only
+  the geometry survives there.
+- **It does not repeat in the body.** The card promises a figure and the article
+  delivers the same one in its narrative place; rendering it twice reads as a
+  templating accident.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.
