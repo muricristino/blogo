@@ -1,21 +1,138 @@
-<section :if={@author} class="post-head">
-  <p class="eyebrow">{@author.headline}</p>
-  <h1 class="post-title">{@author.name}</h1>
-  <p :if={@author.bio} class="post-sub">{@author.bio}</p>
-</section>
-
-<div class="post-list">
-  <article :for={post <- @posts} class="post-item">
-    <a href={~p"/#{post.slug}"}>
-      <h2>{post.title}</h2>
-      <p :if={post.subtitle}>{post.subtitle}</p>
-    </a>
-    <div class="post-meta">
-      <span>{format_date(post.published_at)}</span>
-      <span :if={post.reading_minutes}>{post.reading_minutes} min</span>
-      <span :for={t <- post.topics}>{t}</span>
+<div class="shell pad" style="padding-block:28px 40px">
+  <article :if={@featured} class="card" style="display:grid;grid-template-columns:1fr 1fr;overflow:hidden;margin-bottom:34px">
+    <div style="padding:34px 36px;display:flex;flex-direction:column;gap:18px">
+      <span class="kicker">Em destaque · {@featured.kind}</span>
+      <h1 class="h1" style="font-size:40px">{@featured.title}</h1>
+      <p class="dek" style="font-size:17px">{BlogoWeb.Blocks.inline(@featured.subtitle)}</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span :for={t <- @featured.topics} class="tag">{t}</span>
+        <span class="small mono">{format_date(@featured.published_at)}</span>
+        <span class="small mono">· {@featured.reading_minutes} min</span>
+      </div>
+      <a href={~p"/#{@featured.slug}"} style="display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px;text-decoration:none">
+        Ler o ensaio
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </a>
+    </div>
+    <div style="border-left:1px solid var(--line);padding:30px;display:flex;flex-direction:column;justify-content:center;gap:12px;background:color-mix(in srgb,var(--accent) 4%,transparent)">
+      <.featured_curves />
+      <p class="small">O mesmo modelo, dois conjuntos de teste.</p>
     </div>
   </article>
-</div>
 
-<p :if={@posts == []} class="prose">Nenhum artigo publicado ainda.</p>
+  <div class="home-grid">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <a class="chip is-on" href={~p"/"}>Tudo <span class="c">{@total}</span></a>
+        <a :for={{topic, count} <- @topics} class="chip" href={~p"/?topico=#{topic}"}>
+          {String.capitalize(topic)} <span class="c">{count}</span>
+        </a>
+        <span class="small" style="margin-left:auto">Ordenar por <b style="color:var(--ink2)">mais recente</b></span>
+      </div>
+
+      <a :for={post <- @posts} class="item" href={~p"/#{post.slug}"}>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div class="byline">
+            <span class="ava">{initials(post.author.name)}</span>
+            <span class="nm">{post.author.name}</span>
+            <span class="sep">·</span>
+            <span>{format_date(post.published_at)}</span>
+          </div>
+          <h2 class="item-title">{post.title}</h2>
+          <p class="item-dek">{BlogoWeb.Blocks.inline(post.subtitle)}</p>
+          <div class="item-meta">
+            <span class="mono">{post.reading_minutes} min</span>
+            <span>·</span>
+            <span :for={t <- post.topics} class="tag" style="font-size:11.5px;padding:3px 9px">{t}</span>
+          </div>
+        </div>
+        <div class="thumb"><.thumb_mark /></div>
+      </a>
+    </div>
+
+    <aside class="stack" style="gap:16px">
+      <div class="card aside-card">
+        <span class="micro">Receba por e-mail</span>
+        <p class="small">Um ensaio por semana. Sem curadoria de links, sem newsletter de novidades.</p>
+        <div class="field">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" />
+          </svg>
+          voce@exemplo.com
+        </div>
+        <button class="btn btn--p" type="button">Assinar</button>
+      </div>
+
+      <div :if={@author} class="card aside-card">
+        <div style="display:flex;align-items:center;gap:11px">
+          <span class="ava" style="width:38px;height:38px;font-size:13px">{initials(@author.name)}</span>
+          <div>
+            <div style="color:var(--ink);font-weight:600;font-size:15px">{@author.name}</div>
+            <div class="small">{@author.city} · desde 2023</div>
+          </div>
+        </div>
+        <p class="small">{@author.bio}</p>
+        <div style="display:flex;gap:26px">
+          <div class="stat">
+            <span class="stat-n">{@total}</span><span class="small">artigos</span>
+          </div>
+          <div class="stat">
+            <span class="stat-n mono" style="font-family:'IBM Plex Mono',monospace;font-size:26px">1.204</span>
+            <span class="small">assinantes</span>
+          </div>
+          <div class="stat"><span class="stat-n">3</span><span class="small">séries</span></div>
+        </div>
+      </div>
+
+      <div class="card aside-card">
+        <span class="micro">Mais lidos este mês</span>
+        <a :for={{post, i} <- Enum.with_index(@most_read)} class="arow" href={~p"/#{post.slug}"}>
+          <span class="arank">{String.pad_leading("#{i + 1}", 2, "0")}</span>
+          <span>
+            <span style="color:var(--ink);font-weight:600;font-size:14px;display:block">{post.title}</span>
+            <span class="small">{post.reading_minutes} min de leitura</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="card aside-card">
+        <span class="micro">Tópicos</span>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <a :for={{topic, _} <- @topics} class="tag" href={~p"/?topico=#{topic}"}>{topic}</a>
+        </div>
+      </div>
+
+      <div class="card aside-card">
+        <span class="micro">Sobre o blogo</span>
+        <p class="small">
+          Um ensaio por semana, escrito por uma pessoa só. Sem curadoria de links,
+          sem patrocínio, sem rastreamento além da contagem de leituras.
+        </p>
+        <div style="display:flex;gap:14px" class="small">
+          <a href={~p"/sitemap.xml"}>Arquivo</a>
+          <a :if={@author} href={~p"/autor/#{@author.slug}"}>Contato</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section :if={@series != []} style="margin-top:46px;padding-top:30px;border-top:1px solid var(--line)">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px">
+      <h2 class="h2">Séries</h2>
+      <span class="small">Leituras em ordem, do começo ao fim</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+      <article :for={s <- @series} class="card" style="padding:20px 22px;display:flex;flex-direction:column;gap:9px">
+        <span class="micro">{s.parts} partes</span>
+        <h3 class="h3">{s.title}</h3>
+        <p class="small">{s.dek}</p>
+        <div style="height:3px;border-radius:2px;background:color-mix(in srgb,var(--accent) 14%,transparent);margin-top:6px">
+          <div style={"height:100%;border-radius:2px;background:var(--accent);width:#{s.done / s.parts * 100}%"}></div>
+        </div>
+        <span class="small mono">{status_serie(s)}</span>
+      </article>
+    </div>
+  </section>
+</div>

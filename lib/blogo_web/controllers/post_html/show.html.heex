@@ -1,16 +1,58 @@
-<article>
-  <header class="post-head">
-    <p class="eyebrow">{@post.kind}</p>
-    <h1 class="post-title">{@post.title}</h1>
-    <p :if={@post.subtitle} class="post-sub">{@post.subtitle}</p>
-    <div class="byline">
-      <span>
-        por <a href={~p"/autor/#{@post.author.slug}"} rel="author">{@post.author.name}</a>
-      </span>
-      <span>{format_date(@post.published_at)}</span>
-      <span :if={@post.reading_minutes}>{@post.reading_minutes} min de leitura</span>
-    </div>
-  </header>
+<div class="shell pad article-grid">
+  <aside class="toc-col">
+    <nav class="toc">
+      <span class="micro" style="padding:0 10px 8px">Neste artigo</span>
+      <a :for={{sec, i} <- Enum.with_index(@sections)} href={"##{sec["id"]}"}
+         class={i == 0 && "is-active"} data-toc={sec["id"]}>
+        <span class="n mono">{sec["n"]}</span>
+        <span>{sec["title"]}</span>
+      </a>
 
-  <.render_blocks blocks={Blogo.Content.Post.blocks(@post)} />
-</article>
+      <div style="margin-top:20px;padding:0 10px">
+        <span class="micro">Progresso</span>
+        <p class="small mono" style="margin-top:6px">
+          <span id="read-pct">0%</span> · <span id="read-left">{@post.reading_minutes}</span> min restantes
+        </p>
+      </div>
+    </nav>
+  </aside>
+
+  <article class="stack" style="gap:26px">
+    <header class="stack" style="gap:16px">
+      <span class="kicker">{@post.kind} · {Enum.join(@post.topics, " · ")}</span>
+      <h1 class="h1">{@post.title}</h1>
+      <p :if={@post.subtitle} class="dek">{@post.subtitle}</p>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="byline">
+          <span class="ava">{initials(@post.author.name)}</span>
+          <a class="nm" href={~p"/autor/#{@post.author.slug}"} rel="author"
+             style="text-decoration:none">{@post.author.name}</a>
+          <span class="sep">·</span>
+          <span>{format_date_long(@post.published_at)}</span>
+          <span class="sep">·</span>
+          <span>{@post.reading_minutes} min de leitura</span>
+        </span>
+        <span style="display:flex;gap:7px;margin-left:auto">
+          <span :for={t <- @post.topics} class="tag">{t}</span>
+        </span>
+      </div>
+    </header>
+
+    <section :if={@summary} class="card" style="padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+      <span class="kicker">Em resumo</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px">
+        <div :for={item <- @summary["items"] || []} class="stat">
+          <span class={"statn #{item["accent"] && "is-accent"}"}
+                style={item["accent"] && "color:var(--accent)"}>{item["value"]}</span>
+          <span class="small">{item["label"]}</span>
+        </div>
+      </div>
+      <p :if={@summary["note"]} class="small" style="border-top:1px solid var(--line);padding-top:14px">
+        {@summary["note"]}
+      </p>
+    </section>
+
+    <.render_blocks blocks={@blocks} />
+  </article>
+</div>

@@ -22,16 +22,21 @@ blocks = [
     "paragraphs" => [
       "Dois modelos prometem a mesma coisa: em vez de gerar texto, devolver uma decisão tipada com probabilidade. O **Jev**, da TypeSafe, é API fechada em beta. O **Laya** é peso aberto sob Apache-2.0, e roda no seu Mac.",
       "Passei uma noite medindo os dois nos mesmos casos. A diferença não é de grau."
-    ]
+    ],
+    "note" =>
+      "**Sobre os números.** Conjuntos sintéticos, construídos por mim. Tudo que aparece " <>
+        "aqui foi rodado, não estimado."
   },
   %{
     "type" => "keynumbers",
     "items" => [
-      %{"value" => "0,956", "label" => "AUC do Jev contra negativos difíceis"},
+      %{"value" => "0,956", "label" => "AUC do Jev contra negativos difíceis", "accent" => true},
       %{"value" => "0,508", "label" => "AUC do Laya nos mesmos casos"},
-      %{"value" => "1,70x", "label" => "Jev mais rápido, mediana de 40 pares"},
-      %{"value" => "US$ 0,0022", "label" => "custo de classificar 180 leads"}
-    ]
+      %{"value" => "1,70x", "label" => "Jev mais rápido, mediana de 40 pares pareados"}
+    ],
+    "note" =>
+      "Mesmos casos, mesmas perguntas, medidos na mesma noite. O que separa os dois " <>
+        "não é acurácia de ponta: é negação, magnitude numérica e contagem."
   },
   %{
     "type" => "section",
@@ -57,7 +62,8 @@ blocks = [
       ["Custo por 1M de chamadas", "US$ 13,38", "zero, fora a energia"],
       ["Latência mediana", "295 ms", "26 ms"]
     ],
-    "caption" => "As duas últimas linhas medem coisas diferentes: uma inclui a rede, a outra não."
+    "caption" => "As duas últimas linhas medem coisas diferentes: uma inclui a rede, a outra não.",
+    "note" => "**Janela.** 1.024 tokens parece pouco, mas nenhum caso meu passou de 400."
   },
   %{
     "type" => "section",
@@ -80,7 +86,8 @@ blocks = [
     "não quero cancelar, só uma dúvida"   laya 0,7123   jev 0,04
     "de jeito nenhum vou cancelar"        laya 0,9912   jev 0,05\
     """,
-    "caption" => "No Laya, a frase que nega dá exatamente a mesma nota da que afirma."
+    "caption" => "No Laya, a frase que nega dá exatamente a mesma nota da que afirma.",
+    "note" => "**Custa nada.** Seis chamadas, sem rótulo, e elimina a maioria dos candidatos."
   },
   %{
     "type" => "text",
@@ -120,38 +127,39 @@ blocks = [
         %{
           "title" => "Jev — contra negativos difíceis",
           "neg" => "negativos",
-          "neg_x" => 20,
-          "neg_w" => 160,
+          "neg_c" => 110,
+          "neg_s" => 30,
           "pos" => "positivos",
-          "pos_x" => 360,
-          "pos_w" => 160,
+          "pos_c" => 340,
+          "pos_s" => 34,
           "auc" => "0,956"
         },
         %{
           "title" => "Laya — contra negativos difíceis",
           "neg" => "negativos",
-          "neg_x" => 150,
-          "neg_w" => 210,
+          "neg_c" => 220,
+          "neg_s" => 40,
           "pos" => "positivos",
-          "pos_x" => 250,
-          "pos_w" => 200,
+          "pos_c" => 270,
+          "pos_s" => 40,
           "auc" => "0,508"
         }
       ]
     },
     "caption" =>
-      "Esquemático nas posições, medido nos valores. 0,508 é o que uma moeda jogada para cima entrega."
+      "As curvas são esquemáticas; os valores de AUC são medidos. 0,508 é o que uma moeda entrega.",
+    "note" =>
+      "**Regra do rótulo, escrita antes:** trata paciente humano, com hora marcada. " <>
+        "Farmácia, pet shop e academia ficam de fora."
   },
   %{
     "type" => "text",
     "paragraphs" => [
       "Contra negativos **fáceis** — autopeças, mercearia, banca de jornal — o Laya marca 0,890. É por isso que um teste montado de cabeça o aprova: os negativos que vêm à cabeça são sempre os fáceis."
-    ]
-  },
-  %{
-    "type" => "marginnote",
-    "text" =>
-      "A categoria com segunda maior probabilidade média no Laya foi *plano de saúde*, que é negativo. Clínica veterinária passou consultório odontológico."
+    ],
+    "note" =>
+      "A categoria com segunda maior probabilidade média no Laya foi *plano de saúde*, " <>
+        "que é negativo. Clínica veterinária passou consultório odontológico."
   },
   %{
     "type" => "section",

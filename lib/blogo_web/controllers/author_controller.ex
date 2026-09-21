@@ -15,6 +15,7 @@ defmodule BlogoWeb.AuthorController do
 
         conn
         |> assign(:current_author, author)
+        |> assign(:nav, :sobre)
         |> assign(:seo, %{
           conn: conn,
           title: "#{author.name} · #{author.headline}",

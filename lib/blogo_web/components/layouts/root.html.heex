@@ -20,6 +20,14 @@
     </script>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("blogo-theme")
+          if (t) document.documentElement.setAttribute("data-theme", t)
+        } catch (e) {}
+      })()
+    </script>
     {@inner_content}
   </body>
 </html>
