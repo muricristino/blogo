@@ -1,6 +1,8 @@
 # Override do homelab (ThinkPad): imagem do GHCR e rede compartilhada com o
 # cloudflared. Usar junto com o docker-compose.yml:
 #   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.homelab.yml up -d
+name: blogo
+
 services:
   blogo:
     image: ghcr.io/muricristino/blogo:latest
