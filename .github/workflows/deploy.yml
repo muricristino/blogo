@@ -26,7 +26,7 @@ jobs:
         uses: ./.webo-deploy
         with:
           app: blogo
-          dockerfile: deploy/Dockerfile
+          dockerfile: Dockerfile
           compose_files: deploy/docker-compose.yml deploy/docker-compose.homelab.yml
           service: blogo
           github-token: ${{ secrets.GITHUB_TOKEN }}

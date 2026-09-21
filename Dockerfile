@@ -57,4 +57,10 @@ COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/blogo ./
 
 USER nobody
 
+# webo's tunnel routes every app to <slug>:3000 on the shared network, and the
+# port is not configurable per project. The release binds 0.0.0.0 already; a
+# server on loopback here would show a healthy container and a 502.
+ENV PORT=3000
+EXPOSE 3000
+
 CMD ["/app/bin/server"]
