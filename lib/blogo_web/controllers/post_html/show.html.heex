@@ -1,0 +1,16 @@
+<article>
+  <header class="post-head">
+    <p class="eyebrow">{@post.kind}</p>
+    <h1 class="post-title">{@post.title}</h1>
+    <p :if={@post.subtitle} class="post-sub">{@post.subtitle}</p>
+    <div class="byline">
+      <span>
+        por <a href={~p"/autor/#{@post.author.slug}"} rel="author">{@post.author.name}</a>
+      </span>
+      <span>{format_date(@post.published_at)}</span>
+      <span :if={@post.reading_minutes}>{@post.reading_minutes} min de leitura</span>
+    </div>
+  </header>
+
+  <.render_blocks blocks={Blogo.Content.Post.blocks(@post)} />
+</article>
