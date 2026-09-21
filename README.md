@@ -59,18 +59,35 @@ assets/css/app.css          the design system: tokens, then components
 no parallel palette to keep in sync.
 
 **Blocks are data.** An article's `body` is `{"blocks": [...]}`. Inline markup
-is a deliberately small dialect — `**bold**`, `*italic*`, `` `code` `` — parsed
-at render rather than stored as HTML, so the database never holds markup
-nobody validated.
+is a deliberately small dialect — `**bold**`, `*italic*`, `` `code` ``,
+`[text](url)` — parsed at render rather than stored as HTML, so the database
+never holds markup nobody validated.
+
+**One document, two modes.** The editor writes blocks directly in rich mode and
+the same document as text in markdown mode. Standard markdown covers five of
+the eleven blocks; the other six use a `:::` fence. The conversion is lossless
+in both directions and there are tests that say so — a writer who switches
+modes mid-article has to find the article they left.
 
 **Public pages are controllers, not LiveView.** Reading is anonymous and
 non-interactive; a socket per reader would cost a process and buy nothing.
 LiveView is reserved for the editor and the panel.
 
+## Running it
+
+```sh
+mix setup
+ADMIN_PASSWORD=<uma senha> mix phx.server
+```
+
+The blog is public; writing in it is not. `/editor` is behind
+`ADMIN_PASSWORD`, and with no password configured there is no way in at all —
+a deployment that forgets the variable has an editor nobody can open, which is
+the failure that is safe.
+
 ## Not built yet
 
-Comments, the post editor and the admin panel. The design for all three exists;
-the code does not.
+Comments and the admin panel. The design for both exists; the code does not.
 
 ## Licence
 

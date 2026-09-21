@@ -85,6 +85,37 @@ article is decoration, and decoration on a card is a lie about what is inside.
   delivers the same one in its narrative place; rendering it twice reads as a
   templating accident.
 
+## The editor is behind one password
+
+`ADMIN_PASSWORD` guards `/editor`. There is no users table: the blog has one
+author, and registration, password reset and roles would be machinery serving
+nobody. `BlogoWeb.AdminAuth` is the whole of it, and it is the one module that
+gets replaced the day blogo has a second author.
+
+- **No password configured means no way in,** not a way in for everyone. A
+  deployment that forgets the variable has an editor nobody can open, which is
+  the failure that is safe.
+- **Guard the request and the socket.** A LiveView reconnects over a websocket,
+  which never re-runs a plug. `require_admin/2` covers the request and
+  `on_mount/4` covers the socket; only one of them is a door left open, and
+  `test/blogo_web/live/editor_live_test.exs` has a case for exactly that.
+
+## One document, two modes
+
+The editor writes blocks in rich mode and text in markdown mode, and both
+produce the same `body["blocks"]`. That only holds while the conversion in
+`Blogo.Content.Markdown` is lossless, so it is covered by two separate
+properties in `test/blogo/content/markdown_test.exs`:
+
+- **stable** — markdown → blocks → markdown returns the same text. A document
+  that changes every time it is saved is unusable.
+- **faithful** — blocks → markdown → blocks keeps every block the renderer
+  distinguishes.
+
+Adding a block type means adding it to the palette, to the dialect and to both
+properties in the same commit. A block that only one mode understands is a
+block that the other mode deletes.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.

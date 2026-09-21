@@ -1,0 +1,15 @@
+<.defs />
+
+<%!-- The editor refuses to publish an incomplete article, so it needs
+      somewhere to say why. Without this the button simply did nothing. --%>
+<div
+  :if={Phoenix.Flash.get(@flash, :error) || Phoenix.Flash.get(@flash, :info)}
+  class="ed-flash"
+  role="status"
+>
+  <span class={"ed-flash-dot ed-flash-dot--#{if Phoenix.Flash.get(@flash, :error), do: "bad", else: "good"}"}></span>
+  {Phoenix.Flash.get(@flash, :error) || Phoenix.Flash.get(@flash, :info)}
+  <button type="button" phx-click="lv:clear-flash" aria-label="Fechar">×</button>
+</div>
+
+{@inner_content}

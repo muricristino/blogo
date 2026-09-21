@@ -252,8 +252,20 @@ defmodule BlogoWeb.Blocks do
     |> String.replace(~r/\*\*(.+?)\*\*/s, "<b>\\1</b>")
     |> String.replace(~r/(?<!\*)\*([^*]+?)\*(?!\*)/s, "<em>\\1</em>")
     |> String.replace(~r/`(.+?)`/s, "<code class=\"mono\" style=\"font-size:.9em\">\\1</code>")
+    |> String.replace(~r/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/, &anchor/1)
     |> Phoenix.HTML.raw()
   end
 
   def inline(other), do: to_string(other)
+
+  # A link to another site gets `rel="noopener"`, and nothing else: `nofollow`
+  # on an editorial link tells search engines the citation is not an
+  # endorsement, which is the opposite of what a citation in an article means.
+  defp anchor(match) do
+    [_, text, url] = Regex.run(~r/\[([^\]]+)\]\((.+)\)/, match)
+
+    rel = if String.starts_with?(url, "/"), do: "", else: ~s( rel="noopener")
+
+    ~s(<a href="#{url}"#{rel}>#{text}</a>)
+  end
 end

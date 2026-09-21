@@ -40,4 +40,77 @@ defmodule Blogo.Content do
       post -> post |> Post.changeset(attrs) |> Repo.update()
     end
   end
+
+  # ── the editor ────────────────────────────────────────────────────────────
+
+  @doc """
+  Every post the editor lists, drafts first — a draft is the one that needs
+  attention, and burying it under what is already published is backwards.
+  """
+  def list_posts do
+    from(p in Post,
+      order_by: [asc: fragment("? = 'published'", p.status), desc: p.updated_at],
+      preload: [:author]
+    )
+    |> Repo.all()
+  end
+
+  def get_post!(id), do: Post |> Repo.get!(id) |> Repo.preload(:author)
+
+  @doc """
+  Starts a draft. It has no slug and no body yet, so it cannot be published
+  until someone writes one — which is what `Post.changeset/2` enforces.
+  """
+  def new_draft(author_id) do
+    create_post(%{
+      title: "Sem título",
+      slug: "rascunho-#{System.unique_integer([:positive])}",
+      status: "draft",
+      kind: "ensaio",
+      body: %{"blocks" => []},
+      author_id: author_id
+    })
+  end
+
+  @doc """
+  Saves the draft. Reading time is recomputed from the body on every save, so
+  it can never be a number someone typed once and forgot.
+  """
+  def save_post(%Post{} = post, attrs) do
+    attrs = Map.put(attrs, :reading_minutes, reading_minutes(attrs, post))
+
+    post |> Post.changeset(attrs) |> Repo.update()
+  end
+
+  @doc """
+  Publishes. `published_at` is only set the first time, so re-publishing an
+  edit does not move the article back to the top of the index and does not
+  rewrite the date a reader already saw.
+  """
+  def publish_post(%Post{} = post, attrs \\ %{}) do
+    attrs =
+      attrs
+      |> Map.put(:status, "published")
+      |> Map.put_new_lazy(:published_at, fn ->
+        post.published_at || DateTime.utc_now() |> DateTime.truncate(:second)
+      end)
+
+    save_post(post, attrs)
+  end
+
+  @doc """
+  Takes a published article back to draft. The address is kept, so republishing
+  restores the same URL rather than orphaning the links that already point at it.
+  """
+  def unpublish_post(%Post{} = post), do: save_post(post, %{status: "draft"})
+
+  defp reading_minutes(attrs, post) do
+    blocks =
+      case attrs do
+        %{body: %{"blocks" => blocks}} -> blocks
+        _ -> post.body["blocks"] || []
+      end
+
+    Blogo.Content.Metrics.reading_minutes(blocks)
+  end
 end
