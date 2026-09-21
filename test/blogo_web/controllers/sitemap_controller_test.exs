@@ -7,7 +7,7 @@ defmodule BlogoWeb.SitemapControllerTest do
     p = post()
     body = conn |> get(~p"/sitemap.xml") |> response(200)
 
-    assert body =~ "<loc>http://www.example.com/#{p.slug}</loc>"
+    assert body =~ "<loc>#{BlogoWeb.Endpoint.url()}/#{p.slug}</loc>"
     assert body =~ "/autor/#{p.author.slug}"
   end
 
@@ -18,6 +18,6 @@ defmodule BlogoWeb.SitemapControllerTest do
 
   test "robots points crawlers at the sitemap", %{conn: conn} do
     body = conn |> get(~p"/robots.txt") |> response(200)
-    assert body =~ "Sitemap: http://www.example.com/sitemap.xml"
+    assert body =~ "Sitemap: #{BlogoWeb.Endpoint.url()}/sitemap.xml"
   end
 end
