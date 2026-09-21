@@ -127,21 +127,21 @@ blocks = [
         %{
           "title" => "Jev — contra negativos difíceis",
           "neg" => "negativos",
-          "neg_c" => 110,
-          "neg_s" => 30,
+          "neg_c" => 85,
+          "neg_s" => 26,
           "pos" => "positivos",
-          "pos_c" => 340,
-          "pos_s" => 34,
+          "pos_c" => 285,
+          "pos_s" => 28,
           "auc" => "0,956"
         },
         %{
           "title" => "Laya — contra negativos difíceis",
           "neg" => "negativos",
-          "neg_c" => 220,
-          "neg_s" => 40,
+          "neg_c" => 165,
+          "neg_s" => 32,
           "pos" => "positivos",
-          "pos_c" => 270,
-          "pos_s" => 40,
+          "pos_c" => 215,
+          "pos_s" => 32,
           "auc" => "0,508"
         }
       ]
@@ -175,12 +175,13 @@ blocks = [
       "col_b" => "previsto: outro",
       "row_a" => "real: saúde",
       "row_b" => "real: outro",
-      "metrics" => "precisão 0,83 · cobertura 0,94",
+      "metric_a" => "precisão 0,83",
+      "metric_b" => "cobertura 0,94",
       "cells" => [
         %{"value" => "68", "label" => "acerto", "accent" => true},
-        %{"value" => "4", "label" => "clínica perdida"},
-        %{"value" => "14", "label" => "farmácia, vet…"},
-        %{"value" => "94", "label" => "acerto"}
+        %{"value" => "4", "label" => "clínica perdida", "tone" => "bad"},
+        %{"value" => "14", "label" => "farmácia, vet…", "tone" => "warn"},
+        %{"value" => "94", "label" => "acerto", "accent" => true}
       ]
     },
     "caption" => "Limiar 0,44 no Jev: perde 4 clínicas para não deixar passar 14 negativos difíceis."
@@ -197,20 +198,19 @@ blocks = [
       "Com 8 casos o intervalo de confiança cobre quase toda a faixa; com 180 ele se fecha em torno de 0,72",
     "data" => %{
       "ticks" => ["0,4", "0,7", "1,0"],
-      "null_x" => 280,
       "rows" => [
         %{
           "label" => "8 casos",
-          "lo" => 160,
-          "hi" => 500,
-          "point" => 420,
+          "lo" => 0.42,
+          "hi" => 0.98,
+          "point" => 0.72,
           "note" => "qualquer conclusão cabe"
         },
         %{
           "label" => "180 casos",
-          "lo" => 262,
-          "hi" => 330,
-          "point" => 296,
+          "lo" => 0.647,
+          "hi" => 0.790,
+          "point" => 0.720,
           "note" => "0,720",
           "accent" => true
         }
@@ -234,7 +234,8 @@ blocks = [
       "no" => "descarte o candidato",
       "yes_label" => "sim",
       "yes" => "calibre o limiar",
-      "footnote" => "metade A ajusta, metade B reporta"
+      "then_a" => "metade A ajusta",
+      "then_b" => "metade B reporta"
     },
     "caption" => "AUC responde a primeira pergunta sem depender de corte. O corte é a segunda decisão."
   },
@@ -245,10 +246,15 @@ blocks = [
     "data" => %{
       "steps" => [
         %{"label" => "lead do Maps", "note" => "nome + categoria"},
-        %{"label" => "classificador", "note" => "noul"},
-        %{"label" => "limiar", "note" => "0,44"},
-        %{"label" => "campanha", "note" => "ou revisão", "accent" => true}
-      ]
+        %{"label" => "classificador", "note" => "noul", "accent" => true},
+        %{"label" => "p = 0,61", "mono" => true},
+        %{"label" => "campanha", "note" => "limiar 0,44"}
+      ],
+      "branch" => %{
+        "x" => 228,
+        "label" => "abaixo do limiar",
+        "note" => "vai para revisão"
+      }
     },
     "caption" => "A categoria carrega o sinal. O nome fantasia não vale nada para nenhum dos dois."
   },
@@ -269,13 +275,14 @@ blocks = [
     "alt" =>
       "O prompt novo corrigiu a categoria de automático informal de 2 para 25, mas derrubou humano informal de 25 para 17",
     "data" => %{
-      "from_label" => "prompt antigo",
-      "to_label" => "prompt novo",
+      "from_label" => "antigo",
+      "to_label" => "novo",
+      "max" => 25,
       "rows" => [
-        %{"label" => "automático óbvio", "from" => "25", "to" => "25"},
-        %{"label" => "automático informal", "from" => "2", "to" => "25", "tone" => "good"},
-        %{"label" => "humano informal", "from" => "25", "to" => "17", "tone" => "bad"},
-        %{"label" => "humano formal", "from" => "25", "to" => "25"}
+        %{"label" => "automático óbvio", "from" => 25, "to" => 25},
+        %{"label" => "automático informal", "from" => 2, "to" => 25, "tone" => "good"},
+        %{"label" => "humano informal", "from" => 25, "to" => 17, "tone" => "bad"},
+        %{"label" => "humano formal", "from" => 25, "to" => 25}
       ]
     },
     "caption" => "Consertou a coluna que eu estava olhando e quebrou a que eu não estava. De 25 casos cada."
@@ -299,10 +306,10 @@ blocks = [
     "alt" => "A sequência de testes ao longo da noite, do primeiro resultado falso ao teste de negação",
     "data" => %{
       "events" => [
-        %{"time" => "21h", "label" => "8 exemplos", "note" => "“separação perfeita”"},
-        %{"time" => "23h", "label" => "180 casos com negativos difíceis", "note" => "AUC 0,508"},
-        %{"time" => "01h", "label" => "teste de negação", "note" => "30 segundos, decidiu tudo", "accent" => true},
-        %{"time" => "03h", "label" => "conjunto reservado", "note" => "a regressão aparece"}
+        %{"time" => "21h", "label" => "8 exemplos", "note" => "“separação perfeita”", "tone" => "bad"},
+        %{"time" => "23h", "label" => "180 casos", "note" => "AUC 0,508", "accent" => true},
+        %{"time" => "01h", "label" => "teste de negação", "note" => "30 segundos", "accent" => true},
+        %{"time" => "03h", "label" => "reservado", "note" => "regressão"}
       ]
     },
     "caption" => "O teste mais barato foi o último que eu rodei."
