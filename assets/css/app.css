@@ -34,7 +34,7 @@
     --warn: #fbbf24;
     --bad: #fb7185;
     --page-bg: #0a1120;
-    --page-grad: linear-gradient(158deg, color-mix(in srgb, var(--accent) 30%, #0a1120) 0%, #0a1120 44%, color-mix(in srgb, var(--accent) 18%, #0a1120) 100%);
+    --page-grad: linear-gradient(158deg, color-mix(in srgb, var(--accent) 10%, #0a1120) 0%, #0a1120 44%, color-mix(in srgb, var(--accent) 6%, #0a1120) 100%);
     --card-bg: rgb(255 255 255 / .04);
     --field-bg: rgb(255 255 255 / .05);
     --bar-bg: rgb(10 17 32 / .72);
@@ -51,7 +51,7 @@
   --warn: #fbbf24;
   --bad: #fb7185;
   --page-bg: #0a1120;
-  --page-grad: linear-gradient(158deg, color-mix(in srgb, var(--accent) 30%, #0a1120) 0%, #0a1120 44%, color-mix(in srgb, var(--accent) 18%, #0a1120) 100%);
+  --page-grad: linear-gradient(158deg, color-mix(in srgb, var(--accent) 10%, #0a1120) 0%, #0a1120 44%, color-mix(in srgb, var(--accent) 6%, #0a1120) 100%);
   --card-bg: rgb(255 255 255 / .04);
   --field-bg: rgb(255 255 255 / .05);
   --bar-bg: rgb(10 17 32 / .72);
