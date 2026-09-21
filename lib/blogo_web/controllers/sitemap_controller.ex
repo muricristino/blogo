@@ -4,7 +4,9 @@ defmodule BlogoWeb.SitemapController do
   alias Blogo.Content
 
   def index(conn, _params) do
-    base = "#{conn.scheme}://#{conn.host}#{if conn.port in [80, 443], do: "", else: ":#{conn.port}"}"
+    base =
+      "#{conn.scheme}://#{conn.host}#{if conn.port in [80, 443], do: "", else: ":#{conn.port}"}"
+
     posts = Content.list_published()
 
     urls =
@@ -23,7 +25,8 @@ defmodule BlogoWeb.SitemapController do
   end
 
   def robots(conn, _params) do
-    base = "#{conn.scheme}://#{conn.host}#{if conn.port in [80, 443], do: "", else: ":#{conn.port}"}"
+    base =
+      "#{conn.scheme}://#{conn.host}#{if conn.port in [80, 443], do: "", else: ":#{conn.port}"}"
 
     conn
     |> put_resp_content_type("text/plain")

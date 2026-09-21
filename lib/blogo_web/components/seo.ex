@@ -20,7 +20,7 @@ defmodule BlogoWeb.SEO do
 
   def head(assigns) do
     ~H"""
-    <title><%= @title %></title>
+    <title>{@title}</title>
     <meta :if={@description} name="description" content={@description} />
     <link rel="canonical" href={@canonical} />
 
@@ -28,7 +28,11 @@ defmodule BlogoWeb.SEO do
     <meta property="og:title" content={@title} />
     <meta :if={@description} property="og:description" content={@description} />
     <meta property="og:url" content={@canonical} />
-    <meta :if={@published_at} property="article:published_time" content={DateTime.to_iso8601(@published_at)} />
+    <meta
+      :if={@published_at}
+      property="article:published_time"
+      content={DateTime.to_iso8601(@published_at)}
+    />
     <meta :if={@author} property="article:author" content={@author.name} />
 
     <meta name="twitter:card" content="summary_large_image" />

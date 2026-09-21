@@ -62,7 +62,8 @@ blocks = [
       ["Custo por 1M de chamadas", "US$ 13,38", "zero, fora a energia"],
       ["Latência mediana", "295 ms", "26 ms"]
     ],
-    "caption" => "As duas últimas linhas medem coisas diferentes: uma inclui a rede, a outra não.",
+    "caption" =>
+      "As duas últimas linhas medem coisas diferentes: uma inclui a rede, a outra não.",
     "note" => "**Janela.** 1.024 tokens parece pouco, mas nenhum caso meu passou de 400."
   },
   %{
@@ -184,7 +185,8 @@ blocks = [
         %{"value" => "94", "label" => "acerto", "accent" => true}
       ]
     },
-    "caption" => "Limiar 0,44 no Jev: perde 4 clínicas para não deixar passar 14 negativos difíceis."
+    "caption" =>
+      "Limiar 0,44 no Jev: perde 4 clínicas para não deixar passar 14 negativos difíceis."
   },
   %{
     "type" => "section",
@@ -216,7 +218,8 @@ blocks = [
         }
       ]
     },
-    "caption" => "O mesmo modelo, a mesma pergunta. O que muda é o que você tem direito de afirmar."
+    "caption" =>
+      "O mesmo modelo, a mesma pergunta. O que muda é o que você tem direito de afirmar."
   },
   %{
     "type" => "section",
@@ -237,12 +240,14 @@ blocks = [
       "then_a" => "metade A ajusta",
       "then_b" => "metade B reporta"
     },
-    "caption" => "AUC responde a primeira pergunta sem depender de corte. O corte é a segunda decisão."
+    "caption" =>
+      "AUC responde a primeira pergunta sem depender de corte. O corte é a segunda decisão."
   },
   %{
     "type" => "diagram",
     "form" => "fluxo",
-    "alt" => "Um lead do Google Maps passa pela categoria, pelo classificador e por um limiar antes de entrar na campanha",
+    "alt" =>
+      "Um lead do Google Maps passa pela categoria, pelo classificador e por um limiar antes de entrar na campanha",
     "data" => %{
       "steps" => [
         %{"label" => "lead do Maps", "note" => "nome + categoria"},
@@ -256,7 +261,8 @@ blocks = [
         "note" => "vai para revisão"
       }
     },
-    "caption" => "A categoria carrega o sinal. O nome fantasia não vale nada para nenhum dos dois."
+    "caption" =>
+      "A categoria carrega o sinal. O nome fantasia não vale nada para nenhum dos dois."
   },
   %{
     "type" => "section",
@@ -285,7 +291,8 @@ blocks = [
         %{"label" => "humano formal", "from" => 25, "to" => 25}
       ]
     },
-    "caption" => "Consertou a coluna que eu estava olhando e quebrou a que eu não estava. De 25 casos cada."
+    "caption" =>
+      "Consertou a coluna que eu estava olhando e quebrou a que eu não estava. De 25 casos cada."
   },
   %{
     "type" => "callout",
@@ -303,12 +310,23 @@ blocks = [
   %{
     "type" => "diagram",
     "form" => "linha_tempo",
-    "alt" => "A sequência de testes ao longo da noite, do primeiro resultado falso ao teste de negação",
+    "alt" =>
+      "A sequência de testes ao longo da noite, do primeiro resultado falso ao teste de negação",
     "data" => %{
       "events" => [
-        %{"time" => "21h", "label" => "8 exemplos", "note" => "“separação perfeita”", "tone" => "bad"},
+        %{
+          "time" => "21h",
+          "label" => "8 exemplos",
+          "note" => "“separação perfeita”",
+          "tone" => "bad"
+        },
         %{"time" => "23h", "label" => "180 casos", "note" => "AUC 0,508", "accent" => true},
-        %{"time" => "01h", "label" => "teste de negação", "note" => "30 segundos", "accent" => true},
+        %{
+          "time" => "01h",
+          "label" => "teste de negação",
+          "note" => "30 segundos",
+          "accent" => true
+        },
         %{"time" => "03h", "label" => "reservado", "note" => "regressão"}
       ]
     },

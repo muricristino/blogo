@@ -28,8 +28,17 @@ defmodule Blogo.Content.Post do
   def changeset(post, attrs) do
     post
     |> cast(attrs, [
-      :title, :subtitle, :slug, :kind, :status, :published_at,
-      :reading_minutes, :topics, :meta_description, :body, :author_id
+      :title,
+      :subtitle,
+      :slug,
+      :kind,
+      :status,
+      :published_at,
+      :reading_minutes,
+      :topics,
+      :meta_description,
+      :body,
+      :author_id
     ])
     |> validate_required([:title, :slug, :author_id])
     |> validate_inclusion(:kind, @kinds)

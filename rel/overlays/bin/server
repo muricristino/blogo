@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+
+# Migrations run before the server accepts traffic. A deploy that ships a
+# migration and a template that depends on it must not serve the gap between
+# the two.
+./blogo eval "Blogo.Release.migrate"
+
+PHX_SERVER=true exec ./blogo start

@@ -70,9 +70,24 @@ defmodule BlogoWeb.PostController do
   # declara, e enquanto o editor não existe elas moram aqui.
   defp series do
     [
-      %{title: "Avaliar sem se enganar", dek: "Do conjunto de teste ao limiar calibrado.", parts: 4, done: 2},
-      %{title: "Falhas silenciosas", dek: "Os lugares onde um erro não vira log.", parts: 3, done: 0},
-      %{title: "Rails que aguenta", dek: "Consultas, filas e o que quebra primeiro.", parts: 5, done: 5}
+      %{
+        title: "Avaliar sem se enganar",
+        dek: "Do conjunto de teste ao limiar calibrado.",
+        parts: 4,
+        done: 2
+      },
+      %{
+        title: "Falhas silenciosas",
+        dek: "Os lugares onde um erro não vira log.",
+        parts: 3,
+        done: 0
+      },
+      %{
+        title: "Rails que aguenta",
+        dek: "Consultas, filas e o que quebra primeiro.",
+        parts: 5,
+        done: 5
+      }
     ]
   end
 
