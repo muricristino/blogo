@@ -1,0 +1,20 @@
+<.defs />
+<div class="wrap">
+  <header class="masthead">
+    <a class="masthead-name" href={~p"/"}>blogo</a>
+    <nav>
+      <a href={~p"/"}>Artigos</a>
+      <a :if={@current_author} href={~p"/autor/#{@current_author.slug}"}>Sobre</a>
+    </nav>
+  </header>
+
+  <main>
+    {@inner_content}
+  </main>
+
+  <footer class="site-foot">
+    <p :if={@current_author}>
+      {@current_author.name}<span :if={@current_author.city}> · {@current_author.city}</span>
+    </p>
+  </footer>
+</div>
