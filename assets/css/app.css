@@ -217,7 +217,15 @@ a{color:var(--accent);text-underline-offset:.2em}
   .drop::first-letter { font-size: 48px; }
 }
 
-.tbl-wrap, .dg-wrap { overflow-x: auto; }
+/* Tabela, código e diagrama rolam dentro da própria caixa. O `overflow`
+   estava em estilo inline como `hidden`, que vence a folha e fazia a
+   largura vazar para a página em vez de ficar contida. */
+.tbl-wrap, .dg-wrap { overflow-x: auto; overflow-y: hidden; }
+.dg-wrap { padding: 22px 24px; }
+.tbl { min-width: 280px; }
+/* Uma figura é filha da grade do texto; sem isto ela se recusa a encolher
+   abaixo do que carrega, e a caixa que deveria rolar empurra a página. */
+.row > figure, .row > div, .stack > figure { min-width: 0; }
 
 .d-defs { position: absolute; width: 0; height: 0; }
 .d-dot { fill: var(--ink3); }
@@ -239,3 +247,90 @@ a{color:var(--accent);text-underline-offset:.2em}
 .d-node--m{fill:none;stroke:var(--ink4);stroke-width:1.1;stroke-dasharray:4 4}
 .d-edge--a{stroke:var(--accent);stroke-width:1.6;fill:none}
 .d-arrow--a{fill:var(--accent)}
+
+/* ── Mobile-first: as regras abaixo valem a partir de 320px ─────────────
+   Um item de grid tem `min-width: auto`, então ele se recusa a encolher
+   abaixo do conteúdo mais largo que carrega — um bloco de código, uma
+   tabela. Zerar isso é o que deixa a coluna caber no telefone; o próprio
+   bloco rola dentro da sua caixa. */
+.article-grid > *,
+.home-grid > *,
+.feat > *,
+.stack > * { min-width: 0; }
+
+/* Alvo de toque. No dedo, 44px é o mínimo que se acerta sem errar; no
+   mouse, 40px já basta e ocupa menos. */
+@media (pointer: coarse) {
+  .navlink, .iconbtn, .btn, .chip, .code-copy, .cmt-act { min-height: 44px; }
+  .brand { display: inline-flex; align-items: center; min-height: 44px; }
+  .tag { min-height: 32px; }
+  .toc a { min-height: 44px; }
+  .arow { padding-block: 14px; }
+  .item { padding-block: 22px; }
+}
+
+/* Texto que se lê no telefone. Abaixo de 16px o iOS dá zoom ao focar um
+   campo, e o corpo do texto cansa. */
+@media (max-width: 760px) {
+  .item-dek, .ctext, .cmt-body { font-size: 16px; line-height: 1.6; }
+  .dek { font-size: 17px; }
+  .prose { font-size: 17px; }
+  .field { font-size: 16px; }
+}
+
+/* A medida do texto não passa de ~70 caracteres em nenhuma largura. */
+
+
+/* O destaque: uma coluna no telefone, duas a partir de 760px. Estava em
+   estilo inline com duas colunas fixas e `overflow: hidden`, então no
+   telefone a figura era cortada fora sem nenhuma rolagem que denunciasse. */
+.feat { display: grid; grid-template-columns: 1fr; overflow: hidden; margin-bottom: 34px; }
+.feat-text { padding: 26px 22px; display: flex; flex-direction: column; gap: 16px; }
+.feat-fig {
+  padding: 24px 22px; display: flex; flex-direction: column; justify-content: center; gap: 12px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.feat-cta {
+  display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+  font-weight: 600; font-size: 15px; text-decoration: none;
+}
+@media (pointer: coarse) { .feat-cta { min-height: 44px; } }
+
+@media (min-width: 760px) {
+  .feat { grid-template-columns: 1fr 1fr; }
+  .feat-text { padding: 34px 36px; }
+  .feat-fig { border-top: 0; border-left: 1px solid var(--line); padding: 30px; }
+}
+
+/* O título do destaque escala com a largura. Fixo em 40px, a palavra mais
+   longa impunha uma largura mínima maior que o telefone e empurrava o card
+   inteiro para fora da tela. */
+.feat-title { font-size: clamp(26px, 7vw, 40px); }
+.h1, .h2, .feat-title, .item-title { overflow-wrap: break-word; }
+
+/* O resumo. Três colunas fixas não cabiam a 320px: os números têm 40px e
+   impõem uma largura mínima que empurrava a página. Agora as colunas
+   quebram quando não cabem, em vez de o card estourar. */
+.resumo { padding: 22px 20px; display: flex; flex-direction: column; gap: 16px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 18px; }
+.stats > * { min-width: 0; }
+@media (min-width: 760px) { .resumo { padding: 26px 28px; gap: 18px; } .stats { gap: 22px; } }
+
+/* Todo link de texto vira alvo de 44px no dedo. Um link de 21px de altura
+   acerta-se com o mouse e erra-se com o polegar. */
+@media (pointer: coarse) {
+  .site-foot a, .aside-card a, .byline a, .source a {
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+}
+
+/* Texto de leitura, não legenda — vale em qualquer largura. */
+.item-dek, .ctext { font-size: 16px; }
+
+/* A medida vale em `ch`, que é a largura do zero da fonte. Em 68ch a coluna
+   de 640px ainda passava de 75 caracteres. */
+.prose, .item-dek, .ctext { max-width: 62ch; }
+
+.home { padding-block: 28px 40px; }
+.site-foot { padding-block: 26px; border-top: 1px solid var(--line); margin-top: 40px; }

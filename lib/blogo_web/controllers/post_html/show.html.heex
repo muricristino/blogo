@@ -55,7 +55,7 @@
       style="padding:26px 28px;display:flex;flex-direction:column;gap:18px"
     >
       <span class="kicker">Em resumo</span>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px">
+      <div class="stats">
         <div :for={item <- @summary["items"] || []} class="stat">
           <span
             class={"statn #{item["accent"] && "is-accent"}"}
