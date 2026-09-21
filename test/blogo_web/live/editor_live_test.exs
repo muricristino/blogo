@@ -9,6 +9,7 @@ defmodule BlogoWeb.EditorLiveTest do
   import Phoenix.LiveViewTest
 
   alias Blogo.Content
+  alias Blogo.Content.Markdown
   alias Blogo.Fixtures
 
   @password "senha-de-teste"
@@ -176,9 +177,9 @@ defmodule BlogoWeb.EditorLiveTest do
       post = draft()
       {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
 
-      html = render_click(live, "publish", %{})
+      render_click(live, "publish", %{})
 
-      assert html =~ "hero"
+      assert flash_of(live)["error"] =~ "diagrama de capa"
       assert Content.get_post!(post.id).status == "draft"
     end
 
@@ -247,7 +248,179 @@ defmodule BlogoWeb.EditorLiveTest do
 
   # ── reading the live view's state ──────────────────────────────────────────
 
+  describe "o que a auditoria de uso encontrou" do
+    setup %{conn: conn} do
+      %{conn: sign_in(conn), post: draft()}
+    end
+
+    # The first version of this screen wrote the change into the post struct and
+    # then handed that same struct to the changeset, so `cast` had nothing to
+    # compare against and the column was never written. The editor showed the
+    # new title, the badge turned green, and the database never heard about it.
+    # Every test passed, because none of them read the row back.
+    test "um campo do post chega ao banco", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      live
+      |> form("#ed-head", %{"title" => "Um título que precisa sobreviver"})
+      |> render_change()
+
+      render_click(live, "save", %{})
+
+      assert Content.get_post!(post.id).title == "Um título que precisa sobreviver"
+    end
+
+    test "endereço, resumo e descrição também", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      live |> form("#ed-head", %{"subtitle" => "A linha de apoio."}) |> render_change()
+      live |> form("#ed-publish", %{"slug" => "endereco-novo"}) |> render_change()
+      live |> form("#ed-seo", %{"meta_description" => "Para a busca."}) |> render_change()
+      render_click(live, "save", %{})
+
+      saved = Content.get_post!(post.id)
+      assert saved.subtitle == "A linha de apoio."
+      assert saved.slug == "endereco-novo"
+      assert saved.meta_description == "Para a busca."
+    end
+
+    test "os marcadores também", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      render_click(live, "add_topic", %{"value" => "avaliação"})
+      render_click(live, "save", %{})
+
+      assert "avaliação" in Content.get_post!(post.id).topics
+    end
+
+    # There was no way to create a hero from the editor at all, which made every
+    # new article unpublishable: the checklist asked for a "diagrama de capa"
+    # and the refusal spoke of a "hero".
+    test "o diagrama de capa é criado pelo editor e permite publicar", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      live |> form("#ed-hero", %{"form" => "fluxo"}) |> render_change()
+
+      live
+      |> form("#ed-hero", %{
+        "form" => "fluxo",
+        "alt" => "Dois passos",
+        "data" => ~s({"steps":[{"label":"medir"}]})
+      })
+      |> render_change()
+
+      render_click(live, "publish", %{})
+
+      published = Content.get_post!(post.id)
+      assert published.status == "published"
+      assert published.hero["form"] == "fluxo"
+      assert published.hero["data"]["steps"] == [%{"label" => "medir"}]
+    end
+
+    test "dados de capa inválidos mantêm a figura anterior", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      # Os campos de dados só existem depois que uma forma é escolhida.
+      live |> form("#ed-hero", %{"form" => "fluxo"}) |> render_change()
+
+      live
+      |> form("#ed-hero", %{"form" => "fluxo", "data" => ~s({"steps":[]})})
+      |> render_change()
+
+      html =
+        live
+        |> form("#ed-hero", %{"form" => "fluxo", "data" => "{isto não é json"})
+        |> render_change()
+
+      assert html =~ "não são JSON válido"
+      assert :sys.get_state(live.pid).socket.assigns.fields.hero["form"] == "fluxo"
+    end
+
+    # A fence with no name raised, the LiveView died, the client remounted and
+    # the writer watched the document revert to the last saved state with no
+    # message at all.
+    test "um ::: sem nome é reportado em vez de derrubar o editor", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      render_click(live, "mode", %{"to" => "markdown"})
+      html = render_hook(live, "markdown_input", %{"value" => "Um parágrafo.\n\n:::\n"})
+
+      assert html =~ "não abre bloco nenhum"
+      assert Process.alive?(live.pid)
+    end
+
+    test "uma forma de diagrama que não existe é reportada", %{conn: _conn, post: _post} do
+      assert {:error, message} = Markdown.from_markdown(":::diagrama comparacao\n{}\n:::\n")
+      assert message =~ "comparacao"
+    end
+
+    test "um aviso de variante inválida é reportado", %{conn: _conn, post: _post} do
+      assert {:error, message} = Markdown.from_markdown(":::aviso xpto Título\ntexto\n:::\n")
+      assert message =~ "xpto"
+    end
+
+    test "inserir um bloco seleciona o que foi inserido", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      live |> element(".pitem[phx-value-type=quote]") |> render_click()
+      live |> element(".pitem[phx-value-type=question]") |> render_click()
+
+      # Inserted in the order they were clicked. Before, the selection never
+      # moved, so each new block landed above the previous one.
+      assert [%{"type" => "text"}, %{"type" => "quote"}, %{"type" => "question"}] = blocks(live)
+    end
+
+    test "o menu de barra filtra e insere pelo teclado", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      render_hook(live, "slash", %{"uid" => first_uid(live)})
+      render_hook(live, "slash_key", %{"key" => "t"})
+      render_hook(live, "slash_key", %{"key" => "b"})
+      render_hook(live, "slash_key", %{"key" => "Enter"})
+
+      assert Enum.any?(blocks(live), &(&1["type"] == "table"))
+    end
+
+    test "remover um bloco pode ser desfeito", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      antes = blocks(live)
+      render_click(live, "delete", %{"uid" => first_uid(live)})
+      assert blocks(live) == []
+
+      render_click(live, "undo_delete", %{})
+      assert Enum.map(blocks(live), & &1["type"]) == Enum.map(antes, & &1["type"])
+    end
+
+    # Two tabs on one post used to be last-write-wins, in silence.
+    test "uma edição feita noutro lugar é reportada em vez de sobrescrita", %{
+      conn: conn,
+      post: post
+    } do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      # Outra aba grava enquanto esta está aberta.
+      {:ok, _} = Content.save_post(Content.get_post!(post.id), %{title: "Escrito noutro lugar"})
+
+      live |> form("#ed-head", %{"title" => "Escrito aqui"}) |> render_change()
+      render_click(live, "save", %{})
+
+      assert flash_of(live)["error"] =~ "alterado noutro lugar"
+      assert Content.get_post!(post.id).title == "Escrito noutro lugar"
+    end
+
+    test "um rascunho novo abre com um parágrafo para escrever", %{conn: _conn} do
+      author = Blogo.Fixtures.author()
+      {:ok, novo} = Content.new_draft(author.id)
+
+      assert [%{"type" => "text"}] = novo.body["blocks"]
+    end
+  end
+
+  # ── reading the live view's state ──────────────────────────────────────────
+
   defp blocks(live), do: :sys.get_state(live.pid).socket.assigns.blocks
+  defp flash_of(live), do: :sys.get_state(live.pid).socket.assigns.flash
   defp first_block(live), do: blocks(live) |> List.first()
   defp first_uid(live), do: first_block(live)["_uid"]
 end

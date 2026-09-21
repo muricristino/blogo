@@ -340,12 +340,17 @@ defmodule Blogo.Content.Markdown do
   defp lines_to_block([]), do: {:ok, nil}
 
   defp lines_to_block([":::" <> head | rest]) do
-    [name | args] = String.split(head, " ", trim: true)
     body = Enum.join(rest, "\n")
 
-    case Map.fetch(@block_fences, name) do
-      {:ok, type} -> fenced_block(type, args, body)
-      :error -> {:error, "bloco desconhecido: :::#{name}"}
+    case String.split(head, " ", trim: true) do
+      [name | args] ->
+        case Map.fetch(@block_fences, name) do
+          {:ok, type} -> fenced_block(type, args, body)
+          :error -> {:error, "bloco desconhecido: :::#{name}"}
+        end
+
+      [] ->
+        {:error, "um ::: sozinho não abre bloco nenhum — falta o nome depois dele"}
     end
   end
 
@@ -411,6 +416,10 @@ defmodule Blogo.Content.Markdown do
 
   defp separator_row?(cells), do: Enum.all?(cells, &Regex.match?(~r/^:?-{2,}:?$/, &1))
 
+  defp fenced_block("callout", [v | _rest], _body) when v not in ~w(note warn bad) do
+    {:error, "aviso de tipo desconhecido: #{v}. Use note, warn ou bad."}
+  end
+
   defp fenced_block("callout", args, body) do
     {variant, title} =
       case args do
@@ -458,6 +467,16 @@ defmodule Blogo.Content.Markdown do
       end)
 
     {:ok, %{"type" => "keynumbers", "items" => items}}
+  end
+
+  @forms ~w(fluxo distribuicao antes_depois matriz decisao linha_tempo intervalo)
+
+  defp fenced_block("diagram", [form | _], _body) when form not in @forms do
+    {:error, "forma de diagrama desconhecida: #{form}. As sete são: #{Enum.join(@forms, ", ")}."}
+  end
+
+  defp fenced_block("diagram", [], _body) do
+    {:error, "o diagrama precisa de uma forma: :::diagrama <forma>"}
   end
 
   defp fenced_block("diagram", args, body) do

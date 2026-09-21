@@ -71,7 +71,7 @@ defmodule Blogo.Content.Checklist do
     cond do
       diagrams == [] -> nil
       missing == 0 -> {:ok, "Todos os diagramas têm descrição para leitor de tela"}
-      true -> {:warn, plural(missing, "diagrama sem descrição", "diagramas sem descrição")}
+      true -> {:warn, contagem(missing, "um diagrama sem descrição", "diagramas sem descrição")}
     end
   end
 
@@ -80,9 +80,14 @@ defmodule Blogo.Content.Checklist do
     missing = Enum.count(figures, &(&1["caption"] in [nil, ""]))
 
     cond do
-      figures == [] -> nil
-      missing == 0 -> {:ok, "Toda figura tem legenda"}
-      true -> {:warn, plural(missing, "figura ainda sem legenda", "figuras ainda sem legenda")}
+      figures == [] ->
+        nil
+
+      missing == 0 ->
+        {:ok, "Toda figura tem legenda"}
+
+      true ->
+        {:warn, contagem(missing, "uma figura ainda sem legenda", "figuras ainda sem legenda")}
     end
   end
 
@@ -103,8 +108,10 @@ defmodule Blogo.Content.Checklist do
     end
   end
 
-  defp plural(1, singular, _plural), do: "Uma #{singular}"
-  defp plural(n, _singular, plural), do: "#{n} #{plural}"
+  # The article decides the gender of the noun, not the count, so the singular
+  # is written out in full instead of being assembled from a prefix.
+  defp contagem(1, singular, _plural), do: String.capitalize(singular)
+  defp contagem(n, _singular, plural), do: "#{n} #{plural}"
 
   @doc """
   The help line under the markdown editor: which fence opens which block.

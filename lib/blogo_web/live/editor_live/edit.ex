@@ -25,24 +25,46 @@ defmodule BlogoWeb.EditorLive.Edit do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     post = Content.get_post!(id)
+    if connected?(socket), do: Process.send_after(self(), :tick, 30_000)
 
     {:ok,
      socket
      |> assign(
        post: post,
+       fields: fields_of(post),
        page_title: post.title,
        editor?: true,
        mode: :rich,
        selected: nil,
        slash_for: nil,
+       slash_query: "",
+       slash_at: 0,
        saved_at: post.updated_at,
        dirty?: false,
        timer: nil,
        error: nil,
+       hero_error: nil,
+       undo: nil,
+       now: DateTime.utc_now(),
        markdown: Markdown.to_markdown(post)
      )
      |> put_blocks(post.body["blocks"] || [])
      |> assign_derived()}
+  end
+
+  # `post` is the row as it was last read, and `fields` is what the writer has
+  # typed. They have to stay separate: writing a change into the struct and then
+  # handing that same struct to `Ecto.Changeset.cast/3` leaves nothing for cast
+  # to compare against, so the column is never written and the screen goes on
+  # showing a value the database never received. That bug shipped in the first
+  # version of this file and nothing on screen contradicted it — the save badge
+  # still turned green.
+  @editable ~w(title subtitle slug kind meta_description)a
+
+  defp fields_of(post) do
+    post
+    |> Map.take([:topics, :hero | @editable])
+    |> Map.new(fn {k, v} -> {k, v} end)
   end
 
   # ── events ────────────────────────────────────────────────────────────────
@@ -62,26 +84,121 @@ defmodule BlogoWeb.EditorLive.Edit do
   end
 
   def handle_event("insert", %{"type" => type} = params, socket) do
-    blocks = insert_after(socket.assigns.blocks, params["after"], new_block(type))
-
-    {:noreply,
-     socket
-     |> put_blocks(blocks)
-     |> assign(slash_for: nil)
-     |> touched()}
+    insert_block(socket, type, params["after"])
   end
 
   def handle_event("move", %{"uid" => uid, "dir" => dir}, socket) do
     {:noreply, socket |> put_blocks(move(socket.assigns.blocks, uid, dir)) |> touched()}
   end
 
+  # Removing is one click and the browser's undo cannot reach it, so the block
+  # is kept with its position until something else is removed.
   def handle_event("delete", %{"uid" => uid}, socket) do
-    blocks = Enum.reject(socket.assigns.blocks, &(&1["_uid"] == uid))
-    {:noreply, socket |> put_blocks(blocks) |> assign(selected: nil) |> touched()}
+    blocks = socket.assigns.blocks
+    index = Enum.find_index(blocks, &(&1["_uid"] == uid))
+    removed = index && Enum.at(blocks, index)
+
+    {:noreply,
+     socket
+     |> put_blocks(List.delete_at(blocks, index || -1))
+     |> assign(selected: nil, undo: removed && {index, removed})
+     |> touched()}
+  end
+
+  # Backspace in an empty block removes it and puts the caret at the end of the
+  # one above, which is what every editor does. The last block stays: a sheet
+  # with nothing to type in is a dead end.
+  def handle_event("delete_empty", %{"uid" => uid}, socket) do
+    blocks = socket.assigns.blocks
+
+    if length(blocks) <= 1 do
+      {:noreply, socket}
+    else
+      index = Enum.find_index(blocks, &(&1["_uid"] == uid))
+      previous = index && index > 0 && Enum.at(blocks, index - 1)
+
+      socket =
+        socket
+        |> put_blocks(List.delete_at(blocks, index || -1))
+        |> touched()
+
+      case previous do
+        %{"_uid" => prev_uid} ->
+          {:noreply,
+           socket
+           |> assign(selected: prev_uid)
+           |> push_event("focus_block", %{uid: prev_uid})}
+
+        _ ->
+          {:noreply, socket}
+      end
+    end
+  end
+
+  def handle_event("undo_delete", _params, socket) do
+    case socket.assigns.undo do
+      {index, block} ->
+        blocks = List.insert_at(socket.assigns.blocks, index, block)
+
+        {:noreply,
+         socket
+         |> put_blocks(blocks)
+         |> assign(undo: nil, selected: block["_uid"])
+         |> touched()}
+
+      nil ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("slash", %{"uid" => uid}, socket) do
-    {:noreply, assign(socket, slash_for: uid, selected: uid)}
+    {:noreply, assign(socket, slash_for: uid, selected: uid, slash_query: "", slash_at: 0)}
+  end
+
+  # The palette advertises /t, /h, /tb. Before this they were decoration: the
+  # menu opened and then ignored every key, so the letters landed in the
+  # paragraph as text and Enter inserted a line break.
+  def handle_event("slash_key", %{"key" => key}, socket) do
+    matches = slash_matches(socket.assigns.slash_query)
+
+    case key do
+      "ArrowDown" ->
+        {:noreply,
+         assign(socket, slash_at: min(socket.assigns.slash_at + 1, length(matches) - 1))}
+
+      "ArrowUp" ->
+        {:noreply, assign(socket, slash_at: max(socket.assigns.slash_at - 1, 0))}
+
+      "Enter" ->
+        case Enum.at(matches, socket.assigns.slash_at) do
+          {type, _label, _key} -> insert_block(socket, type, socket.assigns.slash_for)
+          nil -> {:noreply, assign(socket, slash_for: nil)}
+        end
+
+      "Escape" ->
+        {:noreply, assign(socket, slash_for: nil)}
+
+      "Backspace" ->
+        query = String.slice(socket.assigns.slash_query, 0..-2//1)
+
+        if query == "" and socket.assigns.slash_query == "" do
+          {:noreply, assign(socket, slash_for: nil)}
+        else
+          {:noreply, assign(socket, slash_query: query, slash_at: 0)}
+        end
+
+      <<letter::utf8>> ->
+        query = socket.assigns.slash_query <> <<letter::utf8>>
+
+        if slash_matches(query) == [] do
+          {:noreply, assign(socket, slash_for: nil)}
+        else
+          {:noreply, assign(socket, slash_query: query, slash_at: 0)}
+        end
+
+      _ ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("slash_close", _params, socket), do: {:noreply, assign(socket, slash_for: nil)}
@@ -89,39 +206,71 @@ defmodule BlogoWeb.EditorLive.Edit do
   # An input outside a form sends `%{"value" => ...}`, so the field it belongs
   # to travels as a phx-value and is matched against a fixed list — never
   # `String.to_atom` on something that arrived from a browser.
-  def handle_event("field", %{"field" => field, "value" => value}, socket) do
-    case field do
-      f when f in ~w(title subtitle slug kind meta_description) ->
-        post = Map.put(socket.assigns.post, String.to_existing_atom(f), value)
-        {:noreply, socket |> assign(post: post) |> assign_derived() |> touched()}
+  # The panel and the sheet heading are forms, so a change event carries the
+  # fields by name and `phx-debounce` saves while the writer types. The previous
+  # version listened for blur on loose inputs: a writer who typed a caption and
+  # reloaded without clicking elsewhere lost it, while the badge said "salvo".
+  def handle_event("head", params, socket) do
+    socket =
+      Enum.reduce(@editable, socket, fn key, acc ->
+        case Map.fetch(params, to_string(key)) do
+          {:ok, value} -> put_field_value(acc, key, value)
+          :error -> acc
+        end
+      end)
 
-      _ ->
-        {:noreply, socket}
+    {:noreply, touched(socket)}
+  end
+
+  def handle_event("hero", params, socket) do
+    case build_hero(socket.assigns.fields.hero, params) do
+      {:ok, hero} ->
+        {:noreply,
+         socket
+         |> assign(hero_error: nil)
+         |> put_field_value(:hero, hero)
+         |> touched()}
+
+      {:error, message} ->
+        {:noreply, assign(socket, hero_error: message)}
+    end
+  end
+
+  # The commonest case by far: the article already contains the figure that
+  # should be on its cover, and retyping its data would be a second copy to
+  # keep in sync.
+  def handle_event("hero_from_block", _params, socket) do
+    case Enum.find(socket.assigns.blocks, &(&1["type"] == "diagram")) do
+      nil ->
+        {:noreply,
+         put_flash(socket, :error, "O artigo ainda não tem nenhum diagrama para usar como capa.")}
+
+      block ->
+        hero = block |> Map.drop(["_uid", "type", "note"]) |> Map.put("form", block["form"])
+        {:noreply, socket |> put_field_value(:hero, hero) |> touched()}
     end
   end
 
   def handle_event("add_topic", %{"value" => topic}, socket) do
     topic = String.trim(topic)
-    post = socket.assigns.post
+    topics = socket.assigns.fields.topics
 
-    if topic == "" or topic in post.topics do
+    if topic == "" or topic in topics do
       {:noreply, socket}
     else
-      post = %{post | topics: post.topics ++ [topic]}
-      {:noreply, socket |> assign(post: post) |> touched()}
+      {:noreply, socket |> put_field_value(:topics, topics ++ [topic]) |> touched()}
     end
   end
 
   def handle_event("remove_topic", %{"topic" => topic}, socket) do
-    post = socket.assigns.post
-    post = %{post | topics: List.delete(post.topics, topic)}
-    {:noreply, socket |> assign(post: post) |> touched()}
+    topics = List.delete(socket.assigns.fields.topics, topic)
+    {:noreply, socket |> put_field_value(:topics, topics) |> touched()}
   end
 
   def handle_event("mode", %{"to" => "markdown"}, socket) do
-    post = post_with_blocks(socket)
+    markdown = Markdown.to_markdown(working_post(socket))
 
-    {:noreply, assign(socket, mode: :markdown, markdown: Markdown.to_markdown(post), error: nil)}
+    {:noreply, assign(socket, mode: :markdown, markdown: markdown, error: nil)}
   end
 
   def handle_event("mode", %{"to" => "rich"}, socket) do
@@ -133,11 +282,11 @@ defmodule BlogoWeb.EditorLive.Edit do
 
     case Markdown.from_markdown(text) do
       {:ok, attrs} ->
-        post = struct(socket.assigns.post, Map.delete(attrs, :body))
+        fields = Map.merge(socket.assigns.fields, Map.delete(attrs, :body))
 
         {:noreply,
          socket
-         |> assign(post: post, error: nil)
+         |> assign(fields: fields, error: nil)
          |> put_blocks(attrs.body["blocks"])
          |> touched()}
 
@@ -183,6 +332,13 @@ defmodule BlogoWeb.EditorLive.Edit do
   @impl true
   def handle_info(:autosave, socket), do: {:noreply, save(socket)}
 
+  # "salvo há 1 minuto" stayed on screen for an hour. The badge re-renders on a
+  # tick rather than only when something else happens to change.
+  def handle_info(:tick, socket) do
+    Process.send_after(self(), :tick, 30_000)
+    {:noreply, assign(socket, now: DateTime.utc_now())}
+  end
+
   # ── saving ────────────────────────────────────────────────────────────────
 
   defp touched(socket) do
@@ -198,6 +354,15 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   defp save(socket) do
     case Content.save_post(socket.assigns.post, attrs_of(socket)) do
+      # Two tabs on one post used to be last-write-wins in silence. The write
+      # is refused and the writer decides which version survives.
+      {:error, :stale} ->
+        put_flash(
+          socket,
+          :error,
+          "Este post foi alterado noutro lugar depois que você abriu. Recarregue para ver a versão nova — o que está na tela não foi gravado."
+        )
+
       {:ok, post} ->
         socket
         |> assign(post: post, saved_at: post.updated_at, dirty?: false, timer: nil)
@@ -208,27 +373,149 @@ defmodule BlogoWeb.EditorLive.Edit do
     end
   end
 
-  defp attrs_of(socket) do
-    post = socket.assigns.post
+  # Inserting selects what was inserted. Without this the palette kept
+  # inserting after the same old block, so four blocks added in a row came out
+  # in reverse order.
+  defp insert_block(socket, type, after_uid) do
+    block = new_block(type)
+    blocks = insert_after(socket.assigns.blocks, after_uid, block)
 
-    %{
-      title: post.title,
-      subtitle: post.subtitle,
-      slug: post.slug,
-      kind: post.kind,
-      topics: post.topics,
-      meta_description: post.meta_description,
-      body: %{"blocks" => clean_blocks(socket.assigns.blocks)}
-    }
+    {:noreply,
+     socket
+     |> put_blocks(blocks)
+     |> assign(slash_for: nil, selected: block["_uid"])
+     |> push_event("focus_block", %{uid: block["_uid"]})
+     |> touched()}
   end
 
+  defp slash_matches(""), do: Markdown.palette()
+
+  defp slash_matches(query) do
+    q = String.downcase(query)
+
+    Enum.filter(Markdown.palette(), fn {_type, label, key} ->
+      String.starts_with?(String.trim_leading(key, "/"), q) or
+        String.contains?(String.downcase(label), q)
+    end)
+  end
+
+  defp put_field_value(socket, key, value) do
+    socket
+    |> assign(fields: Map.put(socket.assigns.fields, key, value))
+    |> assign_derived()
+  end
+
+  # Choosing a form starts a hero with an empty dataset; clearing the form
+  # removes it. The data is JSON because a diagram carries numbers no prose
+  # expresses, and a broken edit keeps the previous figure rather than blanking
+  # the cover.
+  defp build_hero(_current, %{"form" => ""}), do: {:ok, nil}
+
+  defp build_hero(current, %{"form" => form} = params) do
+    current = current || %{}
+
+    hero =
+      current
+      |> Map.put("form", form)
+      |> put_present("alt", params["alt"])
+      |> put_present("caption", params["caption"])
+
+    case params["data"] do
+      nil ->
+        {:ok, Map.put_new(hero, "data", %{})}
+
+      json ->
+        case Jason.decode(String.trim(json)) do
+          {:ok, data} when is_map(data) -> {:ok, Map.put(hero, "data", data)}
+          _ -> {:error, "Os dados não são JSON válido — a figura anterior foi mantida."}
+        end
+    end
+  end
+
+  defp build_hero(_current, _params), do: {:ok, nil}
+
+  defp put_present(map, _key, nil), do: map
+  defp put_present(map, key, ""), do: Map.delete(map, key)
+  defp put_present(map, key, value), do: Map.put(map, key, value)
+
+  defp hero_json(%{"data" => data}) when is_map(data), do: Jason.encode!(data, pretty: true)
+  defp hero_json(_), do: "{}"
+
+  defp forms do
+    [
+      {"fluxo", "fluxo"},
+      {"distribuicao", "distribuição"},
+      {"antes_depois", "antes e depois"},
+      {"matriz", "matriz"},
+      {"decisao", "decisão"},
+      {"linha_tempo", "linha do tempo"},
+      {"intervalo", "intervalo"}
+    ]
+  end
+
+  # What each form is for, under the selector rather than inside it: an option
+  # long enough to explain itself is an option too long to read in a select.
+  defp form_hint("fluxo"), do: "por onde um caso passa"
+  defp form_hint("distribuicao"), do: "o quanto dois grupos se sobrepõem"
+  defp form_hint("antes_depois"), do: "o que uma mudança custou"
+  defp form_hint("matriz"), do: "onde o erro cai"
+  defp form_hint("decisao"), do: "a pergunta e os dois caminhos"
+  defp form_hint("linha_tempo"), do: "como aquilo se desenrolou"
+  defp form_hint("intervalo"), do: "o que a amostra permite concluir"
+  defp form_hint(_), do: nil
+
+  # The shape each form expects, so nobody has to guess the schema from an
+  # empty box. This is the only place the editor explains a data format, and it
+  # exists because the alternative is trial and error.
+  defp hero_hint("fluxo"), do: ~S|{"steps": [{"label": "passo", "accent": true}]}|
+
+  defp hero_hint("distribuicao"),
+    do:
+      ~S|{"rows": [{"title": "…", "auc": "0,95", "pos_c": 285, "pos_s": 28, "neg_c": 85, "neg_s": 26}]}|
+
+  defp hero_hint("antes_depois"),
+    do:
+      ~S|{"from_label": "antes", "to_label": "depois", "max": 100, "rows": [{"label": "…", "from": 89, "to": 51}]}|
+
+  defp hero_hint("matriz"),
+    do:
+      ~S|{"col_a": "…", "col_b": "…", "row_a": "…", "row_b": "…", "cells": [{"value": "68", "label": "acerto", "accent": true}]}|
+
+  defp hero_hint("decisao"), do: ~S|{"question": "…?", "no": "…", "yes": "…"}|
+
+  defp hero_hint("linha_tempo"),
+    do: ~S|{"events": [{"time": "dia 0", "label": "…", "note": "…"}]}|
+
+  defp hero_hint("intervalo"),
+    do:
+      ~S|{"ticks": ["0,4", "1,0"], "rows": [{"label": "…", "lo": 0.42, "hi": 0.98, "point": 0.72}]}|
+
+  defp hero_hint(_), do: ""
+
+  defp attrs_of(socket) do
+    socket.assigns.fields
+    |> Map.put(:body, %{"blocks" => clean_blocks(socket.assigns.blocks)})
+  end
+
+  defp first_error(:stale) do
+    "Este post foi alterado noutro lugar depois que você abriu. Recarregue para ver a versão nova — o que está na tela não foi gravado."
+  end
+
+  # The refusal speaks the words the screen uses. The changeset says "hero",
+  # which appears nowhere in the interface — a writer who read it had no way to
+  # connect it to the "Diagrama de capa" panel two centimetres to the right.
   defp first_error(changeset) do
     changeset
     |> Ecto.Changeset.traverse_errors(fn {msg, _opts} -> msg end)
-    |> Enum.map(fn {field, [msg | _]} -> "#{field} #{msg}" end)
+    |> Enum.map(fn {field, [msg | _]} -> "#{rotulo(field)} #{msg}" end)
     |> List.first()
     |> Kernel.||("não foi possível salvar")
   end
+
+  defp rotulo(:hero), do: "O diagrama de capa"
+  defp rotulo(:title), do: "O título"
+  defp rotulo(:slug), do: "O endereço"
+  defp rotulo(field), do: to_string(field)
 
   # ── block bookkeeping ─────────────────────────────────────────────────────
 
@@ -249,8 +536,14 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   defp clean_blocks(blocks), do: Enum.map(blocks, &Map.delete(&1, "_uid"))
 
-  defp post_with_blocks(socket) do
-    %{socket.assigns.post | body: %{"blocks" => clean_blocks(socket.assigns.blocks)}}
+  # The post as it would be if saved right now: the row, with what the writer
+  # has typed on top. Everything that reads the document — the preview, the
+  # checklist, the search snippet, the markdown — reads this, so none of them
+  # can disagree with the others.
+  defp working_post(socket) do
+    socket.assigns.post
+    |> Map.merge(socket.assigns.fields)
+    |> Map.put(:body, %{"blocks" => clean_blocks(socket.assigns.blocks)})
   end
 
   defp update_block(blocks, uid, fun) do
@@ -327,8 +620,8 @@ defmodule BlogoWeb.EditorLive.Edit do
   defp defaults(_), do: %{}
 
   defp assign_derived(socket) do
-    blocks = clean_blocks(socket.assigns[:blocks] || [])
-    post = %{socket.assigns.post | body: %{"blocks" => blocks}}
+    post = working_post(socket)
+    blocks = post.body["blocks"]
 
     assign(socket,
       words: Metrics.word_count(blocks),
@@ -346,9 +639,16 @@ defmodule BlogoWeb.EditorLive.Edit do
     <div class="lx-admin" phx-window-keydown="slash_close" phx-key="Escape">
       <.topbar {assigns} />
 
+      <div :if={@undo} class="ed-undo" role="status">
+        Bloco removido. <button type="button" phx-click="undo_delete">Desfazer</button>
+      </div>
+
       <div class={"ed-grid ed-grid--#{@mode}"}>
-        <.palette :if={@mode == :rich} selected={@selected} />
+        <%!-- The sheet comes first in the DOM so Tab reaches the title before
+              the eleven palette buttons; `order` puts the palette back on the
+              left at desktop width. --%>
         <.sheet :if={@mode == :rich} {assigns} />
+        <.palette :if={@mode == :rich} selected={@selected} />
         <.markdown_pane :if={@mode == :markdown} {assigns} />
         <.preview_pane :if={@mode == :markdown} {assigns} />
         <.side :if={@mode == :rich} {assigns} />
@@ -380,7 +680,7 @@ defmodule BlogoWeb.EditorLive.Edit do
           <span class="small" style="font-size:11.5px">
             <.link class="ed-crumb" navigate={~p"/editor"}>Posts</.link> / {estado(@post.status)}
           </span>
-          <span class="ed-title">{@post.title}</span>
+          <span class="ed-title">{@fields.title}</span>
         </span>
       </div>
 
@@ -400,7 +700,7 @@ defmodule BlogoWeb.EditorLive.Edit do
         >
           <path d="m5 13 4 4L19 7" />
         </svg>
-        {if @dirty?, do: "salvando…", else: "salvo #{ha_quanto(@saved_at)}"}
+        {if @dirty?, do: "salvando…", else: "salvo #{ha_quanto(@saved_at, @now)}"}
       </span>
 
       <div class="ed-actions">
@@ -503,9 +803,10 @@ defmodule BlogoWeb.EditorLive.Edit do
     ~H"""
     <div class="ed-center">
       <div class="sheet">
-        <div style="display:flex;flex-direction:column;gap:14px">
+        <form id="ed-head" phx-change="head" style="display:flex;flex-direction:column;gap:14px">
           <span class="micro" style="color:var(--accent)">
-            {@post.kind} <span :if={@post.topics != []}>· {Enum.join(@post.topics, " · ")}</span>
+            {@fields.kind}
+            <span :if={@fields.topics != []}>· {Enum.join(@fields.topics, " · ")}</span>
           </span>
 
           <label style="display:block">
@@ -515,11 +816,10 @@ defmodule BlogoWeb.EditorLive.Edit do
               phx-hook="Grow"
               class="t-title"
               rows="1"
-              phx-blur="field"
-              phx-value-field="title"
-              name="value"
+              name="title"
+              phx-debounce="400"
               placeholder="O título"
-            >{@post.title}</textarea>
+            >{@fields.title}</textarea>
           </label>
 
           <label style="display:block">
@@ -529,13 +829,12 @@ defmodule BlogoWeb.EditorLive.Edit do
               phx-hook="Grow"
               class="t-dek"
               rows="2"
-              phx-blur="field"
-              phx-value-field="subtitle"
-              name="value"
+              name="subtitle"
+              phx-debounce="400"
               placeholder="A linha que diz o que o leitor ganha"
-            >{@post.subtitle}</textarea>
+            >{@fields.subtitle}</textarea>
           </label>
-        </div>
+        </form>
 
         <hr style="border:0;border-top:1px solid var(--line);margin:26px 0" />
 
@@ -545,6 +844,8 @@ defmodule BlogoWeb.EditorLive.Edit do
             block={block}
             selected={@selected}
             slash_for={@slash_for}
+            slash_query={@slash_query}
+            slash_at={@slash_at}
           />
 
           <button type="button" class="ed-add" phx-click="insert" phx-value-type="text">
@@ -564,6 +865,9 @@ defmodule BlogoWeb.EditorLive.Edit do
   attr :block, :map, required: true
   attr :selected, :string, default: nil
   attr :slash_for, :string, default: nil
+
+  attr :slash_query, :string, default: ""
+  attr :slash_at, :integer, default: 0
 
   defp editable_block(assigns) do
     ~H"""
@@ -604,9 +908,18 @@ defmodule BlogoWeb.EditorLive.Edit do
         </button>
       </span>
 
-      <.block_body block={@block} />
+      <.block_body
+        block={@block}
+        slash_open={@slash_for == @block["_uid"]}
+        selected={@selected == @block["_uid"]}
+      />
 
-      <.slash_menu :if={@slash_for == @block["_uid"]} uid={@block["_uid"]} />
+      <.slash_menu
+        :if={@slash_for == @block["_uid"]}
+        uid={@block["_uid"]}
+        query={@slash_query}
+        at={@slash_at}
+      />
 
       <.attachment
         :if={@block["type"] in ~w(diagram table code)}
@@ -625,15 +938,20 @@ defmodule BlogoWeb.EditorLive.Edit do
     """
   end
 
+  attr :block, :map, required: true
+  attr :slash_open, :boolean, default: false
+  attr :selected, :boolean, default: false
+
   defp block_body(%{block: %{"type" => "text"}} = assigns) do
     ~H"""
     <.rich_text
       uid={@block["_uid"]}
       field="paragraphs"
       class="prose"
-      value={Enum.join(@block["paragraphs"] || [], "\n\n")}
+      paragraphs={@block["paragraphs"] || [""]}
       placeholder="Escreva, ou digite / para inserir um bloco"
       slash
+      slash_open={@slash_open}
     />
     """
   end
@@ -646,6 +964,8 @@ defmodule BlogoWeb.EditorLive.Edit do
         style="width:34px"
         value={@block["n"]}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="n"
         name="value"
@@ -656,6 +976,8 @@ defmodule BlogoWeb.EditorLive.Edit do
         class="h2 ed-inline-input"
         value={@block["title"]}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="title"
         name="value"
@@ -691,6 +1013,8 @@ defmodule BlogoWeb.EditorLive.Edit do
           class="ctitle ed-inline-input"
           value={@block["title"]}
           phx-blur="block_input"
+          phx-keyup="block_input"
+          phx-debounce="400"
           phx-value-uid={@block["_uid"]}
           phx-value-field="title"
           name="value"
@@ -717,6 +1041,8 @@ defmodule BlogoWeb.EditorLive.Edit do
         class="small ed-inline-input"
         value={@block["cite"]}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="cite"
         name="value"
@@ -765,6 +1091,8 @@ defmodule BlogoWeb.EditorLive.Edit do
           class="code-lang ed-inline-input"
           value={@block["lang"]}
           phx-blur="block_input"
+          phx-keyup="block_input"
+          phx-debounce="400"
           phx-value-uid={@block["_uid"]}
           phx-value-field="lang"
           name="value"
@@ -777,6 +1105,8 @@ defmodule BlogoWeb.EditorLive.Edit do
         class="ed-code"
         rows={max(length(String.split(@block["source"] || "", "\n")), 3)}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="source"
         name="value"
@@ -794,6 +1124,8 @@ defmodule BlogoWeb.EditorLive.Edit do
         class="ed-inline-input"
         value={@block["title"]}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="title"
         name="value"
@@ -804,6 +1136,8 @@ defmodule BlogoWeb.EditorLive.Edit do
         class="small ed-inline-input mono"
         value={@block["url"]}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="url"
         name="value"
@@ -825,12 +1159,20 @@ defmodule BlogoWeb.EditorLive.Edit do
     ~H"""
     <div class="ed-structured">
       <div class="ed-structured-render">
-        <BlogoWeb.Blocks.block block={Map.delete(@block, "_uid")} />
+        <%!-- Without the caption: the field below is where it is edited, and
+              showing it twice reads as a templating accident. --%>
+        <BlogoWeb.Blocks.block block={Map.drop(@block, ["_uid", "caption"])} />
       </div>
+      <%!-- The source is shown only while the block is selected. Leaving it
+            open under every figure doubled the length of the document on a
+            phone and filled the screen with JSON nobody was editing. --%>
       <textarea
+        :if={@selected}
         class="ed-structured-src mono"
         rows={max(length(String.split(@source, "\n")), 3)}
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@block["_uid"]}
         phx-value-field="_markdown"
         name="value"
@@ -844,10 +1186,12 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   attr :uid, :string, required: true
   attr :field, :string, required: true
-  attr :value, :string, default: ""
+  attr :value, :string, default: nil
+  attr :paragraphs, :list, default: nil
   attr :class, :string, default: ""
   attr :placeholder, :string, default: ""
   attr :slash, :boolean, default: false
+  attr :slash_open, :boolean, default: false
 
   # `phx-update="ignore"` is what makes this safe: without it LiveView would
   # replace the node on the next patch and take the caret with it.
@@ -865,19 +1209,25 @@ defmodule BlogoWeb.EditorLive.Edit do
       data-uid={@uid}
       data-field={@field}
       data-slash={to_string(@slash)}
+      data-slash-open={to_string(@slash_open)}
       data-placeholder={@placeholder}
-    >{Phoenix.HTML.raw(BlogoWeb.Blocks.inline(@value))}</div>
+    ><%= if @paragraphs do %><p :for={p <- @paragraphs}>{Phoenix.HTML.raw(BlogoWeb.Blocks.inline(p))}</p><% else %>{Phoenix.HTML.raw(BlogoWeb.Blocks.inline(@value))}<% end %></div>
     """
   end
 
+  attr :uid, :string, required: true
+  attr :query, :string, default: ""
+  attr :at, :integer, default: 0
+
   defp slash_menu(assigns) do
-    assigns = assign(assigns, :items, Markdown.palette())
+    assigns = assign(assigns, :items, slash_matches(assigns.query))
 
     ~H"""
     <div class="slash" phx-click-away="slash_close">
+      <p :if={@query != ""} class="small" style="padding:4px 10px">/{@query}</p>
       <div
-        :for={{type, label, key} <- @items}
-        class="sitem"
+        :for={{{type, label, key}, i} <- Enum.with_index(@items)}
+        class={"sitem #{i == @at && "is-on"}"}
         phx-click="insert"
         phx-value-type={type}
         phx-value-after={@uid}
@@ -895,14 +1245,20 @@ defmodule BlogoWeb.EditorLive.Edit do
   attr :value, :string, default: nil
   attr :uid, :string, required: true
 
+  # A caption is a sentence, not a value: an input of one line hid the end of
+  # every caption of normal length and showed the inline markup raw.
   defp attachment(assigns) do
     ~H"""
     <div class={"ed-attach #{@value in [nil, ""] && "ed-attach--empty"}"}>
-      <span class="ed-attach-plus" aria-hidden="true">+</span>
-      <input
-        class="ed-inline-input small"
-        value={@value}
+      <span class="ed-attach-plus" aria-hidden="true">{if @field == "caption", do: "+", else: "›"}</span>
+      <textarea
+        id={"att-#{@uid}-#{@field}"}
+        phx-hook="Grow"
+        class="ed-inline-input small ed-attach-input"
+        rows="1"
         phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
         phx-value-uid={@uid}
         phx-value-field={@field}
         name="value"
@@ -912,7 +1268,7 @@ defmodule BlogoWeb.EditorLive.Edit do
             else: "Nota de margem"
         }
         aria-label={@label}
-      />
+      >{@value}</textarea>
     </div>
     """
   end
@@ -953,9 +1309,9 @@ defmodule BlogoWeb.EditorLive.Edit do
         </span>
       </div>
       <div class="pvbody">
-        <span class="micro" style="color:var(--accent)">{@post.kind}</span>
-        <h1 class="pv-h1">{@post.title}</h1>
-        <p class="pv-dek">{@post.subtitle}</p>
+        <span class="micro" style="color:var(--accent)">{@fields.kind}</span>
+        <h1 class="pv-h1">{@fields.title}</h1>
+        <p class="pv-dek">{BlogoWeb.Blocks.inline(@fields.subtitle)}</p>
         <BlogoWeb.Blocks.render_blocks blocks={clean_blocks(@blocks)} />
       </div>
     </div>
@@ -965,32 +1321,31 @@ defmodule BlogoWeb.EditorLive.Edit do
   defp side(assigns) do
     ~H"""
     <aside class="ed-side">
-      <section class="card" style="padding:20px">
+      <form id="ed-publish" class="card" style="padding:20px" phx-change="head">
         <h2 class="h3" style="margin-bottom:14px">Publicação</h2>
 
         <label class="ed-field" style="margin-bottom:12px">
           <span class="micro">Endereço</span>
           <input
             class="input mono"
-            value={@post.slug}
-            phx-blur="field"
-            phx-value-field="slug"
-            name="value"
+            value={@fields.slug}
+            name="slug"
+            phx-debounce="400"
             placeholder="endereco-do-artigo"
           />
         </label>
 
         <label class="ed-field" style="margin-bottom:12px">
           <span class="micro">Tipo</span>
-          <select class="input" phx-change="field" phx-value-field="kind" name="value">
-            <option :for={k <- ~w(ensaio nota)} value={k} selected={@post.kind == k}>{k}</option>
+          <select class="input" name="kind">
+            <option :for={k <- ~w(ensaio nota)} value={k} selected={@fields.kind == k}>{k}</option>
           </select>
         </label>
 
         <div class="ed-field">
           <span class="micro">Marcadores</span>
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-            <span :for={topic <- @post.topics} class="tag">
+            <span :for={topic <- @fields.topics} class="tag">
               {topic}
               <button
                 type="button"
@@ -1012,13 +1367,92 @@ defmodule BlogoWeb.EditorLive.Edit do
             />
           </div>
         </div>
-      </section>
+      </form>
 
       <section class="card" style="padding:20px">
+        <h2 class="h3">Diagrama de capa</h2>
+        <p class="small">
+          A figura do card e da lista. Um artigo não publica sem ela.
+        </p>
+
+        <div :if={@fields.hero} class="ed-hero-preview">
+          <BlogoWeb.Diagrams.diagram
+            form={@fields.hero["form"]}
+            data={@fields.hero["data"] || %{}}
+            label={@fields.hero["alt"] || ""}
+          />
+        </div>
+
+        <form id="ed-hero" phx-change="hero" style="display:flex;flex-direction:column;gap:10px">
+          <label class="ed-field">
+            <span class="micro">Forma</span>
+            <select class="input" name="form">
+              <option value="">nenhuma</option>
+              <option
+                :for={{value, label} <- forms()}
+                value={value}
+                selected={@fields.hero && @fields.hero["form"] == value}
+              >
+                {label}
+              </option>
+            </select>
+            <span :if={@fields.hero} class="small">{form_hint(@fields.hero["form"])}</span>
+          </label>
+
+          <label :if={@fields.hero} class="ed-field">
+            <span class="micro">Descrição para leitor de tela</span>
+            <textarea
+              class="input input--area"
+              rows="2"
+              name="alt"
+              phx-debounce="400"
+              placeholder="O que a figura mostra, em uma frase"
+            >{@fields.hero["alt"]}</textarea>
+          </label>
+
+          <label :if={@fields.hero} class="ed-field">
+            <span class="micro">Legenda</span>
+            <input
+              class="input"
+              name="caption"
+              value={@fields.hero["caption"]}
+              phx-debounce="400"
+              placeholder="A conclusão que a figura carrega"
+            />
+          </label>
+
+          <label :if={@fields.hero} class="ed-field">
+            <span class="micro">Dados</span>
+            <textarea
+              class="input input--area mono"
+              style="min-height:110px;font-size:12px"
+              rows="5"
+              name="data"
+              phx-debounce="600"
+            >{hero_json(@fields.hero)}</textarea>
+          </label>
+
+          <p :if={@hero_error} class="small ed-warn">{@hero_error}</p>
+          <p :if={@fields.hero && is_nil(@hero_error)} class="small">
+            {hero_hint(@fields.hero["form"])}
+          </p>
+        </form>
+
+        <button
+          :if={@fields.hero == nil}
+          type="button"
+          class="btn btn--s"
+          phx-click="hero_from_block"
+        >
+          Usar um diagrama do artigo
+        </button>
+      </section>
+
+      <form id="ed-seo" class="card" style="padding:20px" phx-change="head">
         <h2 class="h3" style="margin-bottom:12px">Como aparece na busca</h2>
         <div class="ed-serp">
           <span class="small mono" style="color:var(--ink4)">
-            {BlogoWeb.Endpoint.host()} › {@post.slug}
+            {BlogoWeb.Endpoint.host()} › {@fields.slug}
           </span>
           <span class="ed-serp-title">{@search.title}</span>
           <p class="small">{@search.description}</p>
@@ -1028,18 +1462,17 @@ defmodule BlogoWeb.EditorLive.Edit do
           <textarea
             class="input input--area"
             rows="3"
-            phx-blur="field"
-            phx-value-field="meta_description"
-            name="value"
+            name="meta_description"
+            phx-debounce="400"
             placeholder="O resumo que aparece no Google"
-          >{@post.meta_description}</textarea>
+          >{@fields.meta_description}</textarea>
         </label>
         <p class={"small #{not @search.fits? && "ed-warn"}"} style="margin-top:8px">
           {if @search.fits?,
             do: "Título e resumo dentro do limite",
             else: "Título ou resumo passa do limite e vai ser cortado"}
         </p>
-      </section>
+      </form>
 
       <section class="card" style="padding:20px">
         <h2 class="h3" style="margin-bottom:12px">Antes de publicar</h2>
@@ -1129,10 +1562,10 @@ defmodule BlogoWeb.EditorLive.Edit do
     |> String.reverse()
   end
 
-  defp ha_quanto(nil), do: "agora"
+  defp ha_quanto(nil, _now), do: "agora"
 
-  defp ha_quanto(%DateTime{} = t) do
-    case DateTime.diff(DateTime.utc_now(), t, :minute) do
+  defp ha_quanto(%DateTime{} = t, now) do
+    case DateTime.diff(now, t, :minute) do
       0 -> "agora"
       1 -> "há 1 minuto"
       n when n < 60 -> "há #{n} minutos"

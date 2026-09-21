@@ -912,6 +912,8 @@
 
   .ed-palette {
     order: 0;
+    grid-column: 1;
+    grid-row: 1;
     position: sticky;
     top: 20px;
   }
@@ -922,6 +924,8 @@
 
   .ed-center {
     order: 1;
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .ed-side {
@@ -936,7 +940,7 @@
   }
 }
 
-@media (min-width: 1300px) {
+@media (min-width: 1180px) {
   .ed-grid--rich {
     grid-template-columns: 234px minmax(0, 1fr) 320px;
   }
@@ -1000,5 +1004,56 @@
   .ed-flash {
     left: auto;
     max-width: 420px;
+  }
+}
+
+/* ── peças acrescentadas depois da primeira rodada de uso ──────────────── */
+
+/* A caption is a sentence and wraps; an input of one line was hiding the end
+   of every caption of normal length. */
+.ed-attach-input {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.ed-hero-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--field-bg);
+  padding: 14px;
+}
+
+/* Removing a block is one click and the browser's undo cannot reach it, so the
+   way back has to be on screen — and above the sheet, not below it. */
+.ed-undo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--page-bg));
+  font-size: 13.5px;
+}
+
+.ed-undo button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--page-bg);
+  color: var(--accent);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .ed-undo button {
+    min-height: 44px;
   }
 }

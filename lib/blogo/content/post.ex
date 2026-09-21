@@ -24,6 +24,10 @@ defmodule Blogo.Content.Post do
     # the figure on the card and the thumbnail in the list.
     field :hero, :map
 
+    # Bumped on every write and checked by the database. Two tabs editing one
+    # post used to overwrite each other without either noticing.
+    field :lock_version, :integer, default: 1
+
     belongs_to :author, Blogo.Content.Author
 
     timestamps(type: :utc_datetime)
@@ -45,6 +49,7 @@ defmodule Blogo.Content.Post do
       :hero,
       :author_id
     ])
+    |> optimistic_lock(:lock_version)
     |> validate_required([:title, :slug, :author_id])
     |> validate_inclusion(:kind, @kinds)
     |> validate_inclusion(:status, @statuses)
@@ -60,8 +65,15 @@ defmodule Blogo.Content.Post do
     case get_field(changeset, :status) do
       "published" ->
         case get_field(changeset, :hero) do
-          %{"form" => form} when is_binary(form) -> changeset
-          _ -> add_error(changeset, :hero, "é obrigatório num artigo publicado")
+          %{"form" => form} when is_binary(form) ->
+            changeset
+
+          _ ->
+            add_error(
+              changeset,
+              :hero,
+              "é obrigatório: escolha uma forma no painel Diagrama de capa"
+            )
         end
 
       _ ->

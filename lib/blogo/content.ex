@@ -67,7 +67,9 @@ defmodule Blogo.Content do
       slug: "rascunho-#{System.unique_integer([:positive])}",
       status: "draft",
       kind: "ensaio",
-      body: %{"blocks" => []},
+      # One empty paragraph, so a new draft opens with somewhere to type instead
+      # of a blank sheet whose only affordance is a dashed button.
+      body: %{"blocks" => [%{"type" => "text", "paragraphs" => [""]}]},
       author_id: author_id
     })
   end
@@ -79,7 +81,14 @@ defmodule Blogo.Content do
   def save_post(%Post{} = post, attrs) do
     attrs = Map.put(attrs, :reading_minutes, reading_minutes(attrs, post))
 
-    post |> Post.changeset(attrs) |> Repo.update()
+    try do
+      post |> Post.changeset(attrs) |> Repo.update()
+    rescue
+      # The row moved under us — someone else saved between our read and our
+      # write. Returning it as a value lets the caller tell the writer instead
+      # of crashing the editor with their article in it.
+      Ecto.StaleEntryError -> {:error, :stale}
+    end
   end
 
   @doc """

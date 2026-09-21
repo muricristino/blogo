@@ -116,6 +116,26 @@ Adding a block type means adding it to the palette, to the dialect and to both
 properties in the same commit. A block that only one mode understands is a
 block that the other mode deletes.
 
+## Two rules that came out of watching someone use the editor
+
+**Never write a change into the struct you are about to hand a changeset.**
+`Ecto.Changeset.cast/3` compares the attributes against the data; if the data
+already carries the change, there is nothing to cast and the column is never
+written. The editor did exactly this for its first week: the title updated on
+screen, the save badge turned green, and the database never heard about it.
+Nothing on screen contradicted it, and 54 tests passed, because not one of them
+read the row back after a save.
+
+So: **a test that saves must read the row back from the database.** Asserting
+on the rendered HTML, or on the LiveView's own assigns, proves only that the
+server agrees with itself.
+
+**A save badge must mean saved.** Every field that can be typed into saves
+while it is being typed — `phx-change` on a form with `phx-debounce`, never a
+bare `phx-blur` on a loose input. A writer who types a caption and reloads
+without clicking elsewhere used to lose it while the screen said "salvo agora".
+A silent loss of someone's writing is the worst defect this project can ship.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.

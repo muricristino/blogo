@@ -34,9 +34,7 @@ function serialize(node) {
     else if (tag === "code") out += inner ? "`" + inner + "`" : ""
     else if (tag === "a" && child.getAttribute("href")) out += `[${inner}](${child.getAttribute("href")})`
     else if (tag === "br") out += "\n"
-    // A paragraph or a div is a line break in a contenteditable, which is how
-    // a blank line — and therefore a new paragraph — gets typed.
-    else if (tag === "p" || tag === "div") out += (out.endsWith("\n") || out === "" ? "" : "\n") + inner + "\n"
+    else if (tag === "p" || tag === "div") out += (out === "" ? "" : "\n\n") + inner
     else out += inner
   }
 
@@ -44,7 +42,10 @@ function serialize(node) {
 }
 
 function text(node) {
-  return serialize(node).replace(/\n{3,}/g, "\n\n").replace(/[ \t]+$/gm, "")
+  return serialize(node)
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+$/gm, "")
+    .trim()
 }
 
 // The floating toolbar, created once and moved to whichever block has a
@@ -104,18 +105,21 @@ function wrapIn(tag) {
 
 function placeToolbar() {
   const selection = window.getSelection()
-  const t = toolbar()
 
-  if (!selection || selection.isCollapsed || !selection.anchorNode) {
-    t.hidden = true
-    return
-  }
+  // Built on first use inside an editable block, never before. The listener is
+  // global, so creating the bar eagerly put it on every page of the site —
+  // including the sign-in screen, where it sat in the corner of an empty page.
+  const host =
+    selection && !selection.isCollapsed && selection.anchorNode
+      ? selection.anchorNode.parentElement?.closest(".ed-rt")
+      : null
 
-  const host = selection.anchorNode.parentElement?.closest(".ed-rt")
   if (!host) {
-    t.hidden = true
+    if (bar) bar.hidden = true
     return
   }
+
+  const t = toolbar()
 
   const rect = selection.getRangeAt(0).getBoundingClientRect()
   t.hidden = false
@@ -145,6 +149,28 @@ export const RichText = {
     // A slash on an otherwise empty block opens the palette. Anywhere else it
     // is just a slash — a writer typing "km/h" is not asking for a menu.
     this.el.addEventListener("keydown", event => {
+      // While the menu is open every key belongs to it: the letters filter,
+      // the arrows move, Enter inserts. Without this they fell through into
+      // the paragraph, so typing "/h" left an "h" in the text and Enter added
+      // a blank line.
+      if (this.el.dataset.slashOpen === "true") {
+        if (["ArrowDown", "ArrowUp", "Enter", "Escape", "Backspace"].includes(event.key) ||
+            event.key.length === 1) {
+          event.preventDefault()
+          this.pushEvent("slash_key", { key: event.key })
+        }
+        return
+      }
+
+      // Backspace in an empty block removes the block. Without this an emptied
+      // paragraph stayed forever as blank lines in the markdown, and the only
+      // way out was to find the × in the handle.
+      if (event.key === "Backspace" && this.el.textContent.trim() === "") {
+        event.preventDefault()
+        this.pushEvent("delete_empty", { uid: this.el.dataset.uid })
+        return
+      }
+
       if (event.key !== "/" || this.el.dataset.slash !== "true") return
       if (this.el.textContent.trim() !== "") return
 
@@ -160,20 +186,44 @@ export const RichText = {
       document.execCommand("insertText", false, plain)
     })
 
-    this.el.addEventListener("blur", () => {
+    const flush = () => {
       clearTimeout(this.timer)
       this.pushEvent("block_input", {
         uid: this.el.dataset.uid,
         field: this.el.dataset.field,
         value: text(this.el)
       })
-    })
+    }
+
+    this.el.addEventListener("blur", flush)
+
+    // Reloading within the debounce window used to lose the last thing typed.
+    this.flushOnLeave = () => { if (this.el.isConnected) flush() }
+    window.addEventListener("beforeunload", this.flushOnLeave)
+    window.addEventListener("pagehide", this.flushOnLeave)
   },
 
   destroyed() {
     clearTimeout(this.timer)
+    window.removeEventListener("beforeunload", this.flushOnLeave)
+    window.removeEventListener("pagehide", this.flushOnLeave)
   }
 }
+
+// A block inserted from the palette or the slash menu gets the caret, so the
+// writer can type straight away instead of hunting for where it landed.
+window.addEventListener("phx:focus_block", event => {
+  const target = document.querySelector(`[data-uid="${event.detail.uid}"].ed-rt`)
+  if (!target) return
+
+  target.focus()
+  const range = document.createRange()
+  range.selectNodeContents(target)
+  range.collapse(false)
+  const selection = window.getSelection()
+  selection.removeAllRanges()
+  selection.addRange(range)
+})
 
 // The markdown pane: a textarea with a line gutter that follows its scroll.
 export const Markdown = {
@@ -211,6 +261,14 @@ export const Markdown = {
       this.timer = setTimeout(() => {
         this.pushEvent("markdown_input", { value: this.el.value })
       }, DEBOUNCE)
+    })
+
+    // Leaving the field sends immediately. Clicking "Rico" blurs the textarea
+    // first, so the last thing typed arrives before the mode changes — without
+    // this, anything written inside the debounce window was simply dropped.
+    this.el.addEventListener("blur", () => {
+      clearTimeout(this.timer)
+      this.pushEvent("markdown_input", { value: this.el.value })
     })
 
     // Tab indents instead of leaving the field: inside a code fence it is the

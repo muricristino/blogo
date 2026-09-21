@@ -33,7 +33,7 @@ defmodule BlogoWeb.EditorLive.Index do
   def render(assigns) do
     ~H"""
     <div class="lx-admin">
-      <nav class="bar">
+      <nav class="bar ed-bar">
         <a class="brand" href={~p"/"}>
           <span>blogo</span>
         </a>
