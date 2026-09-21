@@ -1,21 +1,13 @@
-# Override do homelab (ThinkPad): imagem do GHCR e rede compartilhada com o
-# cloudflared. Usar junto com o docker-compose.yml:
-#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.homelab.yml up -d
-name: blogo
-
+# Homelab override — GHCR image, shared network with the tunnel.
 services:
   blogo:
     image: ghcr.io/muricristino/blogo:latest
-    build: !reset null
+    container_name: blogo
     labels:
-      # O webo lê este label para saber o domínio público do container e
-      # publicar a rota no túnel.
-      webo.domain: ${PHX_HOST}
-    ports: !reset []
-    networks:
-      - homelab
-
-  db:
+      webo.tech: docker
+    env_file:
+      - path: .env
+        required: false
     networks:
       - homelab
 
