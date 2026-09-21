@@ -29,8 +29,7 @@
       </a>
     </div>
     <div class="feat-fig">
-      <.featured_curves />
-      <p class="small">O mesmo modelo, dois conjuntos de teste.</p>
+      <.hero post={@featured} caption />
     </div>
   </article>
 
@@ -61,7 +60,7 @@
             <span :for={t <- post.topics} class="tag" style="font-size:11.5px;padding:3px 9px">{t}</span>
           </div>
         </div>
-        <div class="thumb"><.thumb_mark /></div>
+        <div class="thumb"><.hero post={post} /></div>
       </a>
     </div>
 

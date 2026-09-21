@@ -90,7 +90,7 @@ defmodule BlogoWeb do
       # Core UI components
       import BlogoWeb.CoreComponents
       import BlogoWeb.Blocks, only: [render_blocks: 1]
-      import BlogoWeb.Diagrams, only: [defs: 1]
+      import BlogoWeb.Diagrams, only: [defs: 1, diagram: 1]
       import BlogoWeb.SEO, only: [head: 1]
 
       # Shortcut for generating JS commands
