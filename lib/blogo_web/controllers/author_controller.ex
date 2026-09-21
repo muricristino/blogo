@@ -12,8 +12,7 @@ defmodule BlogoWeb.AuthorController do
       author ->
         posts = Content.list_published() |> Enum.filter(&(&1.author_id == author.id))
 
-        base =
-          "#{conn.scheme}://#{conn.host}#{if conn.port in [80, 443], do: "", else: ":#{conn.port}"}"
+        base = BlogoWeb.Endpoint.url()
 
         conn
         |> assign(:current_author, author)

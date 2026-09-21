@@ -126,7 +126,11 @@ defmodule BlogoWeb.PostController do
     blocks
   end
 
-  defp base_url(conn), do: "#{conn.scheme}://#{conn.host}#{port_suffix(conn)}"
-  defp port_suffix(%{port: p}) when p in [80, 443], do: ""
-  defp port_suffix(%{port: p}), do: ":#{p}"
+  # Behind the tunnel `conn.scheme` is http — cloudflared terminates TLS and
+  # talks to the container in the clear. Taking the base from the endpoint's
+  # configured url instead is what makes the canonical, og:url and every @id in
+  # the structured data agree on https. Cloudflare's Automatic HTTPS Rewrites
+  # hides the bug in `href` attributes and nowhere else, so the JSON-LD was the
+  # only place it showed.
+  defp base_url(_conn), do: BlogoWeb.Endpoint.url()
 end
