@@ -10,7 +10,9 @@ defmodule BlogoWeb.PostHTML do
   def format_date(%DateTime{} = d), do: "#{d.day} #{Enum.at(@abrev, d.month - 1)} #{d.year}"
 
   def format_date_long(nil), do: ""
-  def format_date_long(%DateTime{} = d), do: "#{d.day} de #{Enum.at(@meses, d.month - 1)} de #{d.year}"
+
+  def format_date_long(%DateTime{} = d),
+    do: "#{d.day} de #{Enum.at(@meses, d.month - 1)} de #{d.year}"
 
   def initials(name) do
     name
@@ -27,8 +29,12 @@ defmodule BlogoWeb.PostHTML do
   @doc "The two densities from the featured post, as the card's only ornament."
   def featured_curves(assigns) do
     ~H"""
-    <svg viewBox="0 0 320 140" class="dg" role="img"
-         aria-label="Duas distribuições separadas e duas sobrepostas, com AUC 0,890 e 0,508">
+    <svg
+      viewBox="0 0 320 140"
+      class="dg"
+      role="img"
+      aria-label="Duas distribuições separadas e duas sobrepostas, com AUC 0,890 e 0,508"
+    >
       <line class="d-axis" x1="6" y1="56" x2="250" y2="56" />
       <path class="d-fill-m" d="M30 56 Q70 4 110 56 Z" />
       <path class="d-fill-a" d="M150 56 Q190 4 230 56 Z" />

@@ -3,9 +3,18 @@
 <div style="position:sticky;top:0;z-index:5">
   <nav class="bar">
     <a class="brand" href={~p"/"}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true" style="color:var(--accent)">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        style="color:var(--accent)"
+      >
         <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 15.5Z" />
         <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h4.5a1.5 1.5 0 0 0 1.5-1.5Z" />
       </svg>
@@ -14,23 +23,49 @@
 
     <div style="display:flex;align-items:center;gap:4px">
       <a class="navlink" href={~p"/"} aria-current={@nav == :artigos && "page"}>Artigos</a>
-      
-      <a :if={@current_author} class="navlink" href={~p"/autor/#{@current_author.slug}"}
-         aria-current={@nav == :sobre && "page"}>Sobre</a>
+
+      <a
+        :if={@current_author}
+        class="navlink"
+        href={~p"/autor/#{@current_author.slug}"}
+        aria-current={@nav == :sobre && "page"}
+      >Sobre</a>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px">
       <button class="iconbtn" type="button" aria-label="Buscar">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
           <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
         </svg>
       </button>
       <a :if={@nav == :artigos} class="navlink" href="#assinar">Entrar</a>
-      <a :if={@nav == :artigos} class="btn btn--p" href="#assinar" style="min-height:40px;padding:0 20px">Assinar</a>
+      <a
+        :if={@nav == :artigos}
+        class="btn btn--p"
+        href="#assinar"
+        style="min-height:40px;padding:0 20px"
+      >Assinar</a>
       <button class="iconbtn" type="button" id="theme-toggle" aria-label="Alternar tema">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <path d="M12 3a6.4 6.4 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         </svg>
       </button>
@@ -44,7 +79,9 @@
 <footer class="pad" style="padding-block:26px;border-top:1px solid var(--line);margin-top:40px">
   <div class="shell" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap">
     <span class="small">
-      blogo<span :if={@current_author}> · escrito por {@current_author.name}<span :if={@current_author.city}> em {@current_author.city}</span></span>
+      blogo<span :if={@current_author}> · escrito por {@current_author.name}<span :if={
+        @current_author.city
+      }> em {@current_author.city}</span></span>
     </span>
     <span class="small" style="display:flex;gap:16px">
       <a href={~p"/sitemap.xml"}>Arquivo</a>

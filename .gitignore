@@ -11,3 +11,6 @@ erl_crash.dump
 npm-debug.log
 /assets/node_modules/
 .elixir_ls/
+
+# deploy
+deploy/.env
