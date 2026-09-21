@@ -1,41 +1,43 @@
 package handler
 
-import (
-	"net/http"
 
+import (
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
+	"github.com/olliefr/docker-gs-ping-roach/service"
+	"github.com/olliefr/docker-gs-ping-roach/repository"
 )
 
-type User struct {
-	ID   uint   `gorm:"primaryKey" json:"id"`
-	Name string `json:"name" validate:"required"`
-	Age int `json:"age"`
+type UserHandler struct {
+	Service service.UserService
 }
 
-func GetUsers(db *gorm.DB, c echo.Context) error {
-	var users []User
-	if db != nil {
-		db.Find(&users)
-	}
-
-	return c.JSON(http.StatusOK, users)
+func NewUserHandler(s service.UserService) *UserHandler {
+	return &UserHandler{Service: s}
 }
 
-func CreateUser(db *gorm.DB, c echo.Context) error {
-	u := new(User)
-
-	if err := c.Bind(u); err != nil {
-		return err
+func (h *UserHandler) GetUsers(c echo.Context) error {
+	users, err := h.Service.GetAllUsers()
+	if err != nil {
+		return echo.NewHTTPError(500, err.Error())
 	}
+	return c.JSON(200, users)
+}
 
-	if err := c.Validate(u); err != nil {
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
-	}
+func (h *UserHandler) CreateUser(c echo.Context) error {
+       u := new(repository.User)
 
-	if db != nil {
-		db.Create(u)
-	}
+       if err := c.Bind(u); err != nil {
+	       return err
+       }
 
-	return c.JSON(http.StatusCreated, u)
+       if err := c.Validate(u); err != nil {
+	       return echo.NewHTTPError(422, err.Error())
+       }
+
+       err := h.Service.CreateUser(u)
+       if err != nil {
+	       return echo.NewHTTPError(500, err.Error())
+       }
+
+       return c.JSON(201, u)
 }
