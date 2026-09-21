@@ -1,18 +1,77 @@
-# Blogo
+# blogo
 
-To start your Phoenix server:
+A blog you host yourself, built so a search for the author's name finds the
+author's writing.
 
-  * Run `mix setup` to install and setup dependencies
-  * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+Most blog engines treat the byline as a string. blogo treats the author as an
+entity: every article points at one stable `schema.org` identity, the author
+page carries the profiles that prove the same person owns them, and the pair
+is what lets a name search surface the articles rather than the homepage.
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+Everything renders on the server. The reader gets HTML, no socket, no
+hydration — which is the same thing a crawler gets.
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+## What it does today
 
-## Learn more
+**Reading.** An index with a featured article, topic filters and an author
+column. Articles in a three-column layout: a table of contents that follows
+the reader, the text column, and a margin column where a block's note sits
+beside the paragraph it qualifies.
 
-  * Official website: https://www.phoenixframework.org/
-  * Guides: https://hexdocs.pm/phoenix/overview.html
-  * Docs: https://hexdocs.pm/phoenix
-  * Forum: https://elixirforum.com/c/phoenix-forum
-  * Source: https://github.com/phoenixframework/phoenix
+**Writing.** Articles are block lists in `jsonb`, rendered at request time.
+A design change re-renders every article; there is no content migration and
+no stored HTML.
+
+**Drawing.** Seven diagram forms and no more — flow, distribution, before and
+after, matrix, decision, timeline, interval. Each is inline SVG that writes no
+literal colour: fills and strokes come from classes, so dark mode is a token
+swap rather than a second drawing.
+
+**Being found.** `sitemap.xml`, `robots.txt`, canonical URLs, Open Graph, and
+`Article` JSON-LD whose `author` is the same `@id` the author page declares.
+
+## Running it
+
+Needs Elixir 1.18, OTP 27 and PostgreSQL 17.
+
+```sh
+mix setup                 # deps, database, migrations, seeds
+mix phx.server            # http://localhost:4000
+```
+
+`mix setup` seeds one author and six articles so the first run has something
+to look at. Edit `priv/repo/seeds.exs` to make it yours, or delete the rows
+and write your own.
+
+## How it is put together
+
+```
+lib/blogo/content/          Author and Post, and the context around them
+lib/blogo_web/components/
+  blocks.ex                 the eleven block types an article can hold
+  diagrams.ex               the seven diagram forms
+  seo.ex                    head tags and structured data
+assets/css/app.css          the design system: tokens, then components
+```
+
+**One accent.** Surfaces, borders, chips and every diagram derive from
+`--accent` through `color-mix`, so changing the brand is one line and there is
+no parallel palette to keep in sync.
+
+**Blocks are data.** An article's `body` is `{"blocks": [...]}`. Inline markup
+is a deliberately small dialect — `**bold**`, `*italic*`, `` `code` `` — parsed
+at render rather than stored as HTML, so the database never holds markup
+nobody validated.
+
+**Public pages are controllers, not LiveView.** Reading is anonymous and
+non-interactive; a socket per reader would cost a process and buy nothing.
+LiveView is reserved for the editor and the panel.
+
+## Not built yet
+
+Comments, the post editor and the admin panel. The design for all three exists;
+the code does not.
+
+## Licence
+
+MIT.
