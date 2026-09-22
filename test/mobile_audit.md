@@ -8,14 +8,36 @@ medida de linha.
 mix phx.server                         # noutro terminal
 node test/mobile_audit.mjs             # contra o local
 BASE=https://<domínio> node test/mobile_audit.mjs   # contra produção
+
+# As telas do editor pedem senha; sem a variável elas ficam fora da auditoria.
+BASE=http://localhost:4000 ADMIN_PASSWORD=<senha> node test/mobile_audit.mjs
 ```
 
 O Playwright não é dependência deste repositório — ele vem do `node_modules`
 de outro projeto, e o caminho está no topo do script. Ajuste se o seu for
 outro, ou instale com `npx playwright@latest install chromium`.
 
-**Ao criar uma tela, acrescente-a a `PAGES` no mesmo commit.** Uma tela fora
-da lista é uma tela que ninguém verifica.
+**Ao criar uma tela, acrescente-a a `PAGES` no mesmo commit** — ou a
+`ADMIN_PAGES`, se ela ficar atrás da senha. Uma tela fora da lista é uma tela
+que ninguém verifica.
+
+## O que o editor já custou
+
+O editor reaproveita `.bar` e `.card` da página pública, e herdar um sistema de
+design herda também as regras que foram escritas para outra tela. Duas
+apareceram aqui:
+
+- `.bar .btn { display: none }` existe para tirar o botão "Assinar" da
+  navegação do leitor no celular. O editor usa `.bar`, então perdia **Publicar**
+  e **Pré-visualizar** exatamente onde eles mais importam — sem aviso nenhum,
+  porque um elemento escondido não estoura nada.
+- `.field` na folha pública é um campo de 48px de altura fixa. A classe de mesmo
+  nome no editor era uma coluna flex, e a altura fixa cortava o último campo do
+  painel. O editor passou a usar `.ed-field`.
+
+A lição é a mesma nas duas: **quando uma tela nova reusa uma classe, verifique
+o que essa classe já promete em outro lugar.** Renomear é mais barato que
+sobrescrever.
 
 ## O que cada achado significa
 

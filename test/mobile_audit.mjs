@@ -3,6 +3,9 @@ import { chromium, devices } from "/Users/murilo/code/axolutions/agrosn/new-belc
 const BASE = process.env.BASE || "https://ember-pebble-maple.axolutions.com.br"
 // Uma tela nova entra aqui no mesmo commit que a cria.
 const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/autor/muri-cristino", "autor"]]
+// O editor exige senha, então entra por aqui antes de ser medido.
+const ADMIN = process.env.ADMIN_PASSWORD
+const ADMIN_PAGES = ADMIN ? [["/editor", "lista do editor"], ["/editor/1", "editor"]] : []
 const WIDTHS = [320, 360, 390, 414, 768]
 
 const audit = () => {
@@ -62,10 +65,17 @@ const audit = () => {
 }
 
 const b = await chromium.launch()
-for (const [path, nome] of PAGES) {
+for (const [path, nome] of [...PAGES, ...ADMIN_PAGES]) {
+  const privada = ADMIN_PAGES.some(([p]) => p === path)
   console.log(`\n### ${nome}  ${path}`)
   for (const w of WIDTHS) {
     const p = await b.newPage({ viewport: { width: w, height: 800 }, deviceScaleFactor: 2, isMobile: w < 500, hasTouch: w < 500 })
+    if (privada) {
+      await p.goto(BASE + "/entrar")
+      await p.fill("input[name=password]", ADMIN)
+      await p.click("button[type=submit]")
+      await p.waitForURL("**/editor")
+    }
     await p.goto(BASE + path, { waitUntil: "networkidle" })
     await p.waitForTimeout(400)
     const r = await p.evaluate(audit)
