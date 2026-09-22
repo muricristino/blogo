@@ -39,9 +39,7 @@ defmodule BlogoWeb.PostController do
 
       post ->
         base = base_url(conn)
-        blocks = Post.blocks(post)
-        {summary, blocks} = pop_summary(blocks)
-        blocks = number_sections(blocks)
+        {summary, blocks} = Post.for_reading(post)
 
         conn
         |> assign(:current_author, post.author)
@@ -103,29 +101,6 @@ defmodule BlogoWeb.PostController do
 
   # The first keynumbers block becomes the "EM RESUMO" card in the header
   # rather than a block in the flow, which is where the canvas puts it.
-  defp pop_summary(blocks) do
-    case Enum.split_while(blocks, &(&1["type"] != "keynumbers")) do
-      {before, [summary | rest]} -> {summary, before ++ rest}
-      {all, []} -> {nil, all}
-    end
-  end
-
-  # Anchors are derived, not authored: an editor renaming a section should not
-  # have to remember to renumber the table of contents.
-  defp number_sections(blocks) do
-    {blocks, _} =
-      Enum.map_reduce(blocks, 0, fn
-        %{"type" => "section"} = b, n ->
-          n = n + 1
-          {Map.merge(b, %{"n" => String.pad_leading("#{n}", 2, "0"), "id" => "sec-#{n}"}), n}
-
-        b, n ->
-          {b, n}
-      end)
-
-    blocks
-  end
-
   # Behind the tunnel `conn.scheme` is http — cloudflared terminates TLS and
   # talks to the container in the clear. Taking the base from the endpoint's
   # configured url instead is what makes the canonical, og:url and every @id in

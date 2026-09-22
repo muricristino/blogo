@@ -85,6 +85,57 @@ article is decoration, and decoration on a card is a lie about what is inside.
   delivers the same one in its narrative place; rendering it twice reads as a
   templating accident.
 
+## The editor is behind one password
+
+`ADMIN_PASSWORD` guards `/editor`. There is no users table: the blog has one
+author, and registration, password reset and roles would be machinery serving
+nobody. `BlogoWeb.AdminAuth` is the whole of it, and it is the one module that
+gets replaced the day blogo has a second author.
+
+- **No password configured means no way in,** not a way in for everyone. A
+  deployment that forgets the variable has an editor nobody can open, which is
+  the failure that is safe.
+- **Guard the request and the socket.** A LiveView reconnects over a websocket,
+  which never re-runs a plug. `require_admin/2` covers the request and
+  `on_mount/4` covers the socket; only one of them is a door left open, and
+  `test/blogo_web/live/editor_live_test.exs` has a case for exactly that.
+
+## One document, two modes
+
+The editor writes blocks in rich mode and text in markdown mode, and both
+produce the same `body["blocks"]`. That only holds while the conversion in
+`Blogo.Content.Markdown` is lossless, so it is covered by two separate
+properties in `test/blogo/content/markdown_test.exs`:
+
+- **stable** — markdown → blocks → markdown returns the same text. A document
+  that changes every time it is saved is unusable.
+- **faithful** — blocks → markdown → blocks keeps every block the renderer
+  distinguishes.
+
+Adding a block type means adding it to the palette, to the dialect and to both
+properties in the same commit. A block that only one mode understands is a
+block that the other mode deletes.
+
+## Two rules that came out of watching someone use the editor
+
+**Never write a change into the struct you are about to hand a changeset.**
+`Ecto.Changeset.cast/3` compares the attributes against the data; if the data
+already carries the change, there is nothing to cast and the column is never
+written. The editor did exactly this for its first week: the title updated on
+screen, the save badge turned green, and the database never heard about it.
+Nothing on screen contradicted it, and 54 tests passed, because not one of them
+read the row back after a save.
+
+So: **a test that saves must read the row back from the database.** Asserting
+on the rendered HTML, or on the LiveView's own assigns, proves only that the
+server agrees with itself.
+
+**A save badge must mean saved.** Every field that can be typed into saves
+while it is being typed — `phx-change` on a form with `phx-debounce`, never a
+bare `phx-blur` on a loose input. A writer who types a caption and reloads
+without clicking elsewhere used to lose it while the screen said "salvo agora".
+A silent loss of someone's writing is the worst defect this project can ship.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.

@@ -36,6 +36,7 @@ defmodule Blogo.Fixtures do
           topics: ["avaliação"],
           meta_description: "Descrição para busca.",
           body: %{"blocks" => [%{"type" => "text", "paragraphs" => ["Olá."]}]},
+          hero: %{"form" => "fluxo", "data" => %{"steps" => []}, "alt" => "Um fluxo"},
           author_id: a.id
         }
         |> Map.merge(Map.drop(attrs, [:author]))

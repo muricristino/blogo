@@ -11,7 +11,7 @@
   <article :for={post <- @posts} class="post-item">
     <a href={~p"/#{post.slug}"}>
       <h2>{post.title}</h2>
-      <p :if={post.subtitle}>{post.subtitle}</p>
+      <p :if={post.subtitle}>{BlogoWeb.Blocks.inline(post.subtitle)}</p>
     </a>
     <div class="post-meta">
       <span>{format_date(post.published_at)}</span>

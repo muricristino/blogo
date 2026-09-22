@@ -24,6 +24,10 @@ defmodule Blogo.Content.Post do
     # the figure on the card and the thumbnail in the list.
     field :hero, :map
 
+    # Bumped on every write and checked by the database. Two tabs editing one
+    # post used to overwrite each other without either noticing.
+    field :lock_version, :integer, default: 1
+
     belongs_to :author, Blogo.Content.Author
 
     timestamps(type: :utc_datetime)
@@ -45,6 +49,7 @@ defmodule Blogo.Content.Post do
       :hero,
       :author_id
     ])
+    |> optimistic_lock(:lock_version)
     |> validate_required([:title, :slug, :author_id])
     |> validate_inclusion(:kind, @kinds)
     |> validate_inclusion(:status, @statuses)
@@ -60,8 +65,15 @@ defmodule Blogo.Content.Post do
     case get_field(changeset, :status) do
       "published" ->
         case get_field(changeset, :hero) do
-          %{"form" => form} when is_binary(form) -> changeset
-          _ -> add_error(changeset, :hero, "é obrigatório num artigo publicado")
+          %{"form" => form} when is_binary(form) ->
+            changeset
+
+          _ ->
+            add_error(
+              changeset,
+              :hero,
+              "é obrigatório: escolha uma forma no painel Diagrama de capa"
+            )
         end
 
       _ ->
@@ -74,4 +86,41 @@ defmodule Blogo.Content.Post do
 
   def hero?(%__MODULE__{hero: %{"form" => f}}) when is_binary(f), do: true
   def hero?(_), do: false
+
+  @doc """
+  The blocks as the article page shows them: the key-numbers block lifted out
+  to become the summary, and sections numbered.
+
+  It lives here rather than in the controller because the preview renders the
+  same article and must not drift from it — two copies of this would mean a
+  draft that looks right in preview and wrong once published.
+  """
+  def for_reading(post) do
+    blocks = blocks(post)
+    {summary, blocks} = pop_summary(blocks)
+    {summary, number_sections(blocks)}
+  end
+
+  defp pop_summary(blocks) do
+    case Enum.split_while(blocks, &(&1["type"] != "keynumbers")) do
+      {before, [summary | rest]} -> {summary, before ++ rest}
+      {all, []} -> {nil, all}
+    end
+  end
+
+  # Anchors are derived, not authored: an editor renaming a section should not
+  # have to remember to renumber the table of contents.
+  defp number_sections(blocks) do
+    {blocks, _} =
+      Enum.map_reduce(blocks, 0, fn
+        %{"type" => "section"} = b, n ->
+          n = n + 1
+          {Map.merge(b, %{"n" => String.pad_leading("#{n}", 2, "0"), "id" => "sec-#{n}"}), n}
+
+        b, n ->
+          {b, n}
+      end)
+
+    blocks
+  end
 end

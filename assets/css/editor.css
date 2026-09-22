@@ -1,0 +1,1059 @@
+/* The editor, from the blogo canvas.
+
+   It reuses the public design system — same tokens, same card, same bar, same
+   typography — and adds only what the editor has and the article does not: the
+   sheet, the palette, the floating toolbar, the slash menu and the two panes
+   of markdown mode.
+
+   Mobile-first, like everything else here (see CLAUDE.md): one column at
+   320px, the palette and the side panel appearing as the width allows. */
+
+.lx-admin {
+  min-height: 100vh;
+}
+
+.ed-bar {
+  padding: 11px 16px;
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.ed-title {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The public stylesheet hides `.bar .btn` on a phone — that rule exists to
+   drop the "Assinar" button from the reader's navigation. The editor shares
+   `.bar`, so it was silently losing Publicar and Pré-visualizar exactly where
+   they matter most. */
+.ed-bar .btn {
+  display: inline-flex;
+}
+
+.ed-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* The word count is the first thing to go when the bar runs out of room: it
+   is information, not a control. */
+.ed-count {
+  display: none;
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink4);
+}
+
+.seg2 {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+}
+
+.seg2 button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink3);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.seg2 button.is-on {
+  background: var(--accent);
+  color: #fff;
+}
+
+
+
+
+.ed-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+}
+
+.ed-grid > * {
+  min-width: 0;
+}
+
+/* ── the palette ──────────────────────────────────────────────────────── */
+
+.ed-palette {
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  order: 3;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 3px;
+}
+
+.pitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink2);
+  font-size: 13.5px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.pitem:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: var(--ink);
+}
+
+.pitem .g {
+  color: var(--ink4);
+  display: inline-flex;
+}
+
+.pitem:hover .g {
+  color: var(--accent);
+}
+
+.pkey {
+  margin-left: auto;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  color: var(--ink4);
+}
+
+/* ── the sheet ────────────────────────────────────────────────────────── */
+
+.ed-center {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  order: 1;
+}
+
+.sheet {
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 24px 20px 32px;
+  box-shadow: 0 8px 40px -18px rgb(16 24 40 / 0.25);
+  width: 100%;
+  max-width: 660px;
+}
+
+.t-title {
+  resize: none;
+  overflow: hidden;
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(26px, 7vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  border: 0;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  padding: 0;
+}
+
+.t-dek {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink3);
+  border: 0;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  resize: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+.t-body {
+  font-size: 17.5px;
+  line-height: 1.72;
+  color: var(--ink2);
+}
+
+.ed-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.blk {
+  position: relative;
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin: 0 -10px;
+}
+
+.blk--sel {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+
+/* The handle sits inside the block on a narrow screen, where there is no
+   margin to hang it in. */
+.handle {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.blk:hover .handle,
+.blk--sel .handle,
+.handle:focus-within {
+  opacity: 1;
+}
+
+.hbtn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--field-bg);
+  color: var(--ink3);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hbtn:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+/* A block being edited never collapses to nothing: an empty paragraph with no
+   height is impossible to click back into. */
+.ed-rt {
+  outline: none;
+  min-height: 1.72em;
+  white-space: pre-wrap;
+}
+
+.ed-rt[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  color: var(--ink4);
+  pointer-events: none;
+}
+
+.ed-rt:focus {
+  outline: none;
+}
+
+.ed-inline-input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+  padding: 2px 0;
+}
+
+.ed-inline-input::placeholder {
+  color: var(--ink4);
+}
+
+.ed-variant {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--field-bg);
+  color: var(--ink3);
+  font-size: 11.5px;
+  padding: 2px 6px;
+  margin-bottom: 6px;
+}
+
+.ed-code {
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  background: #0e1524;
+  color: #dbe4f0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  padding: 12px 14px 14px;
+}
+
+.ed-quote {
+  border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding-left: 20px;
+}
+
+.ed-structured {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ed-structured-render {
+  pointer-events: none;
+}
+
+.ed-structured-src {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--field-bg);
+  color: var(--ink2);
+  font-size: 12.5px;
+  line-height: 1.7;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+/* A caption and a margin note are offers, not fields: invisible until the
+   block is hovered or they hold something. */
+.ed-attach {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--ink4);
+}
+
+.ed-attach--empty {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.blk:hover .ed-attach--empty,
+.blk--sel .ed-attach--empty,
+.ed-attach--empty:focus-within {
+  opacity: 1;
+}
+
+.ed-attach-plus {
+  font-size: 13px;
+}
+
+.ed-add {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink4);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.ed-add:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+/* ── the floating toolbar and the slash menu ──────────────────────────── */
+
+.toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 11px;
+  background: #101828;
+  box-shadow: 0 10px 30px -10px rgb(16 24 40 / 0.6);
+}
+
+.ed-toolbar {
+  position: absolute;
+  z-index: 20;
+}
+
+.tbtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.75);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tbtn:hover,
+.tbtn.is-on {
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+}
+
+.slash {
+  position: absolute;
+  z-index: 15;
+  margin-top: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--page-bg);
+  box-shadow: 0 18px 44px -16px rgb(16 24 40 / 0.38);
+  padding: 6px;
+  width: min(280px, calc(100vw - 48px));
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.sitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--ink2);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.sitem:hover,
+.sitem.is-on {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--ink);
+}
+
+/* ── the side panel ───────────────────────────────────────────────────── */
+
+.ed-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  order: 2;
+}
+
+/* Every level of this panel is a flex column, and a flex item shrinks below
+   its content by default. One card clipped its last field — the tag input,
+   once the tags wrapped to a second line — with no scrollbar to say so, which
+   is exactly the failure CLAUDE.md forbids. Declaring it at each level is
+   verbose and leaves nothing to infer. */
+.ed-side > *,
+.ed-side .card > *,
+.ed-side .ed-field > * {
+  flex-shrink: 0;
+}
+
+.ed-side .card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ed-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.input {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+  color: var(--ink);
+  font-size: 13.5px;
+  width: 100%;
+}
+
+/* `.input` centres its content vertically, which is right for one line and
+   wrong for a textarea: the text then sits on a single line and overflows. */
+.input--area {
+  display: block;
+  align-items: initial;
+  min-height: 72px;
+  padding: 9px 11px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.ed-topic-add {
+  min-height: 32px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink4);
+  font-size: 12px;
+  padding: 0 10px;
+  width: 110px;
+}
+
+.ed-serp {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: var(--field-bg);
+  border: 1px solid var(--line);
+}
+
+.ed-serp-title {
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ed-warn {
+  color: var(--warn);
+}
+
+.ed-check {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ed-check li {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink2);
+}
+
+.ed-check-mark {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.ed-check--ok .ed-check-mark {
+  color: var(--good);
+}
+
+.ed-check--warn .ed-check-mark {
+  color: var(--warn);
+}
+
+.ed-check--blocked .ed-check-mark {
+  color: var(--bad);
+}
+
+.ed-check--blocked {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ── markdown mode ────────────────────────────────────────────────────── */
+
+.mdpane,
+.pv {
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: min(72vh, 900px);
+}
+
+.mdhead,
+.pvhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--field-bg);
+}
+
+/* The textarea itself scrolls, not the pane around it: the gutter is
+   positioned against the pane, so a pane that scrolled would leave the line
+   numbers behind. */
+.mdbody {
+  padding: 16px 0 18px;
+  overflow: hidden;
+  flex-grow: 1;
+  position: relative;
+  display: flex;
+}
+
+/* The gutter, the ghost and the textarea have to agree on the height of a
+   line down to the pixel, and a unitless line-height does not give that when
+   the font sizes differ. */
+.mdpane {
+  --md-line: 25px;
+}
+
+.mdcode {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13.5px;
+  line-height: var(--md-line);
+  color: var(--ink);
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  padding: 0 18px 0 56px;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow: auto;
+  flex-grow: 1;
+}
+
+/* Syntax highlighting for a textarea has to be painted underneath it: the
+   text itself is transparent and a <pre> holding the same characters, in the
+   same font at the same size, shows through. Any difference in metrics between
+   the two shows up immediately as drifting colour, which is why both share
+   `.mdcode` and only the caret colour differs. */
+.mdcode--ghost {
+  position: absolute;
+  inset: 16px 0 18px 0;
+  pointer-events: none;
+  overflow: hidden;
+  margin: 0;
+}
+
+.mdcode--live {
+  position: relative;
+  color: transparent;
+  caret-color: var(--ink);
+  background: transparent;
+}
+
+.m-mark {
+  color: var(--ink4);
+}
+
+.m-h {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.m-key {
+  color: var(--accent);
+}
+
+.m-dir {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.m-str {
+  color: var(--good);
+}
+
+.m-dim {
+  color: var(--ink3);
+}
+
+.gut {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  width: 44px;
+  text-align: right;
+  color: color-mix(in srgb, var(--ink4) 70%, transparent);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  line-height: var(--md-line);
+  user-select: none;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pvbody {
+  padding: 22px 20px 26px;
+  overflow: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pv-h1 {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.12;
+  letter-spacing: -0.016em;
+  color: var(--ink);
+}
+
+.pv-dek {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink3);
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--field-bg);
+  font-size: 12px;
+  color: var(--ink3);
+}
+
+.kbd {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 1px 5px;
+  color: var(--ink2);
+  background: var(--page-bg);
+}
+
+/* ── the post list ────────────────────────────────────────────────────── */
+
+.ed-shell {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* A four-column table cannot fit a phone, and scrolling a list of posts
+   sideways to reach its state is not reading. Below 720px each row becomes a
+   block, with the header hidden because each value carries its own label. */
+.ed-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ed-list-item {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.ed-list-item:first-child {
+  border-top: 0;
+}
+
+.ed-list-title {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.ed-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 720px) {
+  .ed-list-item {
+    grid-template-columns: 1fr auto auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 550;
+  border: 1px solid var(--line);
+  color: var(--ink3);
+}
+
+.pill--published {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 34%, transparent);
+  background: color-mix(in srgb, var(--good) 8%, transparent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Every control in the editor takes the full 44px on a touch screen. The
+   editor is denser than the article, so the temptation is to keep the desktop
+   sizes and call the small ones secondary — but a writer fixing a caption on a
+   phone is doing the same work as on a laptop, and missing the target twice
+   costs more than the vertical space. */
+@media (pointer: coarse) {
+  .hbtn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .sitem,
+  .pitem,
+  .seg2 button,
+  .ed-topic-add,
+  .ed-variant,
+  .tbtn,
+  .ed-add,
+  .ed-inline-input,
+  .ed-crumb {
+    min-height: 44px;
+  }
+
+  .tbtn {
+    min-width: 44px;
+  }
+
+  .ed-attach .ed-inline-input,
+  .ed-list-item a,
+  .input,
+  select.input {
+    min-height: 44px;
+  }
+
+  .ed-list-item a {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* The × that removes a tag. Growing it stretches the chip, which is the
+     right trade: a mis-tap here silently drops a topic. */
+  .tag button {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+}
+
+.ed-crumb {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The palette moves beside the sheet once there is room for a second column,
+   and the side panel takes a third at desktop width — the same 234 / 1fr / 320
+   the canvas specifies. */
+@media (min-width: 720px) {
+  .ed-grid {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .ed-count {
+    display: inline;
+  }
+
+  .ed-grid--markdown {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .handle {
+    right: auto;
+    left: -30px;
+    top: 8px;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 1040px) {
+  .ed-grid--rich {
+    grid-template-columns: 234px minmax(0, 1fr);
+  }
+
+  .ed-palette {
+    order: 0;
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    top: 20px;
+  }
+
+  .palette {
+    grid-template-columns: 1fr;
+  }
+
+  .ed-center {
+    order: 1;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ed-side {
+    order: 2;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .sheet {
+    padding: 40px 44px 52px;
+  }
+}
+
+@media (min-width: 1180px) {
+  .ed-grid--rich {
+    grid-template-columns: 234px minmax(0, 1fr) 320px;
+  }
+
+  .ed-side {
+    grid-column: auto;
+    display: flex;
+    position: sticky;
+    top: 20px;
+  }
+}
+
+/* The one place the editor talks back: a refused publish, a saved draft. It
+   floats over the sheet rather than pushing it down, so the text a writer is
+   looking at does not jump. */
+.ed-flash {
+  position: fixed;
+  z-index: 40;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--page-bg);
+  box-shadow: 0 18px 44px -16px rgb(16 24 40 / 0.38);
+  font-size: 13.5px;
+  color: var(--ink2);
+}
+
+.ed-flash button {
+  margin-left: auto;
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--ink4);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.ed-flash-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.ed-flash-dot--bad {
+  background: var(--bad);
+}
+
+.ed-flash-dot--good {
+  background: var(--good);
+}
+
+@media (min-width: 720px) {
+  .ed-flash {
+    left: auto;
+    max-width: 420px;
+  }
+}
+
+/* ── peças acrescentadas depois da primeira rodada de uso ──────────────── */
+
+/* A caption is a sentence and wraps; an input of one line was hiding the end
+   of every caption of normal length. */
+.ed-attach-input {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.ed-hero-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--field-bg);
+  padding: 14px;
+}
+
+/* Removing a block is one click and the browser's undo cannot reach it, so the
+   way back has to be on screen — and above the sheet, not below it. */
+.ed-undo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--page-bg));
+  font-size: 13.5px;
+}
+
+.ed-undo button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--page-bg);
+  color: var(--accent);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .ed-undo button {
+    min-height: 44px;
+  }
+}
