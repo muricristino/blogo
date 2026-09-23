@@ -76,3 +76,15 @@
     <.render_blocks blocks={@blocks} />
   </article>
 </div>
+
+<%!-- The article tells the beacon which post it is and proves it is allowed to
+      report on it. A preview has no token, so a draft being checked by its
+      author never counts as a read. --%>
+<div
+  :if={assigns[:read_token]}
+  id="read-beacon"
+  hidden
+  data-token={@read_token}
+  data-endpoint={~p"/leitura"}
+>
+</div>

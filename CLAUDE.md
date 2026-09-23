@@ -159,6 +159,40 @@ quietly:
 typed in the editor. Every form has to degrade on incomplete data rather than
 raise: a missing number used to raise inside `bell/3` and take down the
 article's public page, not just the card.
+||||||| d68e02b
+## A panel may not invent a number
+
+Everything on `/painel` is counted from the `reads` table. Three states look
+identical if you are careless, and collapsing them is how a panel starts lying
+to the person who trusts it most:
+
+- **not measured** — nothing has been collected, or the figure has no source at
+  all. Subscribers is permanently this, because no newsletter exists.
+- **measured, nothing happened** — a real zero.
+- **measured** — a number.
+
+So `Blogo.Analytics` returns `nil` rather than `0` where there is no
+measurement, and the screen says why in words. A delta needs a previous period
+to compare against; without one there is no delta, because "+100%" against
+nothing is the figure that makes everything else on the screen suspect.
+
+**Two numbers for the same fact have to be the same number.** The depth curve
+ends at the completion threshold precisely so its last point *is* the
+completion rate. It used to end at literal 100% scroll — touching the footer —
+and showed 3% beside a card reading 25%.
+
+**A read is a page view, not a person.** No identifier is stored: no cookie, no
+fingerprint, no IP. Nothing can tell whether a hundred reads are a hundred
+readers or one reader reloading, so the wording never says "leitores" where it
+means "leituras".
+
+### The audit does not see SVG text
+
+`test/mobile_audit.mjs` measures HTML text nodes. Chart labels are `<text>`
+inside an SVG and scale with the viewBox, so a 700-wide chart in a 320px card
+renders its 10.5px labels at about four — unreadable, with every check passing.
+Charts wide enough to have that problem carry `.ch--wide` and get their text
+scaled up under `max-width: 719px`.
 
 ## Deployment
 

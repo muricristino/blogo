@@ -5,7 +5,9 @@ const BASE = process.env.BASE || "https://ember-pebble-maple.axolutions.com.br"
 const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/autor/muri-cristino", "autor"]]
 // O editor exige senha, então entra por aqui antes de ser medido.
 const ADMIN = process.env.ADMIN_PASSWORD
-const ADMIN_PAGES = ADMIN ? [["/editor", "lista do editor"], ["/editor/1", "editor"]] : []
+const ADMIN_PAGES = ADMIN
+  ? [["/painel", "painel"], ["/editor", "lista do editor"], ["/editor/1", "editor"]]
+  : []
 const WIDTHS = [320, 360, 390, 414, 768]
 
 const audit = () => {

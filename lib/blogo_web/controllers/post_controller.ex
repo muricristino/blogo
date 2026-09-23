@@ -57,6 +57,7 @@ defmodule BlogoWeb.PostController do
           author: post.author,
           json_ld: SEO.article(post, base)
         })
+        |> assign(:read_token, BlogoWeb.ReadController.token(post.slug))
         |> render(:show,
           post: post,
           blocks: blocks,
