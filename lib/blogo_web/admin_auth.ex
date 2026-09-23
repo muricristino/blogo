@@ -19,6 +19,7 @@ defmodule BlogoWeb.AdminAuth do
   import Phoenix.Controller, only: [redirect: 2, put_flash: 3]
 
   @session_key "admin?"
+  @user_key "admin_user"
 
   def require_admin(conn, _opts) do
     if get_session(conn, @session_key) do
@@ -26,7 +27,7 @@ defmodule BlogoWeb.AdminAuth do
     else
       conn
       |> put_flash(:error, "Entre para abrir o editor.")
-      |> redirect(to: "/entrar")
+      |> redirect(to: "/auth/login")
       |> halt()
     end
   end
@@ -47,7 +48,23 @@ defmodule BlogoWeb.AdminAuth do
     end
   end
 
+  @doc """
+  Signs in a person Clerk has vouched for. Only the identity is kept: the
+  session token stays in the browser, where it is refreshed and expires on
+  Clerk's schedule rather than ours.
+  """
+  def sign_in_user(conn, user) do
+    conn
+    |> renew_session()
+    |> put_session(@session_key, true)
+    |> put_session(@user_key, %{email: user.email, name: user.name, avatar: user.avatar})
+  end
+
   def sign_out(conn), do: renew_session(conn)
+
+  @doc "Who is signed in, when Clerk told us. `nil` in password mode."
+  def current_user(%Plug.Conn{} = conn), do: get_session(conn, @user_key)
+  def current_user(%{} = session), do: session[@user_key]
 
   def admin?(conn_or_session)
   def admin?(%Plug.Conn{} = conn), do: !!get_session(conn, @session_key)
@@ -55,16 +72,19 @@ defmodule BlogoWeb.AdminAuth do
 
   def on_mount(:ensure_admin, _params, session, socket) do
     if admin?(session) do
-      {:cont, socket}
+      {:cont, Phoenix.Component.assign(socket, :current_admin, current_user(session))}
     else
-      {:halt, Phoenix.LiveView.redirect(socket, to: "/entrar")}
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/auth/login")}
     end
   end
 
   defp valid?(password) when is_binary(password) do
-    case configured_password() do
-      nil -> false
-      expected -> Plug.Crypto.secure_compare(password, expected)
+    # With Clerk configured the password is not a second way in. Leaving both
+    # open would mean the weaker one decides how strong the door is.
+    case {Blogo.Auth.Clerk.mode(), configured_password()} do
+      {:clerk, _} -> false
+      {_, nil} -> false
+      {_, expected} -> Plug.Crypto.secure_compare(password, expected)
     end
   end
 

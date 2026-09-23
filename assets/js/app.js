@@ -22,6 +22,9 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import { RichText, Markdown, Grow } from "./editor"
+
+// Só a tela de login carrega isto; nas demais o elemento não existe.
+if (document.getElementById("clerk-signin")) import("./auth")
 import "./read"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")

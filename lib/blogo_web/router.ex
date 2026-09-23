@@ -41,9 +41,11 @@ defmodule BlogoWeb.Router do
     get "/autor/:slug", AuthorController, :show
     get "/imagem/:slug", CardController, :show
 
-    get "/entrar", SessionController, :new
-    post "/entrar", SessionController, :create
-    delete "/sair", SessionController, :delete
+    # A entrada não se anuncia em lugar nenhum do site público.
+    get "/auth/login", AuthController, :new
+    post "/auth/login", AuthController, :password
+    post "/auth/session", AuthController, :session
+    delete "/auth/logout", AuthController, :delete
   end
 
   scope "/", BlogoWeb do
@@ -76,7 +78,7 @@ defmodule BlogoWeb.Router do
   end
 
   # Last, because it matches any single segment and would otherwise swallow
-  # /entrar and /editor.
+  # /auth/login and /editor.
   scope "/", BlogoWeb do
     pipe_through :browser
 

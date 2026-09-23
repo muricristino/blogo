@@ -1,0 +1,54 @@
+<main class="pad auth-shell">
+  <div class="card auth-card">
+    <p class="kicker" style="margin-bottom:10px">blogo</p>
+    <h1 class="h2" style="margin-bottom:6px">Entrar</h1>
+    <p class="small" style="margin-bottom:22px">
+      O blog é público; escrever nele não é.
+    </p>
+
+    <p
+      :if={Phoenix.Flash.get(@flash, :error)}
+      class="callout callout--bad"
+      style="margin-bottom:16px;font-size:14px"
+    >
+      {Phoenix.Flash.get(@flash, :error)}
+    </p>
+
+    <%= if @mode == :clerk do %>
+      <%!-- Clerk's own component, loaded from the instance in the publishable
+            key — the same host that will verify the token, so there is no
+            third party to trust. The hook does the rest. --%>
+      <div
+        id="clerk-signin"
+        phx-update="ignore"
+        data-publishable-key={@publishable_key}
+        data-session-path={~p"/auth/session"}
+      >
+        <p class="small auth-loading">Carregando…</p>
+      </div>
+      <p id="clerk-error" class="small ed-warn" hidden></p>
+    <% else %>
+      <form action={~p"/auth/login"} method="post" class="auth-form">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+        <label class="ed-field">
+          <span class="micro">Senha</span>
+          <input
+            class="input"
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            required
+            autofocus
+          />
+        </label>
+
+        <button class="btn btn--p" type="submit">Entrar</button>
+      </form>
+
+      <p class="small auth-note">
+        Sem chaves do Clerk configuradas, a entrada é por <span class="mono">ADMIN_PASSWORD</span>.
+      </p>
+    <% end %>
+  </div>
+</main>

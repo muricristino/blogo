@@ -22,7 +22,7 @@ defmodule BlogoWeb.EditorLiveTest do
 
   defp sign_in(conn) do
     conn
-    |> Phoenix.ConnTest.post(~p"/entrar", %{"password" => @password})
+    |> Phoenix.ConnTest.post(~p"/auth/login", %{"password" => @password})
     |> Phoenix.ConnTest.recycle()
   end
 
@@ -42,14 +42,14 @@ defmodule BlogoWeb.EditorLiveTest do
 
   describe "who gets in" do
     test "the editor redirects a visitor who is not signed in", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/entrar"}}} = live(conn, ~p"/editor")
+      assert {:error, {:redirect, %{to: "/auth/login"}}} = live(conn, ~p"/editor")
     end
 
     test "a wrong password does not sign anyone in", %{conn: conn} do
-      conn = post(conn, ~p"/entrar", %{"password" => "chute"})
+      conn = post(conn, ~p"/auth/login", %{"password" => "chute"})
       assert html_response(conn, 200) =~ "Senha incorreta"
 
-      assert conn |> recycle() |> get(~p"/editor") |> redirected_to() == "/entrar"
+      assert conn |> recycle() |> get(~p"/editor") |> redirected_to() == "/auth/login"
     end
 
     test "the right password opens the editor", %{conn: conn} do
@@ -62,7 +62,7 @@ defmodule BlogoWeb.EditorLiveTest do
     # only the plug guarded the editor, this would pass while the door is open.
     test "the live socket is guarded too, not just the request", %{conn: conn} do
       post = draft()
-      assert {:error, {:redirect, %{to: "/entrar"}}} = live(conn, ~p"/editor/#{post.id}")
+      assert {:error, {:redirect, %{to: "/auth/login"}}} = live(conn, ~p"/editor/#{post.id}")
     end
   end
 

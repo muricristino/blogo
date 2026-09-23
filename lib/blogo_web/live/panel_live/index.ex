@@ -282,7 +282,7 @@ defmodule BlogoWeb.PanelLive.Index do
 
       <div style="display:flex;align-items:center;gap:8px">
         <a class="navlink pn-asreader" href={~p"/"}>Ver como leitor</a>
-        <.link class="btn btn--s" href={~p"/sair"} method="delete">Sair</.link>
+        <.link class="btn btn--s" href={~p"/auth/logout"} method="delete">Sair</.link>
       </div>
     </nav>
     """
