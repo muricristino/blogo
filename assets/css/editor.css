@@ -1057,3 +1057,540 @@
     min-height: 44px;
   }
 }
+
+/* ── o painel ─────────────────────────────────────────────────────────────
+
+   Shares the admin surface with the editor: same `.bar`, `.card`, `.btn`, same
+   tokens. Only what the panel has and the editor does not lives here.
+
+   One column at 320px. The four KPIs pair up at 560px and line up at 1080px;
+   the two-column sections split at 1080px, which is where 360px of side panel
+   stops squeezing the chart beside it. */
+
+.pn-shell {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.pn-shell > * {
+  min-width: 0;
+}
+
+.pn-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pn-head .h1 {
+  font-size: clamp(28px, 8vw, 38px);
+}
+
+.seg {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+  align-self: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.seg button {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink3);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seg button.is-on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.rolebadge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+.pn-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navlink[aria-current="page"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+/* The two states that are not a number, said in words rather than shown as a
+   zero. */
+.pn-empty {
+  padding: 16px 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink2);
+}
+
+.pn-empty strong {
+  color: var(--ink);
+  display: block;
+}
+
+.pn-since {
+  margin-top: -8px;
+}
+
+.pn-nothing {
+  padding: 22px 0;
+  text-align: center;
+}
+
+/* ── KPIs ─────────────────────────────────────────────────────────────── */
+
+.pn-kpis {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.kpi {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kpi-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kpi-v {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-v--none {
+  color: var(--ink4);
+}
+
+.kpi-note {
+  margin-top: auto;
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta--up {
+  color: var(--good);
+}
+
+.delta--down {
+  color: var(--bad);
+}
+
+.delta--flat {
+  color: var(--ink4);
+}
+
+/* ── gráficos ─────────────────────────────────────────────────────────── */
+
+.ch {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ch-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.ch-axis {
+  fill: var(--ink4);
+  font-size: 10.5px;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.ch-axis--name {
+  fill: var(--ink2);
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 12px;
+}
+
+.ch-bar {
+  fill: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.ch-bar--on {
+  fill: var(--accent);
+}
+
+.ch-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ch-area {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.ch-dot {
+  fill: var(--accent);
+  stroke: var(--page-bg);
+  stroke-width: 2;
+}
+
+.ch-lab {
+  fill: var(--ink);
+  font-size: 11.5px;
+  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.pn-chart {
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.pn-chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pn-chart-head > span,
+.pn-chart > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pn-two {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.pn-two > * {
+  min-width: 0;
+}
+
+.pn-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── publicações ──────────────────────────────────────────────────────── */
+
+.pn-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pn-posts-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pn-posts-head .seg {
+  margin-left: auto;
+}
+
+.pn-table-wrap {
+  overflow: hidden;
+}
+
+.pn-post-meta {
+  display: block;
+  font-weight: 400;
+}
+
+.pn-actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+}
+
+.btn--sm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 9px;
+}
+
+@media (pointer: coarse) {
+  .btn--sm,
+  .seg button {
+    min-height: 44px;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.pill--live {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 30%, transparent);
+  background: color-mix(in srgb, var(--good) 8%, transparent);
+}
+
+.pill--draft {
+  color: var(--ink3);
+  border-color: var(--line);
+  background: var(--field-bg);
+}
+
+.pill--sched {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 30%, transparent);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+/* A five-column table does not fit a phone, and scrolling sideways to find out
+   whether a post is published is not reading. Below 720px each row becomes a
+   block and every cell carries its own label. */
+.pn-table thead {
+  display: none;
+}
+
+.pn-table,
+.pn-table tbody,
+.pn-table tr,
+.pn-table td {
+  display: block;
+  width: auto;
+}
+
+.pn-table tr {
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.pn-table tbody tr:first-child {
+  border-top: 0;
+}
+
+.pn-table td {
+  border: 0;
+  padding: 2px 0;
+}
+
+.pn-table td[data-label]::before {
+  content: attr(data-label) " ";
+  color: var(--ink4);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
+.pn-table td:first-child::before {
+  content: none;
+}
+
+.pn-table td.r {
+  text-align: left;
+}
+
+.pn-table .pn-actions {
+  padding-top: 10px;
+}
+
+/* ── precisa de você ──────────────────────────────────────────────────── */
+
+.pn-queue {
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.todo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+
+.todo:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.pn-todo-mark {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  display: inline-flex;
+}
+
+.pn-todo-mark--stalled {
+  color: var(--warn);
+}
+
+.pn-todo-mark--broken_link {
+  color: var(--bad);
+}
+
+.pn-todo-text {
+  display: block;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.pn-queue-foot {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 2px;
+}
+
+/* SVG text scales with the viewBox, so a 700-wide chart squeezed into a 320px
+   card renders its 10.5px labels at about four. The mobile audit does not see
+   this — it measures HTML text nodes, and these are `<text>` inside an SVG —
+   so the axis of the daily chart was unreadable on a phone while every check
+   passed. The only chart wide enough to have the problem is the only one that
+   gets the correction. */
+@media (max-width: 719px) {
+  .ch--wide .ch-axis,
+  .ch--wide .ch-lab {
+    font-size: 24px;
+  }
+}
+
+@media (min-width: 560px) {
+  .pn-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 720px) {
+  .pn-shell {
+    padding: 24px;
+  }
+
+  .pn-head {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .pn-table thead {
+    display: table-header-group;
+  }
+
+  .pn-table {
+    display: table;
+    width: 100%;
+  }
+
+  .pn-table tbody {
+    display: table-row-group;
+  }
+
+  .pn-table tr {
+    display: table-row;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .pn-table td {
+    display: table-cell;
+    padding: 13px 18px;
+    border-top: 1px solid var(--line);
+  }
+
+  .pn-table td[data-label]::before {
+    content: none;
+  }
+
+  .pn-table td.r {
+    text-align: right;
+  }
+
+  .pn-table .pn-actions {
+    text-align: right;
+    padding-top: 13px;
+  }
+}
+
+@media (min-width: 1080px) {
+  .pn-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .pn-two {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 18px;
+  }
+
+  .pn-chart {
+    padding: 24px 26px 20px;
+  }
+}

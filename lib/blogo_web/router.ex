@@ -24,6 +24,14 @@ defmodule BlogoWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # The reading beacon. It is anonymous by design and carries a token signed
+  # for the article it reports on, so CSRF is not the threat model here: there
+  # is no session to ride and nothing to forge except a counter that the token
+  # already protects.
+  pipeline :beacon do
+    plug :accepts, ["json"]
+  end
+
   scope "/", BlogoWeb do
     pipe_through :browser
 
@@ -35,6 +43,22 @@ defmodule BlogoWeb.Router do
     get "/entrar", SessionController, :new
     post "/entrar", SessionController, :create
     delete "/sair", SessionController, :delete
+  end
+
+  scope "/", BlogoWeb do
+    pipe_through :beacon
+
+    post "/leitura", ReadController, :create
+  end
+
+  scope "/painel", BlogoWeb do
+    pipe_through [:browser, :admin]
+
+    live_session :painel,
+      on_mount: {BlogoWeb.AdminAuth, :ensure_admin},
+      layout: {BlogoWeb.Layouts, :editor} do
+      live "/", PanelLive.Index, :index
+    end
   end
 
   scope "/editor", BlogoWeb do
