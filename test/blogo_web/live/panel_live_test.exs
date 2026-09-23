@@ -20,7 +20,7 @@ defmodule BlogoWeb.PanelLiveTest do
 
   defp sign_in(conn) do
     conn
-    |> Phoenix.ConnTest.post(~p"/entrar", %{"password" => @password})
+    |> Phoenix.ConnTest.post(~p"/auth/login", %{"password" => @password})
     |> Phoenix.ConnTest.recycle()
   end
 
@@ -34,12 +34,12 @@ defmodule BlogoWeb.PanelLiveTest do
 
   describe "quem entra" do
     test "o painel redireciona quem não entrou", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/entrar"}}} = live(conn, ~p"/painel")
+      assert {:error, {:redirect, %{to: "/auth/login"}}} = live(conn, ~p"/painel")
     end
 
     # The socket reconnects over a websocket, which never re-runs a plug.
     test "o socket é guardado, não só a requisição", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/entrar"}}} = live(conn, ~p"/painel")
+      assert {:error, {:redirect, %{to: "/auth/login"}}} = live(conn, ~p"/painel")
     end
   end
 

@@ -2,7 +2,7 @@ import { chromium, devices } from "/Users/murilo/code/axolutions/agrosn/new-belc
 
 const BASE = process.env.BASE || "https://ember-pebble-maple.axolutions.com.br"
 // Uma tela nova entra aqui no mesmo commit que a cria.
-const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/autor/muri-cristino", "autor"]]
+const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/autor/muri-cristino", "autor"], ["/auth/login", "entrada"]]
 // O editor exige senha, então entra por aqui antes de ser medido.
 const ADMIN = process.env.ADMIN_PASSWORD
 const ADMIN_PAGES = ADMIN
@@ -73,10 +73,10 @@ for (const [path, nome] of [...PAGES, ...ADMIN_PAGES]) {
   for (const w of WIDTHS) {
     const p = await b.newPage({ viewport: { width: w, height: 800 }, deviceScaleFactor: 2, isMobile: w < 500, hasTouch: w < 500 })
     if (privada) {
-      await p.goto(BASE + "/entrar")
+      await p.goto(BASE + "/auth/login")
       await p.fill("input[name=password]", ADMIN)
       await p.click("button[type=submit]")
-      await p.waitForURL("**/editor")
+      await p.waitForURL(url => !url.pathname.startsWith("/auth/"))
     }
     await p.goto(BASE + path, { waitUntil: "networkidle" })
     await p.waitForTimeout(400)

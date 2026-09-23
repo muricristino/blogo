@@ -39,7 +39,7 @@ defmodule BlogoWeb.EditorLive.Index do
         </a>
         <span class="micro">Posts</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <.link class="btn btn--s" href={~p"/sair"} method="delete">Sair</.link>
+          <.link class="btn btn--s" href={~p"/auth/logout"} method="delete">Sair</.link>
           <button class="btn btn--p" type="button" phx-click="new">Novo post</button>
         </div>
       </nav>
