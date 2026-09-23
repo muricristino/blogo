@@ -295,6 +295,13 @@ defmodule BlogoWeb.Diagrams do
   defp tone_style("warn"), do: "fill: var(--warn);"
   defp tone_style(_), do: nil
 
+  # A curve with no centre or no spread has nothing to draw. It used to raise,
+  # which took down the article's public page — and, once the social card
+  # existed, the card too. Data typed into the editor reaches here directly, so
+  # incomplete data has to degrade into an empty path rather than an exception.
+  defp bell(center, spread, _base) when not is_number(center) or not is_number(spread), do: ""
+  defp bell(_center, spread, _base) when spread <= 0, do: ""
+
   defp bell(center, spread, base) do
     left = round(center - spread * 3)
     right = round(center + spread * 3)

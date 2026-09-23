@@ -17,6 +17,7 @@ defmodule BlogoWeb.SEO do
   attr :published_at, :any, default: nil
   attr :author, :any, default: nil
   attr :json_ld, :any, default: nil
+  attr :image, :string, default: nil
 
   def head(assigns) do
     ~H"""
@@ -28,6 +29,11 @@ defmodule BlogoWeb.SEO do
     <meta property="og:title" content={@title} />
     <meta :if={@description} property="og:description" content={@description} />
     <meta property="og:url" content={@canonical} />
+    <%!-- Without these two the card declared below is a promise nothing keeps:
+          `summary_large_image` tells a reader to expect a figure. --%>
+    <meta :if={@image} property="og:image" content={@image} />
+    <meta :if={@image} property="og:image:width" content="1200" />
+    <meta :if={@image} property="og:image:height" content="630" />
     <meta
       :if={@published_at}
       property="article:published_time"
@@ -35,7 +41,8 @@ defmodule BlogoWeb.SEO do
     />
     <meta :if={@author} property="article:author" content={@author.name} />
 
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content={if @image, do: "summary_large_image", else: "summary"} />
+    <meta :if={@image} name="twitter:image" content={@image} />
     <meta name="twitter:title" content={@title} />
     <meta :if={@description} name="twitter:description" content={@description} />
 

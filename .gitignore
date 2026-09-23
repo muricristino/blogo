@@ -14,3 +14,6 @@ npm-debug.log
 
 # deploy
 deploy/.env
+
+# Worktrees de agentes: repositórios próprios, não fazem parte deste.
+.claude/worktrees/
