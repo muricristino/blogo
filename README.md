@@ -30,6 +30,12 @@ swap rather than a second drawing.
 **Being found.** `sitemap.xml`, `robots.txt`, canonical URLs, Open Graph, and
 `Article` JSON-LD whose `author` is the same `@id` the author page declares.
 
+**A link to an article carries its figure.** `/imagem/:slug.png` renders the
+article's hero diagram, its title and the author's name as a 1200×630 PNG,
+drawn from the same seven forms the site uses and rasterised without a browser.
+A blog written so that its author's name is recognised has to survive being
+pasted into a feed.
+
 ## Running it
 
 Needs Elixir 1.18, OTP 27 and PostgreSQL 17.
@@ -72,6 +78,12 @@ modes mid-article has to find the article they left.
 **Public pages are controllers, not LiveView.** Reading is anonymous and
 non-interactive; a socket per reader would cost a process and buy nothing.
 LiveView is reserved for the editor and the panel.
+
+**A link to an article carries its figure.** `/imagem/:slug.png` renders the
+article's hero diagram, its title and the author's name as a 1200×630 PNG,
+drawn from the same seven forms the site uses and rasterised without a browser.
+A blog written so that its author's name is recognised has to survive being
+pasted into a feed.
 
 ## Running it
 

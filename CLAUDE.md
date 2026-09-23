@@ -136,6 +136,64 @@ bare `phx-blur` on a loose input. A writer who types a caption and reloads
 without clicking elsewhere used to lose it while the screen said "salvo agora".
 A silent loss of someone's writing is the worst defect this project can ship.
 
+## The social card renders without a browser
+
+`/imagem/:slug.png` draws the article's hero, its title and the author's name
+as a 1200×630 PNG. It is what a link to the blog looks like in a feed, which is
+the whole point of a blog written to make its author's name recognisable.
+
+It is drawn as SVG — reusing the same seven forms the site draws — and
+rasterised with `resvg`. That buys fidelity and costs two things that fail
+quietly:
+
+- **The fonts ship in `priv/fonts` and the rasteriser is told to ignore system
+  fonts.** A slim container has none, and a missing font does not warn: it
+  renders a card with no text on it. `test/blogo/card_test.exs` asserts the
+  files are there.
+- **`var()` and `color-mix()` mean nothing outside a browser.** The card
+  carries its own stylesheet with the tokens written out, and resolves the
+  inline `var(--bad)` a few figures use. A colour that drifts here is invisible
+  until someone shares a link.
+
+**Diagram data reaches the renderer unvalidated**, straight from what someone
+typed in the editor. Every form has to degrade on incomplete data rather than
+raise: a missing number used to raise inside `bell/3` and take down the
+article's public page, not just the card.
+||||||| d68e02b
+## A panel may not invent a number
+
+Everything on `/painel` is counted from the `reads` table. Three states look
+identical if you are careless, and collapsing them is how a panel starts lying
+to the person who trusts it most:
+
+- **not measured** — nothing has been collected, or the figure has no source at
+  all. Subscribers is permanently this, because no newsletter exists.
+- **measured, nothing happened** — a real zero.
+- **measured** — a number.
+
+So `Blogo.Analytics` returns `nil` rather than `0` where there is no
+measurement, and the screen says why in words. A delta needs a previous period
+to compare against; without one there is no delta, because "+100%" against
+nothing is the figure that makes everything else on the screen suspect.
+
+**Two numbers for the same fact have to be the same number.** The depth curve
+ends at the completion threshold precisely so its last point *is* the
+completion rate. It used to end at literal 100% scroll — touching the footer —
+and showed 3% beside a card reading 25%.
+
+**A read is a page view, not a person.** No identifier is stored: no cookie, no
+fingerprint, no IP. Nothing can tell whether a hundred reads are a hundred
+readers or one reader reloading, so the wording never says "leitores" where it
+means "leituras".
+
+### The audit does not see SVG text
+
+`test/mobile_audit.mjs` measures HTML text nodes. Chart labels are `<text>`
+inside an SVG and scale with the viewBox, so a 700-wide chart in a 320px card
+renders its 10.5px labels at about four — unreadable, with every check passing.
+Charts wide enough to have that problem carry `.ch--wide` and get their text
+scaled up under `max-width: 719px`.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.

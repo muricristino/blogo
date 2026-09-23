@@ -22,6 +22,7 @@ defmodule BlogoWeb.AuthorController do
           title: "#{author.name} · #{author.headline}",
           description: author.bio,
           canonical: "#{base}/autor/#{author.slug}",
+          image: List.first(posts) && "#{base}/imagem/#{List.first(posts).slug}.png",
           type: "profile",
           json_ld: SEO.profile_page(author, posts, base)
         })
