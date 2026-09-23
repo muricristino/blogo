@@ -17,3 +17,7 @@ deploy/.env
 
 # Worktrees de agentes: repositórios próprios, não fazem parte deste.
 .claude/worktrees/
+
+# Chaves do Clerk puxadas por `clerk env pull` — nunca versionadas.
+.env.local
+.env

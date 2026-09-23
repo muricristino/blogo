@@ -39,6 +39,14 @@ const audit = () => {
   for (const el of toque ? document.querySelectorAll("a, button, input, [role=button]") : []) {
     const r = el.getBoundingClientRect()
     if (r.width === 0 || r.height === 0) continue
+
+    // Um alvo que ninguém vê não é um alvo de toque. O componente de login do
+    // Clerk carrega um <button> escondido só para o Enter submeter o form, e
+    // medir a caixa dele acusava um alvo pequeno que não existe para ninguém —
+    // nem para leitor de tela.
+    const cs = getComputedStyle(el)
+    if (cs.visibility === "hidden" || cs.opacity === "0" || el.getAttribute("aria-hidden") === "true")
+      continue
     // 44px para navegação e ação; 32px para link secundário em linha.
     const secundario = el.classList.contains("tag")
     const min = secundario ? 32 : 44
@@ -74,8 +82,19 @@ for (const [path, nome] of [...PAGES, ...ADMIN_PAGES]) {
     const p = await b.newPage({ viewport: { width: w, height: 800 }, deviceScaleFactor: 2, isMobile: w < 500, hasTouch: w < 500 })
     if (privada) {
       await p.goto(BASE + "/auth/login")
-      await p.fill("input[name=password]", ADMIN)
-      await p.click("button[type=submit]")
+
+      // Com o Clerk configurado a senha não é uma segunda porta, então não há
+      // como esta auditoria entrar sozinha. Melhor dizer isso do que travar
+      // num formulário que não existe.
+      const temSenha = await p.locator("form.auth-form input[name=password]").count()
+      if (!temSenha) {
+        console.log(`  ${w}px  — pulada (servidor em modo Clerk; use um servidor sem chaves)`)
+        await p.close()
+        continue
+      }
+
+      await p.fill("form.auth-form input[name=password]", ADMIN)
+      await p.click("form.auth-form button[type=submit]")
       await p.waitForURL(url => !url.pathname.startsWith("/auth/"))
     }
     await p.goto(BASE + path, { waitUntil: "networkidle" })

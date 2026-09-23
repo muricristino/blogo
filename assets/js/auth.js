@@ -40,11 +40,64 @@ const appearance = {
   variables: {
     colorPrimary: "#2563eb",
     colorText: "#101828",
-    colorBackground: "#ffffff",
+    colorTextSecondary: "#626c7a",
+    colorBackground: "transparent",
+    colorInputBackground: "#ffffff",
     borderRadius: "11px",
     fontFamily: "'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif"
   },
-  elements: { footer: { display: "none" } }
+  elements: {
+    // Clerk ships its own card, and mounted inside ours that reads as a card
+    // in a card. The page already says where you are and why.
+    // clerk-js v5 wraps the card in a `cardBox` that carries the width and the
+    // shadow; styling only `card` leaves that box at its own size, which is
+    // what pushed the form outside ours.
+    rootBox: { width: "100%" },
+    cardBox: { width: "100%", maxWidth: "100%", boxShadow: "none", border: "0" },
+    card: { boxShadow: "none", border: "0", padding: "0", background: "transparent" },
+    header: { display: "none" },
+    footer: { display: "none" },
+    formButtonPrimary: { fontSize: "14px", textTransform: "none" }
+  }
+}
+
+// O componente do Clerk vem com controles de 30px, e a regra do projeto é 44
+// sob toque (CLAUDE.md). O `appearance` não tem media query, então isto entra
+// como folha de estilo — as classes `cl-` são a API pública deles para isso.
+const TOUCH_TARGETS = `
+@media (pointer: coarse) {
+  .cl-socialButtonsBlockButton,
+  .cl-formButtonPrimary,
+  .cl-formFieldInput,
+  .cl-footerActionLink,
+  .cl-formFieldInputShowPasswordButton {
+    min-height: 44px;
+  }
+  .cl-formFieldInputShowPasswordButton { min-width: 44px; }
+}`
+
+function installTouchTargets() {
+  const style = document.createElement("style")
+  style.textContent = TOUCH_TARGETS
+  document.head.appendChild(style)
+}
+
+// The interface around it is in Portuguese; leaving the component in English
+// makes the login look like it belongs to somebody else's site.
+const localization = {
+  socialButtonsBlockButton: "Continuar com {{provider|titleize}}",
+  dividerText: "ou",
+  formFieldLabel__emailAddress: "E-mail",
+  formFieldLabel__password: "Senha",
+  formFieldInputPlaceholder__emailAddress: "seu@email.com",
+  formButtonPrimary: "Continuar",
+  signIn: {
+    start: { title: "", subtitle: "", actionText: "", actionLink: "" },
+    password: { title: "Digite sua senha", subtitle: "" },
+    emailCode: { title: "Confira seu e-mail", subtitle: "", formTitle: "Código de verificação" }
+  },
+  footerActionLink__useAnotherMethod: "Usar outro método",
+  backButton: "Voltar"
 }
 
 function fail(message) {
@@ -63,7 +116,7 @@ async function start() {
   let Clerk
   try {
     Clerk = await loadClerk(publishableKey)
-    await Clerk.load({ appearance })
+    await Clerk.load({ appearance, localization })
   } catch (error) {
     fail("Não foi possível carregar o login. Verifique a conexão e recarregue.")
     return
@@ -75,6 +128,9 @@ async function start() {
   if (Clerk.user) return exchange(Clerk, sessionPath)
 
   mount.innerHTML = ""
+  installTouchTargets()
+  // A altura mínima existe só para a caixa não saltar durante o carregamento.
+  mount.style.minHeight = "auto"
   Clerk.mountSignIn(mount, {
     appearance,
     afterSignInUrl: window.location.pathname,
