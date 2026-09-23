@@ -136,6 +136,30 @@ bare `phx-blur` on a loose input. A writer who types a caption and reloads
 without clicking elsewhere used to lose it while the screen said "salvo agora".
 A silent loss of someone's writing is the worst defect this project can ship.
 
+## The social card renders without a browser
+
+`/imagem/:slug.png` draws the article's hero, its title and the author's name
+as a 1200×630 PNG. It is what a link to the blog looks like in a feed, which is
+the whole point of a blog written to make its author's name recognisable.
+
+It is drawn as SVG — reusing the same seven forms the site draws — and
+rasterised with `resvg`. That buys fidelity and costs two things that fail
+quietly:
+
+- **The fonts ship in `priv/fonts` and the rasteriser is told to ignore system
+  fonts.** A slim container has none, and a missing font does not warn: it
+  renders a card with no text on it. `test/blogo/card_test.exs` asserts the
+  files are there.
+- **`var()` and `color-mix()` mean nothing outside a browser.** The card
+  carries its own stylesheet with the tokens written out, and resolves the
+  inline `var(--bad)` a few figures use. A colour that drifts here is invisible
+  until someone shares a link.
+
+**Diagram data reaches the renderer unvalidated**, straight from what someone
+typed in the editor. Every form has to degrade on incomplete data rather than
+raise: a missing number used to raise inside `bell/3` and take down the
+article's public page, not just the card.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.

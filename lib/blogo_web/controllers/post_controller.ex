@@ -19,6 +19,7 @@ defmodule BlogoWeb.PostController do
       title: if(author, do: "#{author.name} · artigos", else: "blogo"),
       description: author && author.headline,
       canonical: base <> "/",
+      image: featured && "#{base}/imagem/#{featured.slug}.png",
       json_ld: author && SEO.profile_page(author, posts, base)
     })
     |> render(:index,
@@ -50,6 +51,7 @@ defmodule BlogoWeb.PostController do
           title: "#{post.title} · #{post.author.name}",
           description: post.meta_description || post.subtitle,
           canonical: "#{base}/#{post.slug}",
+          image: "#{base}/imagem/#{post.slug}.png",
           type: "article",
           published_at: post.published_at,
           author: post.author,

@@ -31,6 +31,7 @@ defmodule BlogoWeb.Router do
     get "/sitemap.xml", SitemapController, :index
     get "/robots.txt", SitemapController, :robots
     get "/autor/:slug", AuthorController, :show
+    get "/imagem/:slug", CardController, :show
 
     get "/entrar", SessionController, :new
     post "/entrar", SessionController, :create

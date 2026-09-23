@@ -10,7 +10,7 @@ alias Blogo.Content
         "de avaliar modelo antes de colocar em produção.",
     city: "São Paulo",
     same_as: [
-      "https://github.com/murichristopher",
+      "https://github.com/muricristino",
       "https://www.linkedin.com/in/muricristino"
     ]
   })
