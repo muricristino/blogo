@@ -1594,3 +1594,41 @@
     padding: 24px 26px 20px;
   }
 }
+
+/* ── a entrada ─────────────────────────────────────────────────────────── */
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 30px 26px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-note {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Clerk carrega num segundo ou dois; sem isto a caixa salta de altura quando
+   o componente monta. */
+#clerk-signin {
+  min-height: 330px;
+}
+
+.auth-loading {
+  text-align: center;
+  padding: 40px 0;
+}

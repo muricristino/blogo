@@ -85,20 +85,42 @@ article is decoration, and decoration on a card is a lie about what is inside.
   delivers the same one in its narrative place; rendering it twice reads as a
   templating accident.
 
-## The editor is behind one password
+## The way in is at /auth/login, and nothing links to it
 
-`ADMIN_PASSWORD` guards `/editor`. There is no users table: the blog has one
-author, and registration, password reset and roles would be machinery serving
-nobody. `BlogoWeb.AdminAuth` is the whole of it, and it is the one module that
-gets replaced the day blogo has a second author.
+A reader has no account to sign into, so the public navigation carries no
+"Entrar". The blog is public; writing in it is not.
 
-- **No password configured means no way in,** not a way in for everyone. A
-  deployment that forgets the variable has an editor nobody can open, which is
+Who may sign in is decided by the environment, the same way codo and webo
+decide it:
+
+| | development | with Clerk |
+|---|---|---|
+| when | no Clerk keys | `CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` |
+| how | `ADMIN_PASSWORD` | Google, through Clerk |
+
+- **One key without the other is refused at boot.** A half-configured login
+  that quietly falls back to the password is a door everyone believes is
+  locked.
+- **With Clerk configured, the password stops working.** Two doors where one
+  was intended means the weaker one decides how strong the entrance is.
+- **No password and no Clerk means no way in,** not a way in for everyone. A
+  deployment that forgets the variables has an editor nobody can open, which is
   the failure that is safe.
-- **Guard the request and the socket.** A LiveView reconnects over a websocket,
-  which never re-runs a plug. `require_admin/2` covers the request and
-  `on_mount/4` covers the socket; only one of them is a door left open, and
-  `test/blogo_web/live/editor_live_test.exs` has a case for exactly that.
+- **`BLOGO_ALLOWED_EMAILS` has the last word over Clerk.** An address removed
+  from it stops working on the next request, with no session to hunt down.
+
+**The login happens in the browser and this side only verifies.** Clerk's SDK
+signs the person in; the browser posts the session token to `/auth/session`,
+which checks it locally — RS256 against the instance's JWKS, plus expiry — and
+keeps only the email. The token is never stored server-side. `aud` is
+deliberately not validated, because a Clerk session's audience varies by setup;
+what authenticates it is the signature against *this* instance plus expiry.
+That is the same call codo and webo make, and the tests sign their own tokens
+against a generated key rather than needing an instance.
+
+**Guard the request and the socket.** A LiveView reconnects over a websocket,
+which never re-runs a plug. `require_admin/2` covers the request and
+`on_mount/4` covers the socket; only one of them is a door left open.
 
 ## One document, two modes
 

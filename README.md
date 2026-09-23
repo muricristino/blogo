@@ -92,10 +92,15 @@ mix setup
 ADMIN_PASSWORD=<uma senha> mix phx.server
 ```
 
-The blog is public; writing in it is not. `/editor` is behind
-`ADMIN_PASSWORD`, and with no password configured there is no way in at all —
-a deployment that forgets the variable has an editor nobody can open, which is
-the failure that is safe.
+The blog is public; writing in it is not. The way in is `/auth/login`, and
+nothing on the site links to it — a reader has no account to sign into.
+
+With `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` set, signing in goes
+through Clerk (Google), verified locally against the instance's JWKS;
+`BLOGO_ALLOWED_EMAILS` narrows it further and has the last word. Without them,
+`ADMIN_PASSWORD` is used instead, which is what a fresh clone gets. One key
+without the other is refused at boot, and with neither there is no way in at
+all — the failure that is safe. See `deploy/.env.example`.
 
 ## Not built yet
 
