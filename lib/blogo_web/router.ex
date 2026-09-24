@@ -55,6 +55,7 @@ defmodule BlogoWeb.Router do
     get "/feed.xml", FeedController, :index
     get "/tag/:slug", TopicController, :show
     get "/autor/:slug", PageController, :author
+    get "/autor/:slug/foto", AuthorPhotoController, :show
     get "/imagem/:slug", CardController, :show
 
     # A entrada não se anuncia em lugar nenhum do site público.
