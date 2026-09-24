@@ -99,9 +99,40 @@ defmodule BlogoWeb.SEO do
       "wordCount" => word_count(post),
       "keywords" => Enum.join(post.topics, ", "),
       "author" => person(post.author, base_url),
-      "publisher" => person(post.author, base_url)
+      "publisher" => person(post.author, base_url),
+      "citation" => citations(post)
     }
     |> drop_empty()
+  end
+
+  @doc """
+  What the article says its numbers came from: the `source` blocks, as they were
+  written.
+
+  Nothing is invented here. A block with neither a title nor a URL says nothing
+  a citation could carry, so it is left out rather than emitted as an empty
+  `CreativeWork`.
+
+  There is no `FAQPage` beside it on purpose. The `question` block is the
+  question an article leaves open — "em que tamanho de lista isso deixa de
+  valer?" — and `FAQPage` requires an `acceptedAnswer`. The only way to emit one
+  is to promote the following paragraph into an answer nobody wrote, which is
+  structured data that contradicts the page it describes.
+  """
+  def citations(post) do
+    post
+    |> Blogo.Content.Post.blocks()
+    |> Enum.filter(&(&1["type"] == "source"))
+    |> Enum.map(fn block ->
+      %{
+        "@type" => "CreativeWork",
+        "name" => block["title"],
+        "url" => block["url"],
+        "description" => block["note"]
+      }
+      |> drop_empty()
+    end)
+    |> Enum.reject(&(Map.keys(&1) == ["@type"]))
   end
 
   defp word_count(post) do
