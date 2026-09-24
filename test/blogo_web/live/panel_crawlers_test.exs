@@ -90,4 +90,26 @@ defmodule BlogoWeb.PanelCrawlersTest do
       assert html =~ "Gemini lê com o Googlebot"
     end
   end
+
+  # The crawler choice sits on the same screen as the name and the description,
+  # which have their own Salvar. Saving it used to reload the whole site card
+  # from the row — and a name halfway through being typed went with it. Same
+  # defect the featured-figure switch beside it already had to learn.
+  describe "next to a name being edited" do
+    test "choosing a policy does not discard it", %{conn: conn} do
+      {:ok, live, _html} = live(sign_in(conn), ~p"/painel")
+      render_click(live, "site_abrir", %{})
+
+      live
+      |> form("form[phx-submit=site_salvar]", %{"site" => %{"name" => "Meio digitado"}})
+      |> render_change()
+
+      html =
+        live
+        |> element(~s|button[phx-value-ai_crawlers="none"]|)
+        |> render_click()
+
+      assert html =~ "Meio digitado"
+    end
+  end
 end
