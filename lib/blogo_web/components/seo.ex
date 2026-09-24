@@ -18,6 +18,7 @@ defmodule BlogoWeb.SEO do
   attr :author, :any, default: nil
   attr :json_ld, :any, default: nil
   attr :image, :string, default: nil
+  attr :site_name, :string, default: nil
 
   def head(assigns) do
     ~H"""
@@ -29,6 +30,7 @@ defmodule BlogoWeb.SEO do
     <meta property="og:title" content={@title} />
     <meta :if={@description} property="og:description" content={@description} />
     <meta property="og:url" content={@canonical} />
+    <meta :if={@site_name} property="og:site_name" content={@site_name} />
     <%!-- Without these two the card declared below is a promise nothing keeps:
           `summary_large_image` tells a reader to expect a figure. --%>
     <meta :if={@image} property="og:image" content={@image} />
@@ -66,8 +68,15 @@ defmodule BlogoWeb.SEO do
     |> drop_empty()
   end
 
-  @doc "A published post as schema.org Article, authored by the Person above."
-  def article(post, base_url) do
+  @doc """
+  A published post as schema.org Article, authored by the Person above.
+
+  `image` points at the card the site already renders — it is where a search
+  engine takes the figure for a rich result, and Open Graph alone does not
+  reach it. `isPartOf` is the other half of the series link: the series page
+  lists its articles, and without this the article never says it belongs.
+  """
+  def article(post, base_url, series \\ nil) do
     %{
       "@context" => "https://schema.org",
       "@type" => "Article",
@@ -76,13 +85,32 @@ defmodule BlogoWeb.SEO do
       "headline" => post.title,
       "description" => post.meta_description || post.subtitle,
       "inLanguage" => "pt-BR",
+      "image" => "#{base_url}/imagem/#{post.slug}.png",
       "datePublished" => post.published_at && DateTime.to_iso8601(post.published_at),
       "dateModified" => post.updated_at && DateTime.to_iso8601(post.updated_at),
+      "wordCount" => word_count(post),
       "keywords" => Enum.join(post.topics, ", "),
       "author" => person(post.author, base_url),
-      "publisher" => person(post.author, base_url)
+      "publisher" => person(post.author, base_url),
+      "isPartOf" => series && part_of(series, base_url)
     }
     |> drop_empty()
+  end
+
+  defp part_of(series, base_url) do
+    %{
+      "@type" => "CreativeWorkSeries",
+      "@id" => "#{base_url}/serie/#{series.slug}#series",
+      "name" => series.name,
+      "url" => "#{base_url}/serie/#{series.slug}"
+    }
+  end
+
+  defp word_count(post) do
+    case post.body do
+      %{"blocks" => blocks} when is_list(blocks) -> Blogo.Content.Metrics.word_count(blocks)
+      _ -> nil
+    end
   end
 
   @doc "The author page, which is where the Person entity actually lives."
@@ -122,6 +150,35 @@ defmodule BlogoWeb.SEO do
         "numberOfItems" => length(series.posts),
         "itemListElement" =>
           series.posts
+          |> Enum.with_index(1)
+          |> Enum.map(fn {post, i} ->
+            %{
+              "@type" => "ListItem",
+              "position" => i,
+              "url" => "#{base_url}/#{post.slug}",
+              "name" => post.title
+            }
+          end)
+      }
+    }
+    |> drop_empty()
+  end
+
+  @doc """
+  A topic page as a collection of the articles filed under it.
+  """
+  def topic(topic, base_url) do
+    %{
+      "@context" => "https://schema.org",
+      "@type" => "CollectionPage",
+      "@id" => "#{base_url}/tag/#{topic.slug}#topic",
+      "name" => topic.name,
+      "inLanguage" => "pt-BR",
+      "mainEntity" => %{
+        "@type" => "ItemList",
+        "numberOfItems" => length(topic.posts),
+        "itemListElement" =>
+          topic.posts
           |> Enum.with_index(1)
           |> Enum.map(fn {post, i} ->
             %{

@@ -37,8 +37,8 @@
     <div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <a class="chip is-on" href={~p"/"}>Tudo <span class="c">{@total}</span></a>
-        <a :for={{topic, count} <- @topics} class="chip" href={~p"/?topico=#{topic}"}>
-          {String.capitalize(topic)} <span class="c">{count}</span>
+        <a :for={topic <- @topics} class="chip" href={~p"/tag/#{topic.slug}"}>
+          {String.capitalize(topic.name)} <span class="c">{topic.count}</span>
         </a>
         <span class="small" style="margin-left:auto">Ordenar por
         <b style="color:var(--ink2)">mais recente</b></span>
@@ -120,7 +120,7 @@
       <div class="card aside-card">
         <span class="micro">Tópicos</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <a :for={{topic, _} <- @topics} class="tag" href={~p"/?topico=#{topic}"}>{topic}</a>
+          <a :for={topic <- @topics} class="tag" href={~p"/tag/#{topic.slug}"}>{topic.name}</a>
         </div>
       </div>
 

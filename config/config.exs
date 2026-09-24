@@ -36,7 +36,7 @@ config :esbuild,
   version: "0.17.11",
   blogo: [
     args:
-      ~w(js/app.js css/app.css css/admin.css --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+      ~w(js/public.js js/admin.js css/app.css css/admin.css --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]

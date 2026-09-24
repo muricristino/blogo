@@ -482,3 +482,19 @@ a{color:var(--accent);text-underline-offset:.2em}
     flex: 0 0 auto;
   }
 }
+
+/* Um tópico reusa a lista da série; só o rodapé de volta é próprio. */
+.topic-foot {
+  margin-top: 26px;
+}
+
+.topic-foot a {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (pointer: coarse) {
+  .topic-foot a {
+    min-height: 44px;
+  }
+}

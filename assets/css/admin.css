@@ -1735,3 +1735,16 @@
     min-width: 44px;
   }
 }
+
+/* Um install que ainda não foi nomeado diz o que falta, em vez de mostrar um
+   nome que ninguém escolheu. */
+.pn-site-todo {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink2);
+}
