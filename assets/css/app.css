@@ -478,3 +478,136 @@ a{color:var(--accent);text-underline-offset:.2em}
     margin-block: -15px;
   }
 }
+
+/* ── Quem escreve ────────────────────────────────────────────────────────
+   O bloco do autor, no fim do artigo e no alto da página sobre ele. A 320px
+   a foto fica acima do texto; a partir de 560px, ao lado. Nada de duas
+   colunas fixas aqui: o nome e a lista de perfis não têm largura previsível.
+
+   A lista de perfis é o que liga o nome aqui ao nome de fora, então ela é um
+   alvo de toque de verdade — não uma linha de ícones pequenos no rodapé. */
+.au {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 20px;
+  margin-top: 34px;
+}
+
+.au > * {
+  min-width: 0;
+}
+
+/* A mesma classe veste a foto e as iniciais: quando não há foto, o elemento é
+   um <span> com as letras, e um círculo vazio no lugar de um rosto seria pior
+   que as iniciais. */
+.au-face {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font-size: 23px;
+  font-weight: 600;
+}
+
+/* Uma foto vem na proporção que o dono dela mandou; sem `object-fit` o
+   círculo a estica. */
+.ava--photo {
+  object-fit: cover;
+  background: var(--page-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.au-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.au-name {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.24;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
+
+.au-role {
+  color: var(--ink3);
+}
+
+.au-bio {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink2);
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+.au-links {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.au-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 17%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: var(--ink2);
+  font-size: 13.5px;
+  font-weight: 550;
+  text-decoration: none;
+}
+
+.au-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.au-link-where {
+  white-space: nowrap;
+}
+
+/* Um handle pode ser mais comprido que a tela; ele quebra dentro da pílula em
+   vez de empurrar a página. */
+.au-link-who {
+  font-size: 12px;
+  color: var(--ink4);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.au-link:hover .au-link-who {
+  color: var(--accent);
+}
+
+@media (pointer: coarse) {
+  .au-link {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 560px) {
+  .au {
+    flex-direction: row;
+    gap: 22px;
+    padding: 26px;
+  }
+}
