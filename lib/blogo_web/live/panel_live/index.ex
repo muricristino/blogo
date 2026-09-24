@@ -31,18 +31,135 @@ defmodule BlogoWeb.PanelLive.Index do
        # surface as the editor and shares `.bar`, `.card` and `.btn`.
        admin?: true,
        period: 30,
-       filter: "todos"
+       filter: "todos",
+       autor_aberto?: false,
+       confirmando: nil
      )
+     |> load_author()
      |> load()}
   end
 
   @impl true
-  def handle_event("period", %{"value" => value}, socket) do
+  # O parâmetro não pode se chamar `value`: um <button> tem uma propriedade
+  # `value` nativa (vazia), e ela vence o `phx-value-value` na hora de montar
+  # os params. O painel inteiro ficou com os dois seletores mortos no navegador
+  # por causa disso, e os testes não viram porque disparam o evento direto.
+  def handle_event("period", %{"periodo" => value}, socket) do
     {:noreply, socket |> assign(period: parse_period(value)) |> load()}
   end
 
-  def handle_event("filter", %{"value" => value}, socket) do
+  def handle_event("filter", %{"filtro" => value}, socket) do
     {:noreply, assign(socket, filter: value)}
+  end
+
+  def handle_event("autor_abrir", _params, socket) do
+    {:noreply, assign(socket, autor_aberto?: not socket.assigns.autor_aberto?)}
+  end
+
+  def handle_event("autor_validar", %{"author" => attrs}, socket) do
+    changeset =
+      socket.assigns.author
+      |> Content.change_author(with_same_as(attrs))
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, author_form: to_form(changeset))}
+  end
+
+  def handle_event("autor_salvar", %{"author" => attrs}, socket) do
+    case Content.update_author(socket.assigns.author, with_same_as(attrs)) do
+      {:ok, author} ->
+        {:noreply,
+         socket
+         |> assign(author: author, author_form: to_form(Content.change_author(author)))
+         |> put_flash(
+           :info,
+           "Perfil atualizado. O nome muda no site, no artigo e nos dados estruturados."
+         )}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, author_form: to_form(changeset))}
+    end
+  end
+
+  def handle_event("publicar", %{"id" => id}, socket) do
+    post = Content.get_post!(id)
+
+    case Content.publish_post(post) do
+      {:ok, post} ->
+        {:noreply,
+         socket
+         |> load()
+         |> put_flash(:info, "Publicado em /#{post.slug}")}
+
+      {:error, :stale} ->
+        {:noreply, put_flash(socket, :error, "Este post foi alterado noutro lugar. Recarregue.")}
+
+      {:error, changeset} ->
+        {:noreply, put_flash(socket, :error, primeiro_erro(changeset))}
+    end
+  end
+
+  def handle_event("confirmar_remocao", %{"id" => id}, socket) do
+    {:noreply, assign(socket, confirmando: String.to_integer(id))}
+  end
+
+  def handle_event("cancelar_remocao", _params, socket) do
+    {:noreply, assign(socket, confirmando: nil)}
+  end
+
+  def handle_event("remover", %{"id" => id}, socket) do
+    post = Content.get_post!(id)
+
+    case Content.delete_draft(post) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(confirmando: nil)
+         |> load()
+         |> put_flash(:info, "Rascunho “#{post.title}” removido.")}
+
+      {:error, :published} ->
+        {:noreply,
+         socket
+         |> assign(confirmando: nil)
+         |> put_flash(:error, "Um artigo publicado não é removido daqui: despublique primeiro.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível remover.")}
+    end
+  end
+
+  # O formulário manda os perfis como um texto por linha, que é como se edita
+  # uma lista curta sem inventar uma interface de lista.
+  defp with_same_as(%{"same_as_text" => text} = attrs) do
+    attrs
+    |> Map.delete("same_as_text")
+    |> Map.put("same_as", String.split(text, ~r/[\n,]/))
+  end
+
+  defp with_same_as(attrs), do: attrs
+
+  defp primeiro_erro(changeset) do
+    changeset
+    |> Ecto.Changeset.traverse_errors(fn {msg, _opts} -> msg end)
+    |> Enum.map(fn {field, [msg | _]} -> "#{rotulo(field)} #{msg}" end)
+    |> List.first()
+    |> Kernel.||("não foi possível publicar")
+  end
+
+  defp rotulo(:hero), do: "O diagrama de capa"
+  defp rotulo(:title), do: "O título"
+  defp rotulo(:slug), do: "O endereço"
+  defp rotulo(field), do: to_string(field)
+
+  defp load_author(socket) do
+    case Content.the_author() do
+      nil ->
+        assign(socket, author: nil, author_form: nil)
+
+      author ->
+        assign(socket, author: author, author_form: to_form(Content.change_author(author)))
+    end
   end
 
   defp parse_period("all"), do: :all
@@ -110,7 +227,7 @@ defmodule BlogoWeb.PanelLive.Index do
               type="button"
               class={@period == value && "is-on"}
               phx-click="period"
-              phx-value-value={to_string(value)}
+              phx-value-periodo={to_string(value)}
             >
               {label}
             </button>
@@ -193,6 +310,13 @@ defmodule BlogoWeb.PanelLive.Index do
           </div>
         </section>
 
+        <.author_card
+          :if={@author}
+          author={@author}
+          form={@author_form}
+          aberto?={@autor_aberto?}
+        />
+
         <section class="pn-two">
           <div class="pn-posts">
             <div class="pn-posts-head">
@@ -209,7 +333,7 @@ defmodule BlogoWeb.PanelLive.Index do
                   type="button"
                   class={@filter == value && "is-on"}
                   phx-click="filter"
-                  phx-value-value={value}
+                  phx-value-filtro={value}
                 >
                   {label}
                 </button>
@@ -220,6 +344,7 @@ defmodule BlogoWeb.PanelLive.Index do
               posts={filtrar(@posts, @filter)}
               per_post={@per_post}
               measuring?={@measuring?}
+              confirmando={@confirmando}
             />
           </div>
 
@@ -355,6 +480,7 @@ defmodule BlogoWeb.PanelLive.Index do
   attr :posts, :list, required: true
   attr :per_post, :map, required: true
   attr :measuring?, :boolean, required: true
+  attr :confirmando, :integer, default: nil
 
   defp post_table(assigns) do
     ~H"""
@@ -373,7 +499,9 @@ defmodule BlogoWeb.PanelLive.Index do
           <tr :for={post <- @posts}>
             <td data-label="Título">
               {post.title}
-              <span class="small pn-post-meta">{meta_do_post(post)}</span>
+              <span class={"small pn-post-meta #{parado?(post) && "pn-stalled"}"}>
+                {meta_do_post(post)}
+              </span>
             </td>
             <td data-label="Status">
               <span class={"pill pill--#{pill(post.status)}"}>
@@ -383,21 +511,55 @@ defmodule BlogoWeb.PanelLive.Index do
             <td class="r" data-label="Leituras">{leituras(@per_post, post, @measuring?)}</td>
             <td class="r" data-label="Conclusão">{conclusao(@per_post, post, @measuring?)}</td>
             <td class="pn-actions">
-              <.link class="btn btn--s btn--sm" navigate={~p"/editor/#{post.id}"}>Editar</.link>
-              <.link
-                :if={post.status == "published"}
-                class="btn btn--s btn--sm"
-                href={~p"/#{post.slug}"}
-              >
-                Ver
-              </.link>
-              <.link
-                :if={post.status != "published"}
-                class="btn btn--s btn--sm"
-                href={~p"/editor/#{post.id}/previa"}
-              >
-                Prévia
-              </.link>
+              <%= if @confirmando == post.id do %>
+                <span class="small pn-confirm">Remover “{post.title}”?</span>
+                <button
+                  type="button"
+                  class="btn btn--sm pn-danger"
+                  phx-click="remover"
+                  phx-value-id={post.id}
+                >
+                  Remover
+                </button>
+                <button type="button" class="btn btn--s btn--sm" phx-click="cancelar_remocao">
+                  Cancelar
+                </button>
+              <% else %>
+                <.link class="btn btn--s btn--sm" navigate={~p"/editor/#{post.id}"}>Editar</.link>
+                <.link
+                  :if={post.status == "published"}
+                  class="btn btn--s btn--sm"
+                  href={~p"/#{post.slug}"}
+                >
+                  Ver
+                </.link>
+                <.link
+                  :if={post.status != "published"}
+                  class="btn btn--s btn--sm"
+                  href={~p"/editor/#{post.id}/previa"}
+                >
+                  Prévia
+                </.link>
+                <button
+                  :if={post.status == "draft"}
+                  type="button"
+                  class="btn btn--p btn--sm"
+                  phx-click="publicar"
+                  phx-value-id={post.id}
+                >
+                  Publicar
+                </button>
+                <button
+                  :if={post.status == "draft"}
+                  type="button"
+                  class="btn btn--s btn--sm pn-remove"
+                  phx-click="confirmar_remocao"
+                  phx-value-id={post.id}
+                  aria-label={"Remover #{post.title}"}
+                >
+                  ×
+                </button>
+              <% end %>
             </td>
           </tr>
 
@@ -410,6 +572,115 @@ defmodule BlogoWeb.PanelLive.Index do
       </table>
     </div>
     """
+  end
+
+  attr :author, :map, required: true
+  attr :form, :any, required: true
+  attr :aberto?, :boolean, default: false
+
+  defp author_card(assigns) do
+    ~H"""
+    <section class="card pn-author">
+      <div class="pn-author-head">
+        <span>
+          <span class="h3">Quem assina</span>
+          <span class="small">
+            O nome aparece no cabeçalho do site, na assinatura de cada artigo e nos dados
+            estruturados que ligam os artigos a você.
+          </span>
+        </span>
+        <button type="button" class="btn btn--s btn--sm" phx-click="autor_abrir">
+          {if @aberto?, do: "Fechar", else: "Editar"}
+        </button>
+      </div>
+
+      <div :if={not @aberto?} class="pn-author-now">
+        <span class="pn-author-name">{@author.name}</span>
+        <span class="small">{@author.headline}</span>
+        <span :if={@author.same_as != []} class="small mono pn-author-links">
+          {Enum.join(@author.same_as, " · ")}
+        </span>
+      </div>
+
+      <.form
+        :if={@aberto?}
+        id="pn-author-form"
+        for={@form}
+        phx-change="autor_validar"
+        phx-submit="autor_salvar"
+        class="pn-author-form"
+      >
+        <label class="ed-field">
+          <span class="micro">Nome</span>
+          <input class="input" type="text" name="author[name]" value={@form[:name].value} />
+          <span :for={msg <- erros(@form[:name])} class="small ed-warn">{msg}</span>
+        </label>
+
+        <label class="ed-field">
+          <span class="micro">Descrição curta</span>
+          <input
+            class="input"
+            type="text"
+            name="author[headline]"
+            value={@form[:headline].value}
+            placeholder="Engenheiro de software"
+          />
+        </label>
+
+        <label class="ed-field">
+          <span class="micro">Cidade</span>
+          <input class="input" type="text" name="author[city]" value={@form[:city].value} />
+        </label>
+
+        <label class="ed-field pn-author-wide">
+          <span class="micro">Bio</span>
+          <textarea class="input input--area" rows="3" name="author[bio]">{@form[:bio].value}</textarea>
+        </label>
+
+        <label class="ed-field pn-author-wide">
+          <span class="micro">Perfis (um por linha)</span>
+          <textarea
+            class="input input--area mono"
+            rows="3"
+            name="author[same_as_text]"
+            placeholder="https://github.com/…"
+          >{same_as_text(@form)}</textarea>
+          <span class="small">
+            É o que diz a um buscador que estes perfis e estes artigos são a mesma pessoa.
+          </span>
+          <span :for={msg <- erros(@form[:same_as])} class="small ed-warn">{msg}</span>
+        </label>
+
+        <div class="pn-author-slug">
+          <span class="micro">Endereço</span>
+          <span class="small mono">/autor/{@author.slug}</span>
+          <span class="small">
+            Não muda por aqui: ele identifica você nos dados estruturados de todos os artigos,
+            e trocá-lo faz um buscador ver outra pessoa.
+          </span>
+        </div>
+
+        <div class="pn-author-actions">
+          <button type="submit" class="btn btn--p">Salvar</button>
+        </div>
+      </.form>
+    </section>
+    """
+  end
+
+  defp erros(field) do
+    Enum.map(field.errors, fn {msg, opts} ->
+      Regex.replace(~r/%{(\w+)}/, msg, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), "") |> to_string()
+      end)
+    end)
+  end
+
+  defp same_as_text(form) do
+    case form[:same_as].value do
+      list when is_list(list) -> Enum.join(list, "\n")
+      _ -> ""
+    end
   end
 
   attr :kind, :atom, required: true
@@ -465,6 +736,11 @@ defmodule BlogoWeb.PanelLive.Index do
   defp filtrar(posts, "todos"), do: posts
   defp filtrar(posts, status), do: Enum.filter(posts, &(&1.status == status))
 
+  defp parado?(%{status: "draft", updated_at: at}),
+    do: DateTime.diff(DateTime.utc_now(), at, :day) >= 14
+
+  defp parado?(_post), do: false
+
   defp pill("published"), do: "live"
   defp pill("scheduled"), do: "sched"
   defp pill(_), do: "draft"
@@ -504,7 +780,13 @@ defmodule BlogoWeb.PanelLive.Index do
     "agendado para #{data_curta(post.published_at)}"
   end
 
-  defp meta_do_post(post), do: "rascunho · editado #{ha_quanto(post.updated_at)}"
+  defp meta_do_post(post) do
+    parado = DateTime.diff(DateTime.utc_now(), post.updated_at, :day)
+
+    if parado >= 14,
+      do: "rascunho · parado #{ha_quanto(post.updated_at)}",
+      else: "rascunho · editado #{ha_quanto(post.updated_at)}"
+  end
 
   @meses ~w(jan fev mar abr mai jun jul ago set out nov dez)
 

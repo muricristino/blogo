@@ -1344,8 +1344,10 @@
   margin-left: auto;
 }
 
+/* Rola em vez de esconder: `overflow: hidden` aqui transformava uma tabela
+   larga demais num corte silencioso, que é o que o CLAUDE.md proíbe. */
 .pn-table-wrap {
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .pn-post-meta {
@@ -1354,8 +1356,8 @@
 }
 
 .pn-actions {
-  white-space: nowrap;
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -1631,4 +1633,105 @@
 .auth-loading {
   text-align: center;
   padding: 40px 0;
+}
+
+/* ── quem assina ───────────────────────────────────────────────────────── */
+
+.pn-author {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pn-author-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pn-author-head > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pn-author-now {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pn-author-name {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pn-author-links {
+  color: var(--ink4);
+  overflow-wrap: anywhere;
+}
+
+.pn-author-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.pn-author-slug {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+}
+
+.pn-author-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 720px) {
+  .pn-author-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pn-author-wide,
+  .pn-author-slug,
+  .pn-author-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Um rascunho parado é a informação que decide o que fazer com ele. */
+.pn-stalled {
+  color: var(--warn);
+}
+
+.pn-confirm {
+  color: var(--ink);
+}
+
+.pn-danger {
+  background: var(--bad);
+  color: #fff;
+  border-color: var(--bad);
+}
+
+.pn-remove {
+  min-width: 34px;
+  padding: 0 8px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+@media (pointer: coarse) {
+  .pn-remove {
+    min-width: 44px;
+  }
 }

@@ -100,7 +100,7 @@ defmodule BlogoWeb.PanelLiveTest do
       # Fora da janela de 30 dias.
       assert html =~ "Nenhuma leitura neste período"
 
-      html = live |> element(~s|button[phx-value-value="90"]|) |> render_click()
+      html = live |> element(~s|button[phx-value-periodo="90"]|) |> render_click()
       refute html =~ "Nenhuma leitura neste período"
     end
 
@@ -111,7 +111,7 @@ defmodule BlogoWeb.PanelLiveTest do
       assert html =~ "Só um rascunho"
       assert html =~ "Artigo medido"
 
-      html = live |> element(~s|button[phx-value-value="published"]|) |> render_click()
+      html = live |> element(~s|button[phx-value-filtro="published"]|) |> render_click()
       assert html =~ "Artigo medido"
       refute html =~ "Só um rascunho"
     end
@@ -181,7 +181,7 @@ defmodule BlogoWeb.PanelLiveTest do
       for _ <- 1..4, do: read(post, %{day: Date.utc_today()})
 
       {:ok, live, _html} = live(conn, ~p"/painel")
-      html = live |> element(~s|button[phx-value-value="30"]|) |> render_click()
+      html = live |> element(~s|button[phx-value-periodo="30"]|) |> render_click()
 
       assert html =~ "delta--up"
       assert html =~ "100%"
