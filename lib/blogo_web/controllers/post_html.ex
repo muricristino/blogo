@@ -41,18 +41,4 @@ defmodule BlogoWeb.PostHTML do
     </div>
     """
   end
-
-  defdelegate parts_label(count), to: BlogoWeb.SeriesHTML
-
-  @doc """
-  Where an article sits among the *published* parts, which is not its
-  `series_position`: an unpublished part 2 would make part 3 introduce itself
-  as "parte 3 de 2".
-  """
-  def part_of(series, post) do
-    case Enum.find_index(series.posts, &(&1.id == post.id)) do
-      nil -> 1
-      i -> i + 1
-    end
-  end
 end

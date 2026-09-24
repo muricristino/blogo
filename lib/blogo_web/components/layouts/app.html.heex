@@ -24,12 +24,14 @@
     <div style="display:flex;align-items:center;gap:4px">
       <a class="navlink" href={~p"/"} aria-current={@nav == :artigos && "page"}>Artigos</a>
 
+      <%!-- One link per fixed page, named by its title. No pages, no links —
+            a "Sobre" that leads nowhere is worse than no "Sobre". --%>
       <a
-        :if={@current_author}
+        :for={page <- assigns[:pages] || []}
         class="navlink"
-        href={~p"/autor/#{@current_author.slug}"}
-        aria-current={@nav == :sobre && "page"}
-      >Sobre</a>
+        href={~p"/#{page.slug}"}
+        aria-current={assigns[:page_slug] == page.slug && "page"}
+      >{page.title}</a>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px">
@@ -79,7 +81,7 @@
     <span class="small" style="display:flex;gap:16px">
       <a href={~p"/feed.xml"}>Feed</a>
       <a href={~p"/sitemap.xml"}>Arquivo</a>
-      <a :if={@current_author} href={~p"/autor/#{@current_author.slug}"}>Sobre</a>
+      <a :for={page <- assigns[:pages] || []} href={~p"/#{page.slug}"}>{page.title}</a>
     </span>
   </div>
 </footer>

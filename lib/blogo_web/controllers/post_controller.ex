@@ -22,7 +22,7 @@ defmodule BlogoWeb.PostController do
       canonical: base <> "/",
       site_name: Content.site_name(site),
       image: featured && "#{base}/imagem/#{featured.slug}.png",
-      json_ld: author && SEO.profile_page(author, posts, base)
+      json_ld: SEO.site(site, base)
     })
     |> render(:index,
       posts: rest,
@@ -30,8 +30,7 @@ defmodule BlogoWeb.PostController do
       author: author,
       topics: Content.list_topics(),
       total: length(posts),
-      most_read: Enum.take(posts, 3),
-      series: Content.list_series()
+      most_read: Enum.take(posts, 3)
     )
   end
 
@@ -43,31 +42,37 @@ defmodule BlogoWeb.PostController do
       post ->
         base = base_url(conn)
         site = Content.the_site()
-        series = Content.series_of(post)
         {summary, blocks} = Post.for_reading(post)
+        page? = post.kind == "pagina"
 
         conn
         |> assign(:current_author, post.author)
-        |> assign(:nav, :artigos)
+        |> assign(:nav, if(page?, do: :pagina, else: :artigos))
+        |> assign(:page_slug, post.slug)
         |> assign(:progress, true)
         |> assign(:seo, %{
           conn: conn,
-          title: "#{post.title} · #{post.author.name}",
+          title: "#{post.title} · #{Content.site_name(site)}",
           description: post.meta_description || post.subtitle,
           canonical: "#{base}/#{post.slug}",
           image: "#{base}/imagem/#{post.slug}.png",
-          type: "article",
+          type: if(page?, do: "profile", else: "article"),
           site_name: Content.site_name(site),
           published_at: post.published_at,
           author: post.author,
-          json_ld: SEO.article(post, base, series)
+          # A fixed page is where the Person lives; an article carries the same
+          # Person inside it as author and publisher.
+          json_ld:
+            if(page?,
+              do: SEO.profile_page(post.author, base),
+              else: SEO.article(post, base)
+            )
         })
         |> assign(:read_token, BlogoWeb.ReadController.token(post.slug))
         |> render(:show,
           post: post,
           blocks: blocks,
           summary: summary,
-          series: series,
           sections: Enum.filter(blocks, &(&1["type"] == "section"))
         )
     end

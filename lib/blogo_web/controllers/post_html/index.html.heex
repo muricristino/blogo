@@ -100,9 +100,6 @@
           <div class="stat">
             <span class="stat-n">{@total}</span><span class="small">artigos</span>
           </div>
-          <div :if={@series != []} class="stat">
-            <span class="stat-n">{length(@series)}</span><span class="small">séries</span>
-          </div>
         </div>
       </div>
 
@@ -137,21 +134,4 @@
       </div>
     </aside>
   </div>
-
-  <section :if={@series != []} class="serie-section">
-    <div class="serie-section-head">
-      <h2 class="h2">Séries</h2>
-      <span class="small">Leituras em ordem, do começo ao fim</span>
-    </div>
-    <div class="serie-grid">
-      <a :for={s <- @series} href={~p"/serie/#{s.slug}"} class="card serie-card">
-        <span class="micro">{parts_label(length(s.posts))}</span>
-        <h3 class="h3">{s.name}</h3>
-        <p :if={s.description} class="small">{s.description}</p>
-        <span class="small serie-card-first">
-          Começa em “{List.first(s.posts).title}”
-        </span>
-      </a>
-    </div>
-  </section>
 </div>

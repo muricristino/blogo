@@ -3,12 +3,16 @@ defmodule BlogoWeb.SitemapControllerTest do
 
   import Blogo.Fixtures
 
-  test "the sitemap carries published posts and their author", %{conn: conn} do
+  test "the sitemap carries published posts and the fixed pages", %{conn: conn} do
     p = post()
     body = conn |> get(~p"/sitemap.xml") |> response(200)
 
+    pagina = post(%{kind: "pagina", slug: "sobre-teste"})
+
     assert body =~ "<loc>#{BlogoWeb.Endpoint.url()}/#{p.slug}</loc>"
-    assert body =~ "/autor/#{p.author.slug}"
+    # A page is kept out of every listing, so the sitemap is the only place a
+    # crawler meets it.
+    assert conn |> get(~p"/sitemap.xml") |> response(200) =~ "/#{pagina.slug}</loc>"
   end
 
   test "a draft stays out of the sitemap", %{conn: conn} do

@@ -413,15 +413,6 @@ hero = %{
   }
 }
 
-{:ok, serie} =
-  Content.upsert_series(%{
-    name: "Avaliar sem se enganar",
-    slug: "avaliar-sem-se-enganar",
-    description:
-      "Do conjunto de teste ao limiar calibrado: como montar os casos, o que medir neles " <>
-        "e como comparar dois modelos sem se convencer do resultado que você queria."
-  })
-
 {:ok, _post} =
   Content.upsert_post(%{
     title: "Laya x Jev: o que um classificador tipado faz e o que ele não faz",
@@ -438,9 +429,7 @@ hero = %{
         "teste de negação, custo por chamada e latência pareada.",
     hero: hero,
     body: %{"blocks" => blocks},
-    author_id: author.id,
-    series_id: serie.id,
-    series_position: 2
+    author_id: author.id
   })
 
-IO.puts("seed ok — #{author.name}, 1 artigo publicado, série \"#{serie.name}\"")
+IO.puts("seed ok — #{author.name}, 1 artigo publicado")

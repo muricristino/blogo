@@ -47,7 +47,7 @@ defmodule BlogoWeb.Charts do
 
       <rect
         :for={bar <- @geometry.bars}
-        class={"ch-bar #{bar.peak? && "ch-bar--on"}"}
+        class={["ch-bar", bar.peak? && "ch-bar--on"]}
         x={bar.x}
         y={bar.y}
         width={bar.width}
@@ -84,7 +84,7 @@ defmodule BlogoWeb.Charts do
       <g :for={{row, i} <- Enum.with_index(@rows)}>
         <text class="ch-axis ch-axis--name" x="0" y={i * 28 + 14}>{row.source}</text>
         <rect
-          class={"ch-bar #{i == 0 && "ch-bar--on"}"}
+          class={["ch-bar", i == 0 && "ch-bar--on"]}
           x="92"
           y={i * 28 + 4}
           width={max(row.pct * 1.55, 3)}

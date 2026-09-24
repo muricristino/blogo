@@ -2,8 +2,16 @@ defmodule Blogo.Content.Post do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @kinds ~w(ensaio nota)
+  # "pagina" is a fixed page — Sobre, Contato — written in the editor like any
+  # article but kept out of the index, the feed and the topic pages. It is a
+  # kind rather than a flag because an article is already one of several kinds,
+  # and a second axis saying "but not really an article" would be one more
+  # thing to remember at every query.
+  @kinds ~w(ensaio nota pagina)
   @statuses ~w(draft scheduled published)
+
+  @doc "The kinds a post may be, in the order the editor offers them."
+  def kinds, do: @kinds
 
   schema "posts" do
     field :title, :string
@@ -29,7 +37,9 @@ defmodule Blogo.Content.Post do
 
     belongs_to :author, Blogo.Content.Author
 
-    # An article belongs to at most one series and knows where it sits in it.
+    # Series left the interface but the data stays: the table, these columns and
+    # what was already declared in them. Recreating content is expensive and
+    # dropping a table is cheap, so nothing here is a leftover to clean up.
     belongs_to :series, Blogo.Content.Series
     field :series_position, :integer
 
@@ -50,34 +60,15 @@ defmodule Blogo.Content.Post do
       :meta_description,
       :body,
       :hero,
-      :author_id,
-      :series_id,
-      :series_position
+      :author_id
     ])
     |> optimistic_lock(:lock_version)
     |> validate_required([:title, :slug, :author_id])
     |> validate_inclusion(:kind, @kinds)
     |> validate_inclusion(:status, @statuses)
     |> unique_constraint(:slug)
-    |> unique_constraint(:series_position,
-      name: :posts_series_position_index,
-      message: "já é ocupada por outro artigo desta série"
-    )
     |> assoc_constraint(:author)
     |> validate_hero()
-    |> validate_series()
-  end
-
-  # A position without a series is a number that means nothing, and a series
-  # without a position has no place in the reading order.
-  defp validate_series(changeset) do
-    case {get_field(changeset, :series_id), get_field(changeset, :series_position)} do
-      {nil, nil} -> changeset
-      {nil, _} -> add_error(changeset, :series_position, "precisa de uma série")
-      {_, nil} -> add_error(changeset, :series_position, "é obrigatória quando há série")
-      {_, n} when n < 1 -> add_error(changeset, :series_position, "começa em 1")
-      _ -> changeset
-    end
   end
 
   # Enforced at publication, not creation: a draft may be incomplete. See
