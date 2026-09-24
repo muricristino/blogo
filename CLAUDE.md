@@ -292,6 +292,11 @@ Two constraints come from there and are not guessable from this repository:
   `<slug>:3000` and the port is not configurable per project.
 - **Migrations run at boot, seeds only on an empty database.** webo owns the
   `.env` and the Postgres container; never edit either by hand.
+- **Cloudflare's AI Crawl Control and its managed `robots.txt` stay off.** The
+  choice about AI crawlers is configuration in the panel and the app generates
+  `/robots.txt` from it, so a blocking rule at the edge would be the same
+  decision answered twice — and the edge answers first, with the panel still
+  claiming otherwise. One rule, one place: `Blogo.Content.Crawlers`.
 
 Read `webo://runbook` through the webo MCP before changing anything about the
 server.

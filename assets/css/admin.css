@@ -1858,3 +1858,63 @@
   line-height: 1.55;
   color: var(--ink2);
 }
+
+/* ── o que crawler de IA pode fazer ────────────────────────────────────── */
+
+.pn-choices {
+  display: grid;
+  gap: 10px;
+}
+
+/* Cada opção é um botão: o alvo é a linha, e o radio nativo de 18px não vira
+   44px sem deformar o desenho do controle. */
+.pn-choice {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--field-bg);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pn-choice.is-on {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.pn-choice-mark {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1.5px solid var(--ink4);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.pn-choice.is-on .pn-choice-mark {
+  border-color: var(--accent);
+  /* O ponto de dentro é um anel de borda: sem pseudo-elemento, que em alguns
+     navegadores não desenha dentro de controle de formulário. */
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.pn-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pn-choice-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
