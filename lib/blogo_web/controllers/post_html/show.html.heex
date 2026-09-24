@@ -26,9 +26,9 @@
   <article class="stack" style="gap:26px">
     <header class="stack" style="gap:16px">
       <span class="kicker">
-        {@post.kind}<span :for={topic <- @post.topics}>
-          ·
-          <a href={~p"/tag/#{Blogo.Content.topic_slug(topic)}"} class="kicker-link">{topic}</a>
+        {@post.kind}
+        <span :for={topic <- @post.topics}>
+          · <a href={~p"/tag/#{Blogo.Content.topic_slug(topic)}"} class="kicker-link">{topic}</a>
         </span>
       </span>
       <a :if={@series} href={~p"/serie/#{@series.slug}"} class="serie-badge">

@@ -23,7 +23,7 @@ defmodule Blogo.Repo.Migrations.PublishLearnoArticle do
       |> Code.eval_file()
       |> elem(0)
 
-    repo().one(from p in "posts", where: p.slug == ^article.slug, select: count())
+    repo().one(from(p in "posts", where: p.slug == ^article.slug, select: count()))
     |> case do
       0 -> insert(article)
       _ -> :ok
@@ -33,7 +33,7 @@ defmodule Blogo.Repo.Migrations.PublishLearnoArticle do
   def down, do: :ok
 
   defp insert(article) do
-    case repo().one(from a in "authors", order_by: a.id, limit: 1, select: a.id) do
+    case repo().one(from(a in "authors", order_by: a.id, limit: 1, select: a.id)) do
       nil -> :ok
       author_id -> insert(article, author_id)
     end
