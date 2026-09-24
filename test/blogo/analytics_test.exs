@@ -52,6 +52,43 @@ defmodule Blogo.AnalyticsTest do
     end
   end
 
+  describe "quem chegou por resposta de IA" do
+    test "as superfícies de assistente são origem própria" do
+      assert Analytics.classify("https://chatgpt.com/c/abc") == "ia"
+      assert Analytics.classify("https://www.perplexity.ai/search/x") == "ia"
+      assert Analytics.classify("https://claude.ai/chat/1") == "ia"
+      assert Analytics.classify("https://copilot.microsoft.com/") == "ia"
+      assert Analytics.classify("https://grok.com/") == "ia"
+    end
+
+    # gemini.google.com é um host do Google e não é resultado de busca. Se a
+    # busca fosse testada primeiro, essa leitura entraria como busca para sempre.
+    test "gemini não cai na regra de busca por ser um host do google" do
+      assert Analytics.classify("https://gemini.google.com/app") == "ia"
+      assert Analytics.classify("https://www.google.com/search?q=x") == "busca"
+    end
+
+    test "uma campanha pode se identificar como IA" do
+      assert Analytics.classify(nil, "chatgpt") == "ia"
+      assert Analytics.classify("https://algumsite.example/", "perplexity") == "ia"
+    end
+
+    test "a tabela aceita a origem, senão a leitura seria descartada" do
+      post = Fixtures.post()
+      assert read(post, %{source: "ia"}).source == "ia"
+    end
+
+    test "a quebra aparece contada entre as origens" do
+      post = Fixtures.post()
+      read(post, %{source: "ia"})
+      read(post, %{source: "busca"})
+
+      origens = Analytics.sources(Analytics.window(30))
+
+      assert %{source: "ia", count: 1, pct: 50} = Enum.find(origens, &(&1.source == "ia"))
+    end
+  end
+
   describe "o que chega do navegador é limitado" do
     setup do
       %{post: Fixtures.post()}

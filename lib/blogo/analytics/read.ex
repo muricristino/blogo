@@ -13,7 +13,10 @@ defmodule Blogo.Analytics.Read do
   # eleven-minute essay. Past that, the number is measuring a forgotten tab.
   @max_seconds 20 * 60
 
-  @sources ~w(busca redes newsletter interno direto outros)
+  # "ia" is a reader sent by an assistant's answer. It is a source of its own
+  # rather than a slice of "busca" because the two are different events: one was
+  # picked from a list of results, the other was quoted into a reply.
+  @sources ~w(busca redes newsletter interno direto ia outros)
 
   schema "reads" do
     field :day, :date
