@@ -255,3 +255,16 @@ Two constraints come from there and are not guessable from this repository:
 
 Read `webo://runbook` through the webo MCP before changing anything about the
 server.
+
+Two things about the pipeline itself cost us an outage:
+
+- **`webo-deploy` commits its scaffold back to `main` while it deploys,** and a
+  push to `main` is what triggers the deploy. One merge restarted the container
+  two or three times until the `Deploy` job learned to skip its own commit. The
+  chain was never infinite only because the scaffold usually comes out
+  byte-identical, which is luck and not a design.
+- **A variable goes in before the code that reads it, never after.**
+  `BlogoWeb.CanonicalHost` turns `PHX_HOST` into a **permanent** redirect, so
+  deploying it while `PHX_HOST` still held the tunnel's address sent every
+  request for the real domain to the old one — with a 301 the browser then
+  cached. There is no window small enough to make that safe.
