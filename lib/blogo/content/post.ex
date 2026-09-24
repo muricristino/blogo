@@ -10,8 +10,15 @@ defmodule Blogo.Content.Post do
   @kinds ~w(ensaio nota pagina)
   @statuses ~w(draft scheduled published)
 
+  # BCP 47 tags, because `<html lang>`, `xml:lang` and `inLanguage` are the only
+  # things that read this.
+  @languages ~w(pt-BR en)
+
   @doc "The kinds a post may be, in the order the editor offers them."
   def kinds, do: @kinds
+
+  @doc "The languages a post may declare itself written in."
+  def languages, do: @languages
 
   schema "posts" do
     field :title, :string
@@ -23,6 +30,12 @@ defmodule Blogo.Content.Post do
     field :reading_minutes, :integer
     field :topics, {:array, :string}, default: []
     field :meta_description, :string
+
+    # The language of this post's own words — not the language of the reader's
+    # menu, which is a different decision and lives in the session. Translating
+    # the interface is a string table; translating an article is writing
+    # another article.
+    field :language, :string, default: "pt-BR"
 
     # Stored whole so a design change re-renders every post rather than needing
     # a content migration.
@@ -58,6 +71,7 @@ defmodule Blogo.Content.Post do
       :reading_minutes,
       :topics,
       :meta_description,
+      :language,
       :body,
       :hero,
       :author_id
@@ -66,6 +80,7 @@ defmodule Blogo.Content.Post do
     |> validate_required([:title, :slug, :author_id])
     |> validate_inclusion(:kind, @kinds)
     |> validate_inclusion(:status, @statuses)
+    |> validate_inclusion(:language, @languages)
     |> unique_constraint(:slug)
     |> assoc_constraint(:author)
     |> validate_hero()

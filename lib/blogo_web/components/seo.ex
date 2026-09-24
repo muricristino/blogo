@@ -90,7 +90,9 @@ defmodule BlogoWeb.SEO do
       "mainEntityOfPage" => "#{base_url}/#{post.slug}",
       "headline" => post.title,
       "description" => post.meta_description || post.subtitle,
-      "inLanguage" => "pt-BR",
+      # The article's own language, not the reader's. Declaring the interface's
+      # here would tell a search engine that a Portuguese essay is English.
+      "inLanguage" => post.language,
       "image" => "#{base_url}/imagem/#{post.slug}.png",
       "datePublished" => post.published_at && DateTime.to_iso8601(post.published_at),
       "dateModified" => post.updated_at && DateTime.to_iso8601(post.updated_at),
@@ -124,7 +126,7 @@ defmodule BlogoWeb.SEO do
       "name" => Blogo.Content.site_name(site),
       "description" => site.description,
       "url" => "#{base_url}/",
-      "inLanguage" => "pt-BR"
+      "inLanguage" => Blogo.Content.site_language()
     }
     |> drop_empty()
   end
@@ -154,7 +156,7 @@ defmodule BlogoWeb.SEO do
       "@type" => "CollectionPage",
       "@id" => "#{base_url}/tag/#{topic.slug}#topic",
       "name" => topic.name,
-      "inLanguage" => "pt-BR",
+      "inLanguage" => Blogo.Content.site_language(),
       "mainEntity" => %{
         "@type" => "ItemList",
         "numberOfItems" => length(topic.posts),

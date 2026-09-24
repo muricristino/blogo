@@ -83,6 +83,22 @@ defmodule BlogoWeb.EditorLive.Panel do
           </select>
         </label>
 
+        <label class="ed-field" style="margin-bottom:12px">
+          <span class="micro">Idioma</span>
+          <%!-- A língua do artigo, que não é a língua da interface de quem lê:
+                o texto continua na língua em que foi escrito, e é esta que vai
+                para o `lang` da página e para o `inLanguage`. --%>
+          <select class="input" name="language">
+            <option
+              :for={l <- Blogo.Content.Post.languages()}
+              value={l}
+              selected={@fields.language == l}
+            >
+              {l}
+            </option>
+          </select>
+        </label>
+
         <div class="ed-field">
           <span class="micro">Marcadores</span>
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">

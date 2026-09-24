@@ -79,6 +79,27 @@ defmodule Blogo.Content do
     if Site.unnamed?(site), do: default_site_name(), else: site.name
   end
 
+  @doc """
+  The language this blog writes in: the one most of its published posts are in.
+
+  Counted rather than configured. A post already says which language it is in,
+  and a second place to declare the same fact is a second place for it to be
+  wrong — an install that starts publishing in English says so here without
+  anyone remembering to flip a setting. `pt-BR` while nothing is published,
+  because that is what the first posts here were written in.
+  """
+  def site_language do
+    from(p in Post,
+      where: p.status == "published",
+      group_by: p.language,
+      order_by: [desc: count(p.id)],
+      limit: 1,
+      select: p.language
+    )
+    |> Repo.one()
+    |> Kernel.||("pt-BR")
+  end
+
   defp default_site_name do
     BlogoWeb.Endpoint.url() |> URI.parse() |> Map.get(:host) || "blog"
   end
