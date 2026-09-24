@@ -10,6 +10,8 @@ defmodule Blogo.Content.Author do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Blogo.Content.Photo
+
   # 64px on screen, twice that on a retina display. Anything past this is
   # bandwidth spent on every visit to show a face 128 pixels wide.
   @max_photo_bytes 2_000_000
@@ -67,11 +69,16 @@ defmodule Blogo.Content.Author do
   def photo?(_), do: false
 
   @doc """
-  The uploaded photo.
+  The uploaded photo, stripped of everything that is not the picture.
 
   The format is read from the first bytes rather than taken from the name or
   the content type the browser sent: both are typed by whoever uploads, and a
   `.png` that is not a PNG renders as a broken image on every article.
+
+  What reaches the column is what `Blogo.Content.Photo` gives back, never the
+  file as it arrived — the photo is served publicly, and a photo off a phone
+  carries the GPS coordinates of where it was taken. The digest is taken from
+  the cleaned bytes, because it is the cache key for what will be served.
 
   Every write here is a `force_change/3`, and that is load-bearing. `change/2`
   compares against the data and drops whatever looks unchanged, and `:photo` is
@@ -83,20 +90,27 @@ defmodule Blogo.Content.Author do
   def photo_changeset(author, bytes) when is_binary(bytes) do
     changeset = change(author)
 
-    cond do
-      byte_size(bytes) > @max_photo_bytes ->
-        add_error(changeset, :photo, "passa de #{div(@max_photo_bytes, 1_000_000)} MB")
-
-      type = image_type(bytes) ->
-        changeset
-        |> force_change(:photo, bytes)
-        |> force_change(:photo_type, type)
-        |> force_change(:photo_digest, Base.encode16(:crypto.hash(:sha256, bytes), case: :lower))
-
-      true ->
-        add_error(changeset, :photo, "precisa ser PNG, JPEG ou WebP")
+    if byte_size(bytes) > @max_photo_bytes do
+      add_error(changeset, :photo, "passa de #{div(@max_photo_bytes, 1_000_000)} MB")
+    else
+      store(changeset, Photo.clean(bytes))
     end
   end
+
+  defp store(changeset, {:ok, type, bytes}) do
+    changeset
+    |> force_change(:photo, bytes)
+    |> force_change(:photo_type, type)
+    |> force_change(:photo_digest, Base.encode16(:crypto.hash(:sha256, bytes), case: :lower))
+  end
+
+  defp store(changeset, {:error, :unsupported}),
+    do: add_error(changeset, :photo, "precisa ser PNG, JPEG ou WebP")
+
+  # A file that cannot be taken apart cannot be stripped of its metadata, and
+  # storing it as it came is exactly what this refuses to do.
+  defp store(changeset, {:error, :malformed}),
+    do: add_error(changeset, :photo, "está corrompida: não deu para ler a imagem inteira")
 
   @doc "Takes the photo off, leaving the initials in its place."
   def no_photo_changeset(author) do
@@ -106,11 +120,6 @@ defmodule Blogo.Content.Author do
     |> force_change(:photo_type, nil)
     |> force_change(:photo_digest, nil)
   end
-
-  defp image_type(<<0x89, "PNG\r\n", 0x1A, 0x0A, _::binary>>), do: "image/png"
-  defp image_type(<<0xFF, 0xD8, 0xFF, _::binary>>), do: "image/jpeg"
-  defp image_type(<<"RIFF", _size::binary-size(4), "WEBP", _::binary>>), do: "image/webp"
-  defp image_type(_), do: nil
 
   # A blank line in the form is someone who pressed enter, not a profile.
   defp clean_same_as(changeset) do
