@@ -215,6 +215,11 @@ a{color:var(--accent);text-underline-offset:.2em}
 .shell { max-width: 1160px; margin-inline: auto; }
 .pad { padding-inline: 40px; }
 .article-grid { display: grid; grid-template-columns: 220px 1fr; column-gap: 40px; align-items: start; padding-block: 34px; }
+/* The rail exists for the table of contents, and the aside that fills it is
+   conditional. Without this, a page with no sections makes the article itself
+   the first grid item, and the whole text is laid out in 220px — which is what
+   /sobre did above 1080px, with the handles running one letter per line. */
+.article-grid--solo { grid-template-columns: 1fr; }
 .stack { display: flex; flex-direction: column; }
 .home-grid { display: grid; grid-template-columns: 1fr 292px; column-gap: 34px; align-items: start; }
 
