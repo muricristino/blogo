@@ -54,13 +54,20 @@ defmodule BlogoWeb.SEO do
     """
   end
 
-  @doc "The author as a schema.org Person, with a stable @id."
+  @doc """
+  The author as a schema.org Person, with a stable @id.
+
+  `image` is what a knowledge panel can actually use — a Person without one is
+  a name — and it points at the photo this application serves, not at a profile
+  picture on somebody else's domain.
+  """
   def person(author, base_url) do
     %{
       "@type" => "Person",
       "@id" => "#{base_url}/autor/#{author.slug}#person",
       "name" => author.name,
       "url" => "#{base_url}/autor/#{author.slug}",
+      "image" => BlogoWeb.AuthorPhotoController.url(author, base_url),
       "jobTitle" => author.headline,
       "description" => author.bio,
       "sameAs" => author.same_as

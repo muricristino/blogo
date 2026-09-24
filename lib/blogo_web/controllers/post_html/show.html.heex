@@ -39,7 +39,7 @@
         style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"
       >
         <span class="byline">
-          <span class="ava">{initials(@post.author.name)}</span>
+          <.ava author={@post.author} />
           <span class="nm">{@post.author.name}</span>
           <span class="sep">·</span>
           <span>{format_date_long(@post.published_at)}</span>
@@ -51,6 +51,17 @@
         </span>
       </div>
     </header>
+
+    <%!-- On the page about the author it belongs at the top: that page is the
+          answer to "who is this", and the face is the first half of it. The bio
+          is left out because the page's own text already is the bio — the
+          migration that created it wrote it from this same field. --%>
+    <.author_note
+      :if={@post.kind == "pagina"}
+      author={@post.author}
+      label="Quem escreve aqui"
+      bio={false}
+    />
 
     <section
       :if={@summary}
@@ -74,6 +85,12 @@
     </section>
 
     <.render_blocks blocks={@blocks} />
+
+    <.author_note
+      :if={@post.kind != "pagina"}
+      author={@post.author}
+      label="Quem escreveu"
+    />
   </article>
 </div>
 
