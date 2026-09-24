@@ -110,6 +110,9 @@ defmodule BlogoWeb.PanelLive.Index do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Não foi possível guardar essa escolha.")}
+    end
+  end
+
   # A opção salva no clique: não existe rascunho de "só citação", e um estado
   # marcado na tela sem nada no banco é a mentira que a regra do badge de salvo
   # existe para impedir.
