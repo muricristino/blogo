@@ -18,6 +18,7 @@ defmodule BlogoWeb.PanelLive.Index do
 
   alias Blogo.Analytics
   alias Blogo.Content
+  alias Blogo.Content.Author
 
   @periods [{7, "7 dias"}, {30, "30 dias"}, {90, "90 dias"}, {:all, "Tudo"}]
 
@@ -35,6 +36,16 @@ defmodule BlogoWeb.PanelLive.Index do
        autor_aberto?: false,
        site_aberto?: false,
        confirmando: nil
+     )
+     |> allow_upload(:foto,
+       accept: ~w(.png .jpg .jpeg .webp),
+       max_entries: 1,
+       max_file_size: Author.max_photo_bytes(),
+       # A photo is chosen, not typed, so there is no moment afterwards when
+       # someone would press Salvar. It is stored as soon as it arrives, which
+       # is the same promise every other field on this screen makes.
+       auto_upload: true,
+       progress: &handle_progress/3
      )
      |> load_author()
      |> load_site()
@@ -130,6 +141,27 @@ defmodule BlogoWeb.PanelLive.Index do
     end
   end
 
+  # The form exists so the file input has one; `auto_upload` means the bytes
+  # are on their way before this fires, and `handle_progress/3` stores them.
+  def handle_event("foto_escolhida", _params, socket), do: {:noreply, socket}
+
+  def handle_event("foto_descartar", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :foto, ref)}
+  end
+
+  def handle_event("foto_remover", _params, socket) do
+    case Content.delete_author_photo(socket.assigns.author) do
+      {:ok, _author} ->
+        {:noreply,
+         socket
+         |> load_author()
+         |> put_flash(:info, "Foto removida. Volta a aparecer o monograma com as suas iniciais.")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível remover a foto.")}
+    end
+  end
+
   def handle_event("publicar", %{"id" => id}, socket) do
     post = Content.get_post!(id)
 
@@ -178,6 +210,32 @@ defmodule BlogoWeb.PanelLive.Index do
     end
   end
 
+  # The uploaded file lands in a temporary directory that belongs to the
+  # request, so the bytes are read and handed to the database here and now:
+  # nothing about this container's filesystem outlives the next deploy.
+  defp handle_progress(:foto, entry, socket) do
+    if entry.done? do
+      bytes =
+        consume_uploaded_entry(socket, entry, fn %{path: path} -> {:ok, File.read!(path)} end)
+
+      case Content.put_author_photo(socket.assigns.author, bytes) do
+        {:ok, _author} ->
+          {:noreply,
+           socket
+           |> load_author()
+           |> put_flash(
+             :info,
+             "Foto salva. Aparece no fim de cada artigo e na página sobre você."
+           )}
+
+        {:error, changeset} ->
+          {:noreply, put_flash(socket, :error, primeiro_erro(changeset))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   # O formulário manda os perfis como um texto por linha, que é como se edita
   # uma lista curta sem inventar uma interface de lista.
   defp with_same_as(%{"same_as_text" => text} = attrs) do
@@ -196,6 +254,7 @@ defmodule BlogoWeb.PanelLive.Index do
     |> Kernel.||("não foi possível publicar")
   end
 
+  defp rotulo(:photo), do: "A foto"
   defp rotulo(:hero), do: "O diagrama de capa"
   defp rotulo(:title), do: "O título"
   defp rotulo(:slug), do: "O endereço"
@@ -390,6 +449,7 @@ defmodule BlogoWeb.PanelLive.Index do
           :if={@author}
           author={@author}
           form={@author_form}
+          upload={@uploads.foto}
           aberto?={@autor_aberto?}
         />
 
@@ -752,6 +812,7 @@ defmodule BlogoWeb.PanelLive.Index do
 
   attr :author, :map, required: true
   attr :form, :any, required: true
+  attr :upload, :any, required: true
   attr :aberto?, :boolean, default: false
 
   defp author_card(assigns) do
@@ -771,11 +832,59 @@ defmodule BlogoWeb.PanelLive.Index do
       </div>
 
       <div :if={not @aberto?} class="pn-author-now">
-        <span class="pn-author-name">{@author.name}</span>
-        <span class="small">{@author.headline}</span>
-        <span :if={@author.same_as != []} class="small mono pn-author-links">
-          {Enum.join(@author.same_as, " · ")}
+        <BlogoWeb.PostHTML.ava author={@author} class="pn-foto-face" />
+        <span class="pn-author-said">
+          <span class="pn-author-name">{@author.name}</span>
+          <span class="small">{@author.headline}</span>
+          <span :if={@author.same_as != []} class="small mono pn-author-links">
+            {Enum.join(@author.same_as, " · ")}
+          </span>
         </span>
+      </div>
+
+      <%!-- Outside the profile form on purpose: a form cannot nest in another
+            one, and the upload needs a form of its own to live in. --%>
+      <div :if={@aberto?} class="pn-foto">
+        <BlogoWeb.PostHTML.ava author={@author} class="pn-foto-face" />
+
+        <div class="pn-foto-side">
+          <span class="micro">Foto</span>
+
+          <form id="pn-foto-form" phx-change="foto_escolhida" phx-submit="foto_escolhida">
+            <.live_file_input upload={@upload} class="pn-foto-input" />
+          </form>
+
+          <span class="small">
+            PNG, JPEG ou WebP, até {div(Author.max_photo_bytes(), 1_000_000)} MB. Ela é servida por
+            este site, e entra nos dados estruturados como a imagem da pessoa que assina.
+          </span>
+
+          <span :for={msg <- upload_errors(@upload)} class="small ed-warn">{erro_foto(msg)}</span>
+
+          <div :for={entry <- @upload.entries} class="pn-foto-entry">
+            <span :for={msg <- upload_errors(@upload, entry)} class="small ed-warn">
+              {erro_foto(msg)}
+            </span>
+            <button
+              :if={upload_errors(@upload, entry) != []}
+              type="button"
+              class="btn btn--s btn--sm"
+              phx-click="foto_descartar"
+              phx-value-ref={entry.ref}
+            >
+              Descartar
+            </button>
+          </div>
+
+          <button
+            :if={Author.photo?(@author)}
+            type="button"
+            class="btn btn--s btn--sm"
+            phx-click="foto_remover"
+          >
+            Remover foto
+          </button>
+        </div>
       </div>
 
       <.form
@@ -843,6 +952,15 @@ defmodule BlogoWeb.PanelLive.Index do
     </section>
     """
   end
+
+  # O LiveView recusa o arquivo antes de ele chegar inteiro; a mensagem dele é
+  # um átomo, e quem lê a tela não fala átomo.
+  defp erro_foto(:too_large),
+    do: "A foto passa de #{div(Author.max_photo_bytes(), 1_000_000)} MB."
+
+  defp erro_foto(:not_accepted), do: "Formato não aceito: PNG, JPEG ou WebP."
+  defp erro_foto(:too_many_files), do: "Uma foto por vez."
+  defp erro_foto(other), do: to_string(other)
 
   defp erros(field) do
     Enum.map(field.errors, fn {msg, opts} ->
