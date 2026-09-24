@@ -49,6 +49,12 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# The interface has two languages and the blog is written in Portuguese, so
+# that is what a request with no preference gets. `pt_BR` and not `pt-BR`:
+# Gettext spells a locale with an underscore, and `Expo.PluralForms` raises on
+# the hyphenated form. `BlogoWeb.Locale.tag/1` converts it for `lang`.
+config :gettext, default_locale: "pt_BR"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
