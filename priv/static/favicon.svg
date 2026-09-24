@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="blogo">
+  <!-- The same open book the header draws, at tab size. Two things differ from
+       the header on purpose: the stroke is thicker, because 1.7 in a 24 viewBox
+       lands at about 1.1px in a 16px tab and disappears; and the colour is a
+       literal, because a favicon has no `currentColor` to inherit. -->
+  <style>
+    .bg { fill: #2563eb; }
+    .mark { fill: none; stroke: #ffffff; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #60a5fa; }
+      .mark { stroke: #0a1120; }
+    }
+  </style>
+  <rect class="bg" width="32" height="32" rx="7" />
+  <g class="mark" transform="translate(4 4)">
+    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 15.5Z" />
+    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h4.5a1.5 1.5 0 0 0 1.5-1.5Z" />
+  </g>
+</svg>
