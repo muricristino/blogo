@@ -7,7 +7,7 @@
     <%= if assigns[:seo] do %>
       <.head {@seo} />
     <% else %>
-      <title>{assigns[:page_title] || "blogo"}</title>
+      <title>{assigns[:page_title] || assigns[:site_name] || "blog"}</title>
     <% end %>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,6 +16,13 @@
       href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;600&display=swap"
     />
     <meta :if={assigns[:preview?]} name="robots" content="noindex, nofollow" />
+    <link
+      :if={!assigns[:admin?]}
+      rel="alternate"
+      type="application/atom+xml"
+      title={assigns[:site_name]}
+      href={~p"/feed.xml"}
+    />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <%!-- Editor and panel share one stylesheet; the public pages never load it. --%>
     <link
@@ -24,7 +31,23 @@
       rel="stylesheet"
       href={~p"/assets/css/admin.css"}
     />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+    <%!-- A reader never loads LiveView: the public pages have no LiveView on
+          them, and the editor's bundle is ten times the size of what they use. --%>
+    <script
+      :if={!assigns[:admin?]}
+      defer
+      phx-track-static
+      type="text/javascript"
+      src={~p"/assets/js/public.js"}
+    >
+    </script>
+    <script
+      :if={assigns[:admin?]}
+      defer
+      phx-track-static
+      type="text/javascript"
+      src={~p"/assets/js/admin.js"}
+    >
     </script>
   </head>
   <body>

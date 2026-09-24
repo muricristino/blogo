@@ -9,7 +9,14 @@ defmodule BlogoWeb.EditorLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(page_title: "Posts", admin?: true) |> load()}
+    {:ok,
+     socket
+     |> assign(
+       page_title: "Posts",
+       admin?: true,
+       site_name: Blogo.Content.site_name(Blogo.Content.the_site())
+     )
+     |> load()}
   end
 
   defp load(socket), do: assign(socket, posts: Content.list_posts())
@@ -35,7 +42,7 @@ defmodule BlogoWeb.EditorLive.Index do
     <div class="lx-admin">
       <nav class="bar ed-bar">
         <a class="brand" href={~p"/"}>
-          <span>blogo</span>
+          <span>{@site_name}</span>
         </a>
         <span class="micro">Posts</span>
         <div style="display:flex;align-items:center;gap:8px">

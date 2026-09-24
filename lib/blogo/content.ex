@@ -3,7 +3,7 @@ defmodule Blogo.Content do
 
   import Ecto.Query, warn: false
   alias Blogo.Repo
-  alias Blogo.Content.{Author, Post, Series}
+  alias Blogo.Content.{Author, Post, PostSlug, Series, Site}
 
   def list_published do
     from(p in Post,
@@ -23,6 +23,41 @@ defmodule Blogo.Content do
   end
 
   def get_author_by_slug(slug), do: Repo.get_by(Author, slug: slug)
+
+  # ── the site itself ───────────────────────────────────────────────────────
+
+  @doc """
+  What this installation calls itself. Always returns a struct: an install that
+  has never been configured gets an empty one rather than nil, so no caller has
+  to guard and no page can crash on a fresh database.
+  """
+  def the_site do
+    case Repo.get(Site, 1) do
+      nil -> %Site{id: 1}
+      site -> site
+    end
+  end
+
+  def update_site(attrs) do
+    case Repo.get(Site, 1) do
+      nil -> %Site{id: 1} |> Site.changeset(attrs) |> Repo.insert()
+      site -> site |> Site.changeset(attrs) |> Repo.update()
+    end
+  end
+
+  def change_site(%Site{} = site, attrs \\ %{}), do: Site.changeset(site, attrs)
+
+  @doc """
+  The name to show. Falls back to the host, which is a fact about where this
+  install lives rather than a name somebody invented for it.
+  """
+  def site_name(%Site{} = site) do
+    if Site.unnamed?(site), do: default_site_name(), else: site.name
+  end
+
+  defp default_site_name do
+    BlogoWeb.Endpoint.url() |> URI.parse() |> Map.get(:host) || "blog"
+  end
 
   # ── series ────────────────────────────────────────────────────────────────
 
@@ -153,7 +188,10 @@ defmodule Blogo.Content do
     attrs = Map.put(attrs, :reading_minutes, reading_minutes(attrs, post))
 
     try do
-      post |> Post.changeset(attrs) |> Repo.update()
+      case post |> Post.changeset(attrs) |> Repo.update() do
+        {:ok, saved} -> {:ok, remember_slug(post, saved)}
+        other -> other
+      end
     rescue
       # The row moved under us — someone else saved between our read and our
       # write. Returning it as a value lets the caller tell the writer instead
@@ -194,6 +232,89 @@ defmodule Blogo.Content do
   def delete_draft(%Post{status: "published"}), do: {:error, :published}
 
   def delete_draft(%Post{} = post), do: Repo.delete(post)
+
+  # ── addresses an article used to have ─────────────────────────────────────
+
+  @doc """
+  The article that used to live at this address, if any.
+
+  Only published articles redirect: a draft's old address was never public, so
+  pointing at it would leak that the draft exists.
+  """
+  def post_by_former_slug(slug) do
+    from(s in PostSlug,
+      join: p in assoc(s, :post),
+      where: s.slug == ^slug and p.status == "published",
+      select: p
+    )
+    |> Repo.one()
+  end
+
+  # Keeping the address an article is leaving means a link someone else made
+  # years ago still lands. Conflicts are ignored on purpose: an address can only
+  # belong to one article, and the first claim is the one that is already out
+  # in the world.
+  defp remember_slug(%Post{slug: before}, %Post{slug: before} = saved), do: saved
+
+  defp remember_slug(%Post{slug: before, id: id}, %Post{} = saved) when is_binary(before) do
+    Repo.insert_all(
+      PostSlug,
+      [
+        [post_id: id, slug: before, inserted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      ],
+      on_conflict: :nothing
+    )
+
+    saved
+  end
+
+  defp remember_slug(_before, saved), do: saved
+
+  # ── topics ────────────────────────────────────────────────────────────────
+
+  @doc """
+  Every topic that has at least one published article, with its count and the
+  address its page lives at.
+  """
+  def list_topics do
+    list_published()
+    |> Enum.flat_map(& &1.topics)
+    |> Enum.frequencies()
+    |> Enum.map(fn {name, count} -> %{name: name, slug: topic_slug(name), count: count} end)
+    |> Enum.sort_by(&{-&1.count, &1.name})
+  end
+
+  @doc """
+  The articles filed under a topic, found by the slug in the address.
+
+  Topics are free text a writer types, so the slug is derived rather than
+  stored — which also means two topics that differ only by accent share a page,
+  and that is the right answer for a reader.
+  """
+  def posts_by_topic_slug(slug) do
+    posts =
+      Enum.filter(list_published(), fn p -> Enum.any?(p.topics, &(topic_slug(&1) == slug)) end)
+
+    name =
+      posts
+      |> Enum.flat_map(& &1.topics)
+      |> Enum.find(&(topic_slug(&1) == slug))
+
+    case posts do
+      [] -> nil
+      _ -> %{name: name, slug: slug, posts: posts}
+    end
+  end
+
+  @doc "The address a topic's page lives at: accents folded, spaces hyphenated."
+  def topic_slug(name) do
+    name
+    |> String.normalize(:nfd)
+    |> String.replace(~r/[^a-zA-Z0-9\s-]/u, "")
+    |> String.trim()
+    |> String.downcase()
+    |> String.replace(~r/\s+/, "-")
+  end
 
   defp reading_minutes(attrs, post) do
     blocks =

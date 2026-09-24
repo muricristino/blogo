@@ -1,0 +1,35 @@
+<div class="shell pad serie-page">
+  <header class="stack serie-head">
+    <span class="kicker">
+      Tópico · {length(@topic.posts)} {if length(@topic.posts) == 1, do: "artigo", else: "artigos"}
+    </span>
+    <h1 class="h1">{@topic.name}</h1>
+  </header>
+
+  <%!-- Same shape as a series, minus the ordinal: a topic groups articles but
+        does not put them in an order anyone should read them in. --%>
+  <ol class="serie-parts">
+    <li :for={post <- @topic.posts} class="serie-part">
+      <a href={~p"/#{post.slug}"} class="serie-part-link">
+        <span class="serie-part-text">
+          <span class="item-title">{post.title}</span>
+          <span :if={post.subtitle} class="item-dek">
+            {BlogoWeb.Blocks.inline(post.subtitle)}
+          </span>
+          <span class="item-meta">
+            <span class="mono">{post.reading_minutes} min</span>
+            <span>·</span>
+            <span class="mono">{BlogoWeb.PostHTML.format_date(post.published_at)}</span>
+          </span>
+        </span>
+        <span :if={post.hero} class="thumb serie-thumb">
+          <BlogoWeb.PostHTML.hero post={post} />
+        </span>
+      </a>
+    </li>
+  </ol>
+
+  <p class="small topic-foot">
+    <a href={~p"/"}>Todos os artigos</a>
+  </p>
+</div>

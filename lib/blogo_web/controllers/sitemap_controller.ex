@@ -12,7 +12,8 @@ defmodule BlogoWeb.SitemapController do
       [{base <> "/", nil}] ++
         Enum.map(posts, &{"#{base}/#{&1.slug}", &1.updated_at}) ++
         Enum.map(Enum.uniq_by(posts, & &1.author_id), &{"#{base}/autor/#{&1.author.slug}", nil}) ++
-        Enum.map(Content.list_series(), &{"#{base}/serie/#{&1.slug}", &1.updated_at})
+        Enum.map(Content.list_series(), &{"#{base}/serie/#{&1.slug}", &1.updated_at}) ++
+        Enum.map(Content.list_topics(), &{"#{base}/tag/#{&1.slug}", nil})
 
     body = """
     <?xml version="1.0" encoding="UTF-8"?>

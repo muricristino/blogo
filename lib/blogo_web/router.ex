@@ -3,6 +3,17 @@ defmodule BlogoWeb.Router do
 
   import BlogoWeb.AdminAuth, only: [require_admin: 2]
 
+  # The header, the footer and every <title> need the site's name. Assigning it
+  # on the pipeline means no controller can forget it and no page falls back to
+  # a name nobody chose.
+  defp put_site(conn, _opts) do
+    site = Blogo.Content.the_site()
+
+    conn
+    |> Plug.Conn.assign(:site, site)
+    |> Plug.Conn.assign(:site_name, Blogo.Content.site_name(site))
+  end
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -10,6 +21,7 @@ defmodule BlogoWeb.Router do
     plug :put_root_layout, html: {BlogoWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :put_site
   end
 
   # The editor is a separate stack: it has its own layout and it is the only
@@ -38,6 +50,8 @@ defmodule BlogoWeb.Router do
     get "/", PostController, :index
     get "/sitemap.xml", SitemapController, :index
     get "/robots.txt", SitemapController, :robots
+    get "/feed.xml", FeedController, :index
+    get "/tag/:slug", TopicController, :show
     get "/autor/:slug", AuthorController, :show
     get "/serie/:slug", SeriesController, :show
     get "/imagem/:slug", CardController, :show

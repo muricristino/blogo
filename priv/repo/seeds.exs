@@ -1,5 +1,12 @@
 alias Blogo.Content
 
+{:ok, _site} =
+  Content.update_site(%{
+    "name" => "Muri Cristino",
+    "description" =>
+      "Ensaios sobre avaliar modelo, medir o que importa e a parte chata de pôr em produção."
+  })
+
 {:ok, author} =
   Content.upsert_author(%{
     name: "Muri Cristino",

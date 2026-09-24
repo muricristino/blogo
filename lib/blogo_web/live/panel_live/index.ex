@@ -33,9 +33,11 @@ defmodule BlogoWeb.PanelLive.Index do
        period: 30,
        filter: "todos",
        autor_aberto?: false,
+       site_aberto?: false,
        confirmando: nil
      )
      |> load_author()
+     |> load_site()
      |> load()}
   end
 
@@ -50,6 +52,36 @@ defmodule BlogoWeb.PanelLive.Index do
 
   def handle_event("filter", %{"filtro" => value}, socket) do
     {:noreply, assign(socket, filter: value)}
+  end
+
+  def handle_event("site_abrir", _params, socket) do
+    {:noreply, assign(socket, site_aberto?: not socket.assigns.site_aberto?)}
+  end
+
+  def handle_event("site_validar", %{"site" => attrs}, socket) do
+    changeset =
+      socket.assigns.site
+      |> Content.change_site(attrs)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, site_form: to_form(changeset))}
+  end
+
+  def handle_event("site_salvar", %{"site" => attrs}, socket) do
+    case Content.update_site(attrs) do
+      {:ok, _site} ->
+        {:noreply,
+         socket
+         |> load_site()
+         |> assign(site_aberto?: false)
+         |> put_flash(
+           :info,
+           "Nome do site atualizado. Ele muda no cabeçalho, no rodapé e no título das páginas."
+         )}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, site_form: to_form(changeset))}
+    end
   end
 
   def handle_event("autor_abrir", _params, socket) do
@@ -152,6 +184,17 @@ defmodule BlogoWeb.PanelLive.Index do
   defp rotulo(:slug), do: "O endereço"
   defp rotulo(field), do: to_string(field)
 
+  defp load_site(socket) do
+    site = Content.the_site()
+
+    assign(socket,
+      site: site,
+      site_name: Content.site_name(site),
+      site_unnamed?: Blogo.Content.Site.unnamed?(site),
+      site_form: to_form(Content.change_site(site))
+    )
+  end
+
   defp load_author(socket) do
     case Content.the_author() do
       nil ->
@@ -212,7 +255,7 @@ defmodule BlogoWeb.PanelLive.Index do
   def render(assigns) do
     ~H"""
     <div class="lx-admin">
-      <.topbar />
+      <.topbar site_name={@site_name} />
 
       <main class="pn-shell">
         <header class="pn-head">
@@ -310,6 +353,14 @@ defmodule BlogoWeb.PanelLive.Index do
           </div>
         </section>
 
+        <.site_card
+          site={@site}
+          name={@site_name}
+          unnamed?={@site_unnamed?}
+          form={@site_form}
+          aberto?={@site_aberto?}
+        />
+
         <.author_card
           :if={@author}
           author={@author}
@@ -375,6 +426,8 @@ defmodule BlogoWeb.PanelLive.Index do
     """
   end
 
+  attr :site_name, :string, required: true
+
   defp topbar(assigns) do
     ~H"""
     <nav class="bar ed-bar">
@@ -395,7 +448,7 @@ defmodule BlogoWeb.PanelLive.Index do
             <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 15.5Z" />
             <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h4.5a1.5 1.5 0 0 0 1.5-1.5Z" />
           </svg>
-          <span>blogo</span>
+          <span>{@site_name}</span>
         </a>
         <span class="rolebadge">Admin</span>
       </div>
@@ -571,6 +624,79 @@ defmodule BlogoWeb.PanelLive.Index do
         </tbody>
       </table>
     </div>
+    """
+  end
+
+  attr :site, :map, required: true
+  attr :name, :string, required: true
+  attr :unnamed?, :boolean, required: true
+  attr :form, :map, required: true
+  attr :aberto?, :boolean, required: true
+
+  defp site_card(assigns) do
+    ~H"""
+    <section class="card pn-author">
+      <div class="pn-author-head">
+        <span>
+          <span class="h3">O site</span>
+          <span class="small">
+            O nome aparece no cabeçalho, no rodapé, no título de cada página e no cartão que
+            aparece quando alguém compartilha um link.
+          </span>
+        </span>
+        <button type="button" class="btn btn--s btn--sm" phx-click="site_abrir">
+          {if @aberto?, do: "Fechar", else: "Editar"}
+        </button>
+      </div>
+
+      <p :if={@unnamed? and not @aberto?} class="pn-site-todo">
+        Este blog ainda não tem nome. Enquanto isso, o cabeçalho mostra <span class="mono">{@name}</span>, que é o endereço onde ele está.
+      </p>
+
+      <div :if={not @unnamed? and not @aberto?} class="pn-author-now">
+        <span class="pn-author-name">{@site.name}</span>
+        <span :if={@site.description} class="small">{@site.description}</span>
+      </div>
+
+      <.form
+        :if={@aberto?}
+        id="pn-site-form"
+        for={@form}
+        phx-change="site_validar"
+        phx-submit="site_salvar"
+        class="pn-author-form"
+      >
+        <label class="ed-field pn-author-wide">
+          <span class="micro">Nome do site</span>
+          <input
+            class="input"
+            type="text"
+            name="site[name]"
+            value={@form[:name].value}
+            placeholder="O nome que vai no cabeçalho"
+          />
+          <span :for={msg <- erros(@form[:name])} class="small ed-warn">{msg}</span>
+        </label>
+
+        <label class="ed-field pn-author-wide">
+          <span class="micro">Descrição</span>
+          <textarea
+            class="input input--area"
+            rows="2"
+            name="site[description]"
+            placeholder="Uma linha sobre o que se escreve aqui"
+          >{@form[:description].value}</textarea>
+          <span class="small">
+            Vai para a busca e para a prévia do link. Até 160 caracteres.
+          </span>
+          <span :for={msg <- erros(@form[:description])} class="small ed-warn">{msg}</span>
+        </label>
+
+        <div class="pn-author-actions">
+          <button type="submit" class="btn btn--p">Salvar</button>
+        </div>
+      </.form>
+    </section>
     """
   end
 

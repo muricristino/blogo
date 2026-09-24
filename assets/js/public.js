@@ -1,53 +1,11 @@
-// If you want to use Phoenix channels, run `mix help phx.gen.channel`
-// to get started and then uncomment the line below.
-// import "./user_socket.js"
+// What a reader's browser needs, and nothing else.
+//
+// This used to be one bundle with LiveView, the editor hooks and the Clerk
+// loader inside it — 158KB on an article page that has no LiveView element on
+// it at all. A reader paid for the editor's dependencies on every page view,
+// and Core Web Vitals is a ranking factor.
 
-// You can include dependencies in two ways.
-//
-// The simplest option is to put them in assets/vendor and
-// import them using relative paths:
-//
-//     import "../vendor/some-package.js"
-//
-// Alternatively, you can `npm install some-package --prefix assets` and import
-// them using a path starting with the package name:
-//
-//     import "some-package"
-//
-
-// Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
-import "phoenix_html"
-// Establish Phoenix Socket and LiveView configuration.
-import {Socket} from "phoenix"
-import {LiveSocket} from "phoenix_live_view"
-import topbar from "../vendor/topbar"
-import { RichText, Markdown, Grow } from "./editor"
-
-// Só a tela de login carrega isto; nas demais o elemento não existe.
-if (document.getElementById("clerk-signin")) import("./auth")
 import "./read"
-
-let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-let liveSocket = new LiveSocket("/live", Socket, {
-  longPollFallbackMs: 2500,
-  hooks: { RichText, Markdown, Grow },
-  params: {_csrf_token: csrfToken}
-})
-
-// Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
-window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
-
-// connect if there are any LiveViews on the page
-liveSocket.connect()
-
-// expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
-// >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
-// >> liveSocket.disableLatencySim()
-window.liveSocket = liveSocket
-
 
 // Theme toggle and reading progress. Both are per-viewer conveniences, so a
 // blocked localStorage degrades to "follow the system" rather than failing.
@@ -97,3 +55,16 @@ if (pct || tocLinks.length) {
   addEventListener("resize", update)
   update()
 }
+
+// Copy button on code blocks, which only exist on an article.
+document.querySelectorAll("[data-copy]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const code = btn.closest(".code")?.querySelector("code")?.textContent
+    if (!code) return
+    navigator.clipboard?.writeText(code).then(() => {
+      const was = btn.textContent
+      btn.textContent = "copiado"
+      setTimeout(() => (btn.textContent = was), 1500)
+    }).catch(() => {})
+  })
+})
