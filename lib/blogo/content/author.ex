@@ -1,6 +1,21 @@
 defmodule Blogo.Content.Author do
+  @moduledoc """
+  Who signs the blog.
+
+  The photo is stored here, as bytes, because the application runs in a
+  container with no volume: a file written to disk lives until the next deploy
+  and then is not there any more, with nothing on screen to say why. The
+  database is the only part of this deployment that survives a rebuild.
+  """
   use Ecto.Schema
   import Ecto.Changeset
+
+  # 64px on screen, twice that on a retina display. Anything past this is
+  # bandwidth spent on every visit to show a face 128 pixels wide.
+  @max_photo_bytes 2_000_000
+
+  @doc "The largest photo accepted, in bytes. The panel shows the same limit."
+  def max_photo_bytes, do: @max_photo_bytes
 
   schema "authors" do
     field :name, :string
@@ -10,6 +25,14 @@ defmodule Blogo.Content.Author do
     field :avatar_url, :string
     field :city, :string
     field :same_as, {:array, :string}, default: []
+
+    field :photo_type, :string
+    field :photo_digest, :string
+    # Every post query preloads its author, so the bytes would ride along into
+    # the index, the article, the feed and the card — megabytes fetched to
+    # render a page that never shows them. They are read by the one request
+    # that serves the image.
+    field :photo, :binary, load_in_query: false
 
     has_many :posts, Blogo.Content.Post
 
@@ -38,6 +61,56 @@ defmodule Blogo.Content.Author do
     |> clean_same_as()
     |> validate_same_as()
   end
+
+  @doc "Whether there is a photo to show, without fetching the bytes to find out."
+  def photo?(%__MODULE__{photo_digest: digest}), do: is_binary(digest)
+  def photo?(_), do: false
+
+  @doc """
+  The uploaded photo.
+
+  The format is read from the first bytes rather than taken from the name or
+  the content type the browser sent: both are typed by whoever uploads, and a
+  `.png` that is not a PNG renders as a broken image on every article.
+
+  Every write here is a `force_change/3`, and that is load-bearing. `change/2`
+  compares against the data and drops whatever looks unchanged, and `:photo` is
+  never loaded — so the struct always reports nil, and the delete built on
+  `change/2` wrote nothing at all: the bytes stayed in the row with their type
+  and digest cleared, invisible to the site and still on disk. It is the defect
+  CLAUDE.md records for the editor, reached from the other direction.
+  """
+  def photo_changeset(author, bytes) when is_binary(bytes) do
+    changeset = change(author)
+
+    cond do
+      byte_size(bytes) > @max_photo_bytes ->
+        add_error(changeset, :photo, "passa de #{div(@max_photo_bytes, 1_000_000)} MB")
+
+      type = image_type(bytes) ->
+        changeset
+        |> force_change(:photo, bytes)
+        |> force_change(:photo_type, type)
+        |> force_change(:photo_digest, Base.encode16(:crypto.hash(:sha256, bytes), case: :lower))
+
+      true ->
+        add_error(changeset, :photo, "precisa ser PNG, JPEG ou WebP")
+    end
+  end
+
+  @doc "Takes the photo off, leaving the initials in its place."
+  def no_photo_changeset(author) do
+    author
+    |> change()
+    |> force_change(:photo, nil)
+    |> force_change(:photo_type, nil)
+    |> force_change(:photo_digest, nil)
+  end
+
+  defp image_type(<<0x89, "PNG\r\n", 0x1A, 0x0A, _::binary>>), do: "image/png"
+  defp image_type(<<0xFF, 0xD8, 0xFF, _::binary>>), do: "image/jpeg"
+  defp image_type(<<"RIFF", _size::binary-size(4), "WEBP", _::binary>>), do: "image/webp"
+  defp image_type(_), do: nil
 
   # A blank line in the form is someone who pressed enter, not a profile.
   defp clean_same_as(changeset) do

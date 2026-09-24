@@ -102,6 +102,33 @@ defmodule Blogo.Content do
     Author.profile_changeset(author, attrs)
   end
 
+  @doc """
+  Stores the uploaded photo. The bytes go to the database because the container
+  they arrive in is replaced on every deploy and has no volume mounted.
+  """
+  def put_author_photo(%Author{} = author, bytes) when is_binary(bytes) do
+    author |> Author.photo_changeset(bytes) |> Repo.update()
+  end
+
+  def delete_author_photo(%Author{} = author) do
+    author |> Author.no_photo_changeset() |> Repo.update()
+  end
+
+  @doc """
+  The photo bytes and what to serve them as, fetched on their own.
+
+  `:photo` is declared `load_in_query: false`, so no other query in the
+  application carries the image around; this is the only place that asks for
+  it. Returns nil when the author has no photo, or does not exist.
+  """
+  def author_photo(slug) do
+    from(a in Author,
+      where: a.slug == ^slug and not is_nil(a.photo),
+      select: %{data: a.photo, type: a.photo_type, digest: a.photo_digest}
+    )
+    |> Repo.one()
+  end
+
   def upsert_author(attrs) do
     case get_author_by_slug(attrs.slug) do
       nil -> create_author(attrs)
