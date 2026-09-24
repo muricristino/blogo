@@ -1,10 +1,10 @@
 <div class="shell pad home">
-  <article :if={@featured} class="card feat">
+  <article :if={@featured} class={["card feat", !@featured_hero && "feat--plain"]}>
     <div class="feat-text">
       <span class="kicker">Em destaque · {@featured.kind}</span>
       <h1 class="h1 feat-title">{@featured.title}</h1>
       <p class="dek">{BlogoWeb.Blocks.inline(@featured.subtitle)}</p>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="feat-meta">
         <span :for={t <- @featured.topics} class="tag">{t}</span>
         <span class="small mono">{format_date(@featured.published_at)}</span>
         <span class="small mono">· {@featured.reading_minutes} min</span>
@@ -28,7 +28,7 @@
         </svg>
       </a>
     </div>
-    <div class="feat-fig">
+    <div :if={@featured_hero} class="feat-fig">
       <.hero post={@featured} caption />
     </div>
   </article>

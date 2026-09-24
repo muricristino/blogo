@@ -21,6 +21,16 @@ outro, ou instale com `npx playwright@latest install chromium`.
 `ADMIN_PAGES`, se ela ficar atrás da senha. Uma tela fora da lista é uma tela
 que ninguém verifica.
 
+**Uma opção que muda o desenho de uma tela são duas telas.** A auditoria mede
+uma URL, não um estado do banco, então uma chave do painel que troca o layout
+pede duas rodadas. A primeira é a figura do card em destaque
+(`site.featured_hero`): a home tem de sair limpa com ela ligada e desligada.
+
+```sh
+psql -U postgres -d blogo_dev -c "update site set featured_hero = false"
+node test/mobile_audit.mjs   # e de novo com true
+```
+
 ## O que o editor já custou
 
 O editor reaproveita `.bar` e `.card` da página pública, e herdar um sistema de
