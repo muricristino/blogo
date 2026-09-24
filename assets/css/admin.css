@@ -1736,6 +1736,45 @@
   }
 }
 
+/* A escolha de desenhar ou não o diagrama no card em destaque. Fica fora do
+   formulário do nome porque grava no clique: o texto explica o padrão, e os
+   dois botões dizem qual estado está valendo agora. */
+.pn-site-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+}
+
+.pn-site-switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .pn-site-switch {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  /* Sem isto a coluna do texto se recusa a encolher abaixo da frase mais
+     longa e empurra os botões para fora do card. */
+  .pn-site-switch-text {
+    flex: 1 1 auto;
+  }
+
+  .pn-site-switch .seg {
+    flex: 0 0 auto;
+  }
+}
+
 /* Um install que ainda não foi nomeado diz o que falta, em vez de mostrar um
    nome que ninguém escolheu. */
 .pn-site-todo {
