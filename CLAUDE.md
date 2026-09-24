@@ -1,5 +1,19 @@
 # blogo — working agreement
 
+## Every task asked for becomes a card in codo, before the work starts
+
+A request that exists only in the conversation is a request nobody can follow
+afterwards. Chat scrolls; the board does not. Whoever asked should be able to
+see what was picked up, what is in progress and what shipped without having to
+ask — and asking is exactly what the board exists to make unnecessary.
+
+So: open the card in `project/blogo` first, then work. It applies to the small
+ones too. If it is worth doing, it is worth a line on the board, and a card
+that turns out to be two minutes of work costs nothing to have written down.
+
+Move it as the work moves, and close it with the PR — `done` requires one, so
+the board can never claim something shipped that nothing can be traced to.
+
 ## Mobile-first is the default, not an adaptation
 
 Design and build for 320px first. A wider screen gets more room through
