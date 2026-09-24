@@ -21,7 +21,7 @@ defmodule BlogoWeb.PageController do
          [page | _] <- Content.list_pages() do
       redirect(conn, to: ~p"/#{page.slug}")
     else
-      _ -> conn |> put_status(:not_found) |> text("Não encontrado")
+      _ -> conn |> put_status(:not_found) |> text(gettext("Not found"))
     end
   end
 end

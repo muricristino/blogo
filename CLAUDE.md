@@ -243,6 +243,46 @@ renders its 10.5px labels at about four — unreadable, with every check passing
 Charts wide enough to have that problem carry `.ch--wide` and get their text
 scaled up under `max-width: 719px`.
 
+## The interface speaks the reader's language; the article speaks its author's
+
+Translating the menu is a table of strings. Translating an article is writing
+another article. They are not the same job, so they are not the same feature:
+the interface is pt-BR and English through Gettext, and every article stays in
+the language it was written in.
+
+- **Detection first, choice above it.** `BlogoWeb.Locale` negotiates
+  `accept-language` on every request; a language the reader picked wins over it
+  and persists. The two live under two session keys on purpose. Remembering a
+  detection as though it had been chosen means a reader who changes their
+  browser's language never changes the site again.
+- **The request and the socket, the same as the login.** The plug covers the
+  request and `on_mount/4` covers the socket, for the reason `require_admin/2`
+  and `ensure_admin` both exist: a reconnect runs no plug. Without the hook the
+  interface changes language by itself the first time the socket drops. The plug
+  writes the negotiated locale into the session precisely because
+  `connect_info` carries the session and never the request headers.
+- **`<html lang>` is the content's language, not the menu's.**
+  `posts.language` says what the article was written in and the article page
+  declares that; the nav and the footer carry their own `lang`, and a listing —
+  mostly interface — takes the interface's, marking each title. A Portuguese
+  essay served as `lang="en"` is a Portuguese essay a search engine indexes as
+  English.
+- **The address never changes language.** The selector posts to `/idioma` and
+  comes back to the same path. `/pt/slug` and `/en/slug` for one text is the
+  duplicate content `BlogoWeb.CanonicalHost` spends a 301 to avoid.
+- **The msgids are English, so the Portuguese has to be complete.** A string
+  nobody translated reaches the Portuguese reader in English, and that is the
+  audience the blog already has. `test/blogo_web/locale_test.exs` fails on an
+  empty `msgstr` in `pt_BR`, and CI runs `gettext.extract --check-up-to-date` so
+  a string added to a template cannot skip extraction. `mix gettext.sync` does
+  both halves.
+- **`pt_BR` for Gettext, `pt-BR` for markup.** Not interchangeable:
+  `Expo.PluralForms` does not know the hyphenated form, so `ngettext` raises
+  under it. `BlogoWeb.Locale.tag/1` is the one place that converts.
+
+The editor and the panel are still pt-BR. They are one operator's tools behind
+a login, and the reader is who the two languages are for.
+
 ## Deployment
 
 The server is a ThinkPad running behind a Cloudflare Tunnel, operated by webo.

@@ -1,0 +1,353 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+#: lib/blogo_web/controllers/topic_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "%{count} article"
+msgid_plural "%{count} articles"
+msgstr[0] "%{count} artigo"
+msgstr[1] "%{count} artigos"
+
+#: lib/blogo_web/controllers/topic_controller.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} article about %{topic}."
+msgid_plural "%{count} articles about %{topic}."
+msgstr[0] "%{count} artigo sobre %{topic}."
+msgstr[1] "%{count} artigos sobre %{topic}."
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "%{minutes} min read"
+msgstr "%{minutes} min de leitura"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "About this blog"
+msgstr "Sobre o blogo"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "All"
+msgstr "Tudo"
+
+#: lib/blogo_web/controllers/topic_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All articles"
+msgstr "Todos os artigos"
+
+#: lib/blogo_web/components/layouts/app.html.heex
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Archive"
+msgstr "Arquivo"
+
+#: lib/blogo_web/components/layouts/app.html.heex
+#, elixir-autogen, elixir-format
+msgid "Articles"
+msgstr "Artigos"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Contact"
+msgstr "Contato"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Featured"
+msgstr "Em destaque"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Get it by e-mail"
+msgstr "Receba por e-mail"
+
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "In short"
+msgstr "Em resumo"
+
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "In this article"
+msgstr "Neste artigo"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Most read this month"
+msgstr "Mais lidos este mês"
+
+#: lib/blogo_web/controllers/page_controller.ex
+#: lib/blogo_web/controllers/post_controller.ex
+#: lib/blogo_web/controllers/topic_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Not found"
+msgstr "Não encontrado"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "One essay a week, written by one person. No link roundups, no sponsorship, no tracking beyond counting reads."
+msgstr "Um ensaio por semana, escrito por uma pessoa só. Sem curadoria de links, sem patrocínio, sem rastreamento além da contagem de leituras."
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "One essay a week. No link roundups, no product newsletter."
+msgstr "Um ensaio por semana. Sem curadoria de links, sem newsletter de novidades."
+
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Progress"
+msgstr "Progresso"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the essay"
+msgstr "Ler o ensaio"
+
+#: lib/blogo_web/components/layouts/app.html.heex
+#, elixir-autogen, elixir-format
+msgid "Search"
+msgstr "Buscar"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Sort by"
+msgstr "Ordenar por"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Subscribe"
+msgstr "Assinar"
+
+#: lib/blogo_web/components/layouts/app.html.heex
+#, elixir-autogen, elixir-format
+msgid "Toggle theme"
+msgstr "Alternar tema"
+
+#: lib/blogo_web/controllers/topic_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Topic"
+msgstr "Tópico"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Topics"
+msgstr "Tópicos"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "article"
+msgid_plural "articles"
+msgstr[0] "artigo"
+msgstr[1] "artigos"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgid "essay"
+msgstr "ensaio"
+
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "min left"
+msgstr "min restantes"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "most recent"
+msgstr "mais recente"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgid "note"
+msgstr "nota"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgid "page"
+msgstr "página"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "since 2023"
+msgstr "desde 2023"
+
+#: lib/blogo_web/components/layouts.ex
+#, elixir-autogen, elixir-format
+msgid "written by %{name}"
+msgstr "escrito por %{name}"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "you@example.com"
+msgstr "voce@exemplo.com"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "long date"
+msgid "%{month} %{day}, %{year}"
+msgstr "%{day} de %{month} de %{year}"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "April"
+msgstr "abril"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "August"
+msgstr "agosto"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "December"
+msgstr "dezembro"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "February"
+msgstr "fevereiro"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "January"
+msgstr "janeiro"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "July"
+msgstr "julho"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "June"
+msgstr "junho"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "March"
+msgstr "março"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "May"
+msgstr "maio"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "November"
+msgstr "novembro"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "October"
+msgstr "outubro"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month"
+msgid "September"
+msgstr "setembro"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Apr"
+msgstr "abr"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Aug"
+msgstr "ago"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Dec"
+msgstr "dez"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Feb"
+msgstr "fev"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Jan"
+msgstr "jan"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Jul"
+msgstr "jul"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Jun"
+msgstr "jun"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Mar"
+msgstr "mar"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "May"
+msgstr "mai"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Nov"
+msgstr "nov"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Oct"
+msgstr "out"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "month, short"
+msgid "Sep"
+msgstr "set"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "short date"
+msgid "%{month} %{day}, %{year}"
+msgstr "%{day} %{month} %{year}"
+
+#: lib/blogo_web/components/layouts.ex
+#, elixir-autogen, elixir-format
+msgid "written by %{name} in %{city}"
+msgstr "escrito por %{name} em %{city}"

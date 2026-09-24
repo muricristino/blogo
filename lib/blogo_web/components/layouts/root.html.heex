@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<%!-- The language of what is on the page, which is not the language of the
+      menu around it. An article page declares the language the article was
+      written in: a Portuguese essay read with an English interface is still
+      Portuguese, and saying otherwise tells a search engine to index it as
+      English. A listing is mostly interface, so it takes the interface's. --%>
+<html lang={assigns[:content_language] || assigns[:locale_tag] || "pt-BR"}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

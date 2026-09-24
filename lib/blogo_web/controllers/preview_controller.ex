@@ -25,6 +25,7 @@ defmodule BlogoWeb.PreviewController do
     |> assign(:current_author, post.author)
     |> assign(:progress, true)
     |> assign(:preview?, true)
+    |> assign(:content_language, post.language)
     |> render(:show,
       post: post,
       blocks: blocks,

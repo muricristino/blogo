@@ -42,6 +42,10 @@ jobs:
       # Warnings become errors here rather than in review, where they are
       # noise that someone has to decide to care about.
       - run: mix compile --warnings-as-errors
+      # The strings in the code and the strings in the .pot have to be the same
+      # set. A string added to a template without extracting it is a string
+      # nobody can translate, and it reaches the reader in the other language.
+      - run: mix gettext.extract --check-up-to-date
       - run: mix test
         env:
           MIX_ENV: test

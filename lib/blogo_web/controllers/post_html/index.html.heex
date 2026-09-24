@@ -1,9 +1,9 @@
 <div class="shell pad home">
   <article :if={@featured} class={["card feat", !@featured_hero && "feat--plain"]}>
     <div class="feat-text">
-      <span class="kicker">Em destaque · {@featured.kind}</span>
-      <h1 class="h1 feat-title">{@featured.title}</h1>
-      <p class="dek">{BlogoWeb.Blocks.inline(@featured.subtitle)}</p>
+      <span class="kicker">{gettext("Featured")} · {kind_label(@featured.kind)}</span>
+      <h1 class="h1 feat-title" lang={@featured.language}>{@featured.title}</h1>
+      <p class="dek" lang={@featured.language}>{BlogoWeb.Blocks.inline(@featured.subtitle)}</p>
       <div class="feat-meta">
         <span :for={t <- @featured.topics} class="tag">{t}</span>
         <span class="small mono">{format_date(@featured.published_at)}</span>
@@ -13,7 +13,7 @@
         href={~p"/#{@featured.slug}"}
         class="feat-cta"
       >
-        Ler o ensaio
+        {gettext("Read the essay")}
         <svg
           width="16"
           height="16"
@@ -36,14 +36,16 @@
   <div class="home-grid">
     <div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-        <a class="chip is-on" href={~p"/"}>Tudo <span class="c">{@total}</span></a>
+        <a class="chip is-on" href={~p"/"}>{gettext("All")} <span class="c">{@total}</span></a>
         <a :for={topic <- @topics} class="chip" href={~p"/tag/#{topic.slug}"}>
           {String.capitalize(topic.name)} <span class="c">{topic.count}</span>
         </a>
-        <span class="small" style="margin-left:auto">Ordenar por
-        <b style="color:var(--ink2)">mais recente</b></span>
+        <span class="small" style="margin-left:auto">{gettext("Sort by")}
+        <b style="color:var(--ink2)">{gettext("most recent")}</b></span>
       </div>
 
+      <%!-- The title and the summary are in the article's own language, whatever
+            the menu around them says. --%>
       <a :for={post <- @posts} class="item" href={~p"/#{post.slug}"}>
         <div style="display:flex;flex-direction:column;gap:9px">
           <div class="byline">
@@ -52,8 +54,8 @@
             <span class="sep">·</span>
             <span>{format_date(post.published_at)}</span>
           </div>
-          <h2 class="item-title">{post.title}</h2>
-          <p class="item-dek">{BlogoWeb.Blocks.inline(post.subtitle)}</p>
+          <h2 class="item-title" lang={post.language}>{post.title}</h2>
+          <p class="item-dek" lang={post.language}>{BlogoWeb.Blocks.inline(post.subtitle)}</p>
           <div class="item-meta">
             <span class="mono">{post.reading_minutes} min</span>
             <span>·</span>
@@ -66,9 +68,9 @@
 
     <aside class="stack" style="gap:16px">
       <div class="card aside-card">
-        <span class="micro">Receba por e-mail</span>
+        <span class="micro">{gettext("Get it by e-mail")}</span>
         <p class="small">
-          Um ensaio por semana. Sem curadoria de links, sem newsletter de novidades.
+          {gettext("One essay a week. No link roundups, no product newsletter.")}
         </p>
         <div class="field">
           <svg
@@ -82,9 +84,9 @@
           >
             <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" />
           </svg>
-          voce@exemplo.com
+          {gettext("you@example.com")}
         </div>
-        <button class="btn btn--p" type="button">Assinar</button>
+        <button class="btn btn--p" type="button">{gettext("Subscribe")}</button>
       </div>
 
       <div :if={@author} class="card aside-card">
@@ -92,44 +94,52 @@
           <span class="ava" style="width:38px;height:38px;font-size:13px">{initials(@author.name)}</span>
           <div>
             <div style="color:var(--ink);font-weight:600;font-size:15px">{@author.name}</div>
-            <div class="small">{@author.city} · desde 2023</div>
+            <div class="small">{@author.city} · {gettext("since 2023")}</div>
           </div>
         </div>
         <p class="small">{@author.bio}</p>
         <div style="display:flex;gap:26px">
           <div class="stat">
-            <span class="stat-n">{@total}</span><span class="small">artigos</span>
+            <span class="stat-n">{@total}</span><span class="small">{ngettext(
+              "article",
+              "articles",
+              @total
+            )}</span>
           </div>
         </div>
       </div>
 
       <div class="card aside-card">
-        <span class="micro">Mais lidos este mês</span>
+        <span class="micro">{gettext("Most read this month")}</span>
         <a :for={{post, i} <- Enum.with_index(@most_read)} class="arow" href={~p"/#{post.slug}"}>
           <span class="arank">{String.pad_leading("#{i + 1}", 2, "0")}</span>
           <span>
-            <span style="color:var(--ink);font-weight:600;font-size:14px;display:block">{post.title}</span>
-            <span class="small">{post.reading_minutes} min de leitura</span>
+            <span
+              lang={post.language}
+              style="color:var(--ink);font-weight:600;font-size:14px;display:block"
+            >{post.title}</span>
+            <span class="small">{gettext("%{minutes} min read", minutes: post.reading_minutes)}</span>
           </span>
         </a>
       </div>
 
       <div class="card aside-card">
-        <span class="micro">Tópicos</span>
+        <span class="micro">{gettext("Topics")}</span>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
           <a :for={topic <- @topics} class="tag" href={~p"/tag/#{topic.slug}"}>{topic.name}</a>
         </div>
       </div>
 
       <div class="card aside-card">
-        <span class="micro">Sobre o blogo</span>
+        <span class="micro">{gettext("About this blog")}</span>
         <p class="small">
-          Um ensaio por semana, escrito por uma pessoa só. Sem curadoria de links,
-          sem patrocínio, sem rastreamento além da contagem de leituras.
+          {gettext(
+            "One essay a week, written by one person. No link roundups, no sponsorship, no tracking beyond counting reads."
+          )}
         </p>
         <div style="display:flex;gap:14px" class="small">
-          <a href={~p"/sitemap.xml"}>Arquivo</a>
-          <a :if={@author} href={~p"/autor/#{@author.slug}"}>Contato</a>
+          <a href={~p"/sitemap.xml"}>{gettext("Archive")}</a>
+          <a :if={@author} href={~p"/autor/#{@author.slug}"}>{gettext("Contact")}</a>
         </div>
       </div>
     </aside>

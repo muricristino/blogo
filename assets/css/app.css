@@ -90,6 +90,22 @@ a{color:var(--accent);text-underline-offset:.2em}
 .navlink{display:inline-flex;align-items:center;height:40px;padding:0 12px;border-radius:9px;color:var(--ink3);text-decoration:none;font-size:13.5px;font-weight:500}
 .navlink[aria-current="page"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent)}
 .iconbtn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--line);background:var(--field-bg);color:var(--ink3);cursor:pointer}
+/* Seletor de idioma: dois botões, não um select. Com duas opções, um select
+   precisaria de um botão de enviar ao lado ou de JavaScript para funcionar, e
+   a troca de idioma tem de funcionar sem script nenhum. */
+.langsw{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:10px;background:var(--field-bg)}
+.langbtn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:34px;padding:0 8px;border:0;border-radius:8px;background:0;color:var(--ink3);font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:.03em;cursor:pointer}
+.langbtn.is-on{background:var(--accent);color:#fff}
+/* O seletor aparece uma vez: no rodapé no telefone, na barra a partir de
+   760px. Dois alvos de 44px não cabem na barra ao lado da marca e da
+   navegação em 320px — a barra estouraria a viewport. */
+.langsw--bar{display:none}
+@media (min-width: 760px){
+  .langsw--bar{display:inline-flex}
+  .langsw--foot{display:none}
+}
+/* Só para leitor de tela: o botão mostra duas letras e diz o nome inteiro. */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .rail{height:3px;background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .rail>span{display:block;height:100%;width:34%;background:var(--accent)}
 .toc{position:sticky;top:24px;display:flex;flex-direction:column;gap:2px}
@@ -263,6 +279,7 @@ a{color:var(--accent);text-underline-offset:.2em}
    mouse, 40px já basta e ocupa menos. */
 @media (pointer: coarse) {
   .navlink, .iconbtn, .btn, .chip, .code-copy, .cmt-act { min-height: 44px; }
+  .langbtn { min-width: 44px; min-height: 44px; }
   .brand { display: inline-flex; align-items: center; min-height: 44px; }
   .tag { min-height: 32px; }
   .toc a { min-height: 44px; }

@@ -1,7 +1,11 @@
 <div class="shell pad listing">
   <header class="stack listing-head">
     <span class="kicker">
-      Tópico · {length(@topic.posts)} {if length(@topic.posts) == 1, do: "artigo", else: "artigos"}
+      {gettext("Topic")} · {ngettext(
+        "%{count} article",
+        "%{count} articles",
+        length(@topic.posts)
+      )}
     </span>
     <h1 class="h1">{@topic.name}</h1>
   </header>
@@ -10,8 +14,8 @@
     <li :for={post <- @topic.posts} class="listing-item">
       <a href={~p"/#{post.slug}"} class="listing-link">
         <span class="listing-text">
-          <span class="item-title">{post.title}</span>
-          <span :if={post.subtitle} class="item-dek">
+          <span class="item-title" lang={post.language}>{post.title}</span>
+          <span :if={post.subtitle} class="item-dek" lang={post.language}>
             {BlogoWeb.Blocks.inline(post.subtitle)}
           </span>
           <span class="item-meta">
@@ -28,6 +32,6 @@
   </ol>
 
   <p class="small topic-foot">
-    <a href={~p"/"}>Todos os artigos</a>
+    <a href={~p"/"}>{gettext("All articles")}</a>
   </p>
 </div>

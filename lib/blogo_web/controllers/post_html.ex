@@ -3,16 +3,85 @@ defmodule BlogoWeb.PostHTML do
 
   embed_templates "post_html/*"
 
-  @meses ~w(janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro)
-  @abrev ~w(jan fev mar abr mai jun jul ago set out nov dez)
+  @doc """
+  A date in the interface's language.
 
+  The parts are translated as a pattern and not glued together here, because
+  their order is part of the language: `3 de fevereiro de 2026` against
+  `February 3, 2026`. A month name alone would put the English one in the
+  Portuguese order.
+  """
   def format_date(nil), do: ""
-  def format_date(%DateTime{} = d), do: "#{d.day} #{Enum.at(@abrev, d.month - 1)} #{d.year}"
+
+  def format_date(%DateTime{} = d) do
+    pgettext("short date", "%{month} %{day}, %{year}",
+      day: d.day,
+      month: month_short(d.month),
+      year: d.year
+    )
+  end
 
   def format_date_long(nil), do: ""
 
-  def format_date_long(%DateTime{} = d),
-    do: "#{d.day} de #{Enum.at(@meses, d.month - 1)} de #{d.year}"
+  def format_date_long(%DateTime{} = d) do
+    pgettext("long date", "%{month} %{day}, %{year}",
+      day: d.day,
+      month: month_long(d.month),
+      year: d.year
+    )
+  end
+
+  @doc """
+  What kind of post this is, in the reader's language.
+
+  The three kinds are a vocabulary this site chose, not something the author
+  typed, so they belong to the interface. Topics, which the author types, stay
+  exactly as written.
+  """
+  def kind_label("ensaio"), do: gettext("essay")
+  def kind_label("nota"), do: gettext("note")
+  def kind_label("pagina"), do: gettext("page")
+  def kind_label(other), do: other
+
+  defp month_short(month) do
+    Enum.at(
+      [
+        pgettext("month, short", "Jan"),
+        pgettext("month, short", "Feb"),
+        pgettext("month, short", "Mar"),
+        pgettext("month, short", "Apr"),
+        pgettext("month, short", "May"),
+        pgettext("month, short", "Jun"),
+        pgettext("month, short", "Jul"),
+        pgettext("month, short", "Aug"),
+        pgettext("month, short", "Sep"),
+        pgettext("month, short", "Oct"),
+        pgettext("month, short", "Nov"),
+        pgettext("month, short", "Dec")
+      ],
+      month - 1
+    )
+  end
+
+  defp month_long(month) do
+    Enum.at(
+      [
+        pgettext("month", "January"),
+        pgettext("month", "February"),
+        pgettext("month", "March"),
+        pgettext("month", "April"),
+        pgettext("month", "May"),
+        pgettext("month", "June"),
+        pgettext("month", "July"),
+        pgettext("month", "August"),
+        pgettext("month", "September"),
+        pgettext("month", "October"),
+        pgettext("month", "November"),
+        pgettext("month", "December")
+      ],
+      month - 1
+    )
+  end
 
   def initials(name) do
     name
