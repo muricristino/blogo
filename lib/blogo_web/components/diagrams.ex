@@ -3,14 +3,11 @@ defmodule BlogoWeb.Diagrams do
   The seven diagram forms, and only these. Geometry and class names come from
   the canvas, so a figure drawn here is the figure that was designed.
 
-  Three rules the whole set obeys:
-
-    * no colour is written into the SVG — fills and strokes come from classes,
-      so dark mode is a token swap rather than a second drawing;
-    * every figure carries `role` and `aria-label`, because the caption states
-      the conclusion and cannot double as the description;
-    * the accent marks the one element that carries the conclusion, and the
-      muted dashed style marks the path nobody wants.
+  Three rules the set obeys: no colour is written into the SVG, so dark mode is
+  a token swap rather than a second drawing; every figure carries `role` and
+  `aria-label`, because the caption states the conclusion and cannot double as
+  the description; and the accent marks the one element carrying that
+  conclusion.
   """
   use Phoenix.Component
 
@@ -31,8 +28,7 @@ defmodule BlogoWeb.Diagrams do
     end
   end
 
-  # 01 — where a case travels. The dashed branch is always the unwanted path,
-  # which is why it needs no colour to read as the bad outcome.
+  # 01 — where a case travels. The dashed branch is always the unwanted path.
   defp fluxo(assigns) do
     assigns =
       assigns
@@ -91,8 +87,7 @@ defmodule BlogoWeb.Diagrams do
     """
   end
 
-  # 02 — how much two groups overlap, as the two densities the AUC summarises.
-  # A single number hides whether the overlap is a sliver or a whole shoulder.
+  # 02 — how much two groups overlap: the densities behind a single AUC.
   defp distribuicao(assigns) do
     assigns = assign(assigns, :rows, assigns.data["rows"] || [])
 
@@ -112,8 +107,8 @@ defmodule BlogoWeb.Diagrams do
     """
   end
 
-  # 03 — what a change cost. Two bars per row and never three; only the rows
-  # that moved take a semantic colour, so the eye lands on them first.
+  # 03 — what a change cost. Two bars per row, never three; only rows that
+  # moved take a semantic colour.
   defp antes_depois(assigns) do
     assigns = assign(assigns, :rows, assigns.data["rows"] || [])
 
@@ -134,8 +129,8 @@ defmodule BlogoWeb.Diagrams do
     """
   end
 
-  # 04 — where the error falls. Each cell names the mistake in words; the count
-  # alone does not say which error you can afford.
+  # 04 — where the error falls. Each cell names the mistake: a count alone does
+  # not say which error you can afford.
   defp matriz(assigns) do
     assigns = assign(assigns, :cells, assigns.data["cells"] || [])
 
@@ -175,8 +170,8 @@ defmodule BlogoWeb.Diagrams do
     """
   end
 
-  # 05 — the order the questions come in. At most two levels: a third turns the
-  # figure into a list, and a list should be written as one.
+  # 05 — the order the questions come in. Two levels at most; a third is a list,
+  # and a list should be written as one.
   defp decisao(assigns) do
     ~H"""
     <svg class="dg" viewBox="0 0 470 160" role="img" aria-label={@label}>
@@ -208,8 +203,8 @@ defmodule BlogoWeb.Diagrams do
     """
   end
 
-  # 06 — how something unfolded. Time runs left to right: what happened above
-  # the line, what was concluded below it.
+  # 06 — how something unfolded: what happened above the line, what it meant
+  # below.
   defp linha_tempo(assigns) do
     assigns = assign(assigns, :events, assigns.data["events"] || [])
 

@@ -2,33 +2,24 @@ defmodule Blogo.Content.Markdown do
   @moduledoc """
   The text form of a post: front matter plus a body, and back again.
 
-  The editor has two modes over one document. Rich mode manipulates the block
-  list directly; markdown mode edits this text and parses it back. Both write
-  the same `body["blocks"]`, so a post can be started in one and finished in
-  the other — which only holds if the conversion is lossless, and
-  `test/blogo/content/markdown_test.exs` is what keeps it honest.
+  Both editor modes write the same `body["blocks"]`, which only holds if the
+  conversion is lossless — `test/blogo/content/markdown_test.exs` keeps it
+  honest.
 
   ## The dialect
 
-  Standard markdown covers five of the eleven blocks: paragraph, `##` heading,
-  pipe table, fenced code and `>` quote. The other six have no markdown of
-  their own, so they use a fence of three colons with the block's name — the
-  same convention the editor's footer advertises:
+  Standard markdown covers five of the eleven blocks. The other six use a fence
+  of three colons with the block's name:
 
       :::aviso bad O antídoto
       Se os negativos são óbvios, você está medindo se o modelo sabe ler.
       :::
 
-  Two prefixes attach to the block above rather than standing alone, because
-  both are properties of a block and not blocks themselves:
+  Two prefixes attach to the block above, because both are properties of a
+  block rather than blocks: `+ ` is a caption, `^ ` is the margin note.
 
-    * `+ ` is the caption under a figure, table or code listing;
-    * `^ ` is the margin note that sits beside the block.
-
-  A diagram carries data no prose can express, so its fence holds `alt:` and
-  `legenda:` lines followed by the data as JSON. That JSON is the one place
-  where the text form is not prose, and it is deliberate: a hand-drawn diagram
-  would be a second drawing to keep in sync with the seven forms.
+  A diagram's fence holds `alt:` and the data as JSON — the one place the text
+  form is not prose, so the seven forms stay the only drawing.
   """
 
   @block_fences %{
@@ -42,9 +33,7 @@ defmodule Blogo.Content.Markdown do
 
   @fence_of Map.new(@block_fences, fn {k, v} -> {v, k} end)
 
-  @doc """
-  Renders a post as the text a writer edits.
-  """
+  @doc "Renders a post as the text a writer edits."
   def to_markdown(post) do
     front = front_matter(post)
     body = (get_in(post, [Access.key(:body), "blocks"]) || []) |> Enum.map(&block_to_md/1)
@@ -56,12 +45,8 @@ defmodule Blogo.Content.Markdown do
   end
 
   @doc """
-  Parses the text back into the fields a post is made of.
-
-  Returns `{:ok, attrs}` with `:title`, `:subtitle`, `:topics`, `:kind`,
-  `:slug` and `:body`, or `{:error, reason}` when the front matter is
-  unreadable — a diagram whose JSON does not parse, most often, which is why
-  the message names the block.
+  Parses the text back into post attrs, or `{:error, reason}` — most often a
+  diagram whose JSON does not parse, which is why the message names the block.
   """
   def from_markdown(text) when is_binary(text) do
     {front, body} = split_front_matter(text)
@@ -98,8 +83,7 @@ defmodule Blogo.Content.Markdown do
   defp format_list([]), do: nil
   defp format_list(list) when is_list(list), do: "[" <> Enum.join(list, ", ") <> "]"
 
-  # A value that would start a new fence or span lines cannot go in front
-  # matter unquoted; quoting always is simpler to read than quoting sometimes.
+  # Quoting always is simpler to read than quoting sometimes.
   defp escape_scalar(v) do
     s = to_string(v)
     if String.contains?(s, "\n"), do: inspect(s), else: s
@@ -248,11 +232,9 @@ defmodule Blogo.Content.Markdown do
     end
   end
 
-  # A blank line separates paragraphs, and markdown has no way to say whether
-  # the next paragraph starts a new block or continues this one. Two plain
-  # paragraphs render identically either way, so they merge; a block carrying a
-  # margin note, a caption or a drop cap never does, because those point at one
-  # specific paragraph.
+  # Markdown cannot say whether the next paragraph starts a new block. Two plain
+  # paragraphs render identically either way, so they merge; one carrying a note,
+  # caption or drop cap never does, because those point at a specific paragraph.
   defp merge_paragraphs(blocks) do
     Enum.reduce(blocks, [], fn block, acc ->
       case {acc, block} do

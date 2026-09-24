@@ -33,9 +33,8 @@ defmodule BlogoWeb.AdminAuth do
   end
 
   @doc """
-  Checks the password and marks the session. The comparison is constant-time:
-  a plain `==` on a secret leaks its length and its first differing byte to
-  anyone willing to measure.
+  Checks the password and marks the session. Constant-time comparison: `==` on
+  a secret leaks its length and first differing byte to anyone measuring.
   """
   def sign_in(conn, password) do
     if valid?(password) do
@@ -49,9 +48,8 @@ defmodule BlogoWeb.AdminAuth do
   end
 
   @doc """
-  Signs in a person Clerk has vouched for. Only the identity is kept: the
-  session token stays in the browser, where it is refreshed and expires on
-  Clerk's schedule rather than ours.
+  Signs in a person Clerk vouched for. Only the identity is kept — the token
+  stays in the browser, on Clerk's expiry schedule rather than ours.
   """
   def sign_in_user(conn, user) do
     conn

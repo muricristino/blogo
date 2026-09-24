@@ -16,16 +16,15 @@ defmodule Blogo.Content.Post do
     field :topics, {:array, :string}, default: []
     field :meta_description, :string
 
-    # The block list the editor produces. Stored whole so a design change
-    # re-renders every post instead of requiring a content migration.
+    # Stored whole so a design change re-renders every post rather than needing
+    # a content migration.
     field :body, :map, default: %{}
 
-    # The article's key diagram, in the same shape as a diagram block. It is
-    # the figure on the card and the thumbnail in the list.
+    # The article's key diagram, shaped like a diagram block: card figure and
+    # list thumbnail.
     field :hero, :map
 
-    # Bumped on every write and checked by the database. Two tabs editing one
-    # post used to overwrite each other without either noticing.
+    # Checked by the database: two tabs used to overwrite each other silently.
     field :lock_version, :integer, default: 1
 
     belongs_to :author, Blogo.Content.Author
@@ -81,9 +80,8 @@ defmodule Blogo.Content.Post do
     end
   end
 
-  # An article carries a diagram, and the rule is enforced at publication
-  # rather than at creation — a draft is allowed to be incomplete, a published
-  # article is not. See CLAUDE.md.
+  # Enforced at publication, not creation: a draft may be incomplete. See
+  # CLAUDE.md.
   defp validate_hero(changeset) do
     case get_field(changeset, :status) do
       "published" ->
@@ -131,8 +129,8 @@ defmodule Blogo.Content.Post do
     end
   end
 
-  # Anchors are derived, not authored: an editor renaming a section should not
-  # have to remember to renumber the table of contents.
+  # Derived, not authored: renaming a section should not mean renumbering the
+  # table of contents by hand.
   defp number_sections(blocks) do
     {blocks, _} =
       Enum.map_reduce(blocks, 0, fn

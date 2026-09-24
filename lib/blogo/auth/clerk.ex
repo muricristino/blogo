@@ -1,26 +1,15 @@
 defmodule Blogo.Auth.Clerk do
   @moduledoc """
-  Verifies a Clerk session, the same way codo and webo do.
+  Verifies a Clerk session, the same way codo and webo do: the login happens in
+  the browser with Clerk's SDK, and this side only verifies — RS256 against
+  this instance's JWKS, plus expiry.
 
-  The division of labour is theirs and it is the point: **the login happens in
-  the browser**, with Clerk's own SDK, and this side only ever *verifies*. A
-  session JWT is checked locally — RS256 against this instance's JWKS, plus
-  expiry — so signing someone in costs no round trip to Clerk and an outage at
-  Clerk cannot lock out a session that is already valid.
+  Two modes, decided by the environment: no keys means `ADMIN_PASSWORD`, both
+  keys mean Google through Clerk. One key without the other is refused at boot,
+  because a half-configured login that falls back to a password is a door
+  everyone believes is locked.
 
-  ## Two modes, decided by the environment
-
-  | | development | with Clerk |
-  |---|---|---|
-  | when | no Clerk keys | `CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` |
-  | how you get in | `ADMIN_PASSWORD` | Google, through Clerk |
-
-  **One key without the other is refused at boot.** A half-configured login
-  that quietly falls back to the password would be a door everyone believes is
-  locked — which is the failure webo's own notes single out.
-
-  `BLOGO_ALLOWED_EMAILS` has the last word over Clerk: an address removed from
-  it stops working on the next request, with no session to hunt down.
+  `BLOGO_ALLOWED_EMAILS` has the last word over Clerk.
   """
 
   require Logger
@@ -29,10 +18,8 @@ defmodule Blogo.Auth.Clerk do
   @http_timeout 10_000
 
   @doc """
-  The mode this instance runs in: `:clerk` or `:password`.
-
-  Raises when exactly one of the two keys is set, because that is a mistake
-  rather than a choice.
+  `:clerk` or `:password`. Raises when exactly one key is set — that is a
+  mistake, not a choice.
   """
   def mode do
     case {publishable_key(), secret_key()} do
@@ -69,12 +56,9 @@ defmodule Blogo.Auth.Clerk do
   end
 
   @doc """
-  The Clerk frontend host, decoded from the publishable key.
-
-  A publishable key is `pk_test_` or `pk_live_` followed by the base64 of the
-  instance's host. Taking the host from the key rather than from configuration
-  means the SDK is loaded from, and the token verified against, the same
-  instance — there is no third host to get wrong.
+  The Clerk host, decoded from the publishable key (base64 after the prefix).
+  Taking it from the key means the SDK is loaded from, and the token verified
+  against, the same instance — no third host to get wrong.
   """
   def frontend_api(pk \\ nil) do
     pk = pk || publishable_key()
@@ -89,10 +73,8 @@ defmodule Blogo.Auth.Clerk do
   end
 
   @doc """
-  Verifies a session token and returns the person it belongs to.
-
-  Returns `{:ok, %{id:, email:, name:, avatar:}}` or `{:error, reason}`. The
-  allowlist is applied last, so it overrides Clerk saying yes.
+  Verifies a session token and returns the person it belongs to. The allowlist
+  is applied last, so it overrides Clerk saying yes.
   """
   def session_user(token) when is_binary(token) do
     with {:ok, claims} <- verify(token),
@@ -106,7 +88,7 @@ defmodule Blogo.Auth.Clerk do
 
   @doc """
   The allowlist has the last word. With none configured, Clerk decides alone —
-  which is the right default only because a Clerk instance is invite-only.
+  acceptable only because a Clerk instance is invite-only.
   """
   def check_allowed(email) do
     case allowed_emails() do
@@ -144,9 +126,9 @@ defmodule Blogo.Auth.Clerk do
          {:ok, jwk} <- key_for(kid) do
       signer = Joken.Signer.create("RS256", jwk)
 
-      # What authenticates the token is the signature against *this* instance's
-      # JWKS plus expiry. The `aud` of a Clerk session varies by setup and is
-      # deliberately not checked — the same call the other two projects make.
+      # `aud` is deliberately not checked: a Clerk session's audience varies by
+      # setup, and what authenticates the token is the signature against *this*
+      # instance plus expiry. Same call codo and webo make.
       case Joken.verify_and_validate(%{}, token, signer) do
         {:ok, claims} -> check_expiry(claims)
         {:error, reason} -> {:error, "sessão recusada: #{inspect(reason)}"}
@@ -156,7 +138,7 @@ defmodule Blogo.Auth.Clerk do
 
   defp check_expiry(claims) do
     now = System.system_time(:second)
-    # Ten seconds of leeway for clock skew, as in codo and webo.
+    # Ten seconds of leeway for clock skew.
     exp = claims["exp"]
     nbf = claims["nbf"]
 
@@ -175,9 +157,8 @@ defmodule Blogo.Auth.Clerk do
     end
   end
 
-  # The JWKS is cached for an hour. A kid nobody has seen — which is what key
-  # rotation looks like — refetches immediately rather than failing until the
-  # cache expires.
+  # Cached for an hour; an unknown kid (key rotation) refetches immediately
+  # rather than failing until the cache expires.
   defp key_for(kid) do
     case cached_jwks() do
       %{^kid => jwk} -> {:ok, jwk}

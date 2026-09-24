@@ -2,18 +2,11 @@ defmodule BlogoWeb.EditorLive.Edit do
   @moduledoc """
   The post editor: two modes over one document.
 
-  **Rich** manipulates the block list directly. Prose blocks are
-  `contenteditable`, marked `phx-update="ignore"` so LiveView never patches a
-  node the writer has the caret in — the one rule that keeps a collaborative
-  DOM and a live editor from fighting over the same text.
-
-  **Markdown** edits the whole document as text through
-  `Blogo.Content.Markdown`, and parses it back on every keystroke. A parse
-  error does not discard the text: it is reported and the last good block list
-  stays, because losing an article to a stray colon is unforgivable.
-
-  Autosave runs on a timer that restarts with each change, so a writer in the
-  middle of a sentence is not interrupted by a save on every character.
+  Rich mode manipulates the block list; prose blocks are `contenteditable` under
+  `phx-update="ignore"`, so LiveView never patches a node the writer has the
+  caret in. Markdown mode edits the whole document as text and parses it back —
+  a parse error is reported and the last good block list stays, because losing
+  an article to a stray colon is unforgivable.
   """
   use BlogoWeb, :live_view
 
@@ -53,13 +46,11 @@ defmodule BlogoWeb.EditorLive.Edit do
      |> assign_derived()}
   end
 
-  # `post` is the row as it was last read, and `fields` is what the writer has
-  # typed. They have to stay separate: writing a change into the struct and then
-  # handing that same struct to `Ecto.Changeset.cast/3` leaves nothing for cast
-  # to compare against, so the column is never written and the screen goes on
-  # showing a value the database never received. That bug shipped in the first
-  # version of this file and nothing on screen contradicted it — the save badge
-  # still turned green.
+  # `post` is the row as last read; `fields` is what the writer typed. Keeping
+  # them separate is load-bearing: writing the change into the struct and then
+  # handing that struct to `cast/3` leaves nothing to compare against, so the
+  # column is never written and the screen keeps showing a value the database
+  # never received. That shipped once, with the save badge turning green.
   @editable ~w(title subtitle slug kind meta_description series_id series_position)a
 
   defp fields_of(post) do
@@ -68,9 +59,7 @@ defmodule BlogoWeb.EditorLive.Edit do
     |> Map.new(fn {k, v} -> {k, v} end)
   end
 
-  # A select sends "" for "nenhuma" and a number input sends a string. Both
-  # have to reach the changeset as nil rather than as "", which would fail to
-  # cast and silently keep the old value.
+  # "" would fail to cast and silently keep the old value.
   defp normalise(:series_id, ""), do: nil
   defp normalise(:series_position, ""), do: nil
   defp normalise(_key, value), do: value
@@ -99,8 +88,8 @@ defmodule BlogoWeb.EditorLive.Edit do
     {:noreply, socket |> put_blocks(move(socket.assigns.blocks, uid, dir)) |> touched()}
   end
 
-  # Removing is one click and the browser's undo cannot reach it, so the block
-  # is kept with its position until something else is removed.
+  # The browser's undo cannot reach this, so the block is kept until the next
+  # removal replaces it.
   def handle_event("delete", %{"uid" => uid}, socket) do
     blocks = socket.assigns.blocks
     index = Enum.find_index(blocks, &(&1["_uid"] == uid))
@@ -113,9 +102,7 @@ defmodule BlogoWeb.EditorLive.Edit do
      |> touched()}
   end
 
-  # Backspace in an empty block removes it and puts the caret at the end of the
-  # one above, which is what every editor does. The last block stays: a sheet
-  # with nothing to type in is a dead end.
+  # The last block stays: a sheet with nothing to type in is a dead end.
   def handle_event("delete_empty", %{"uid" => uid}, socket) do
     blocks = socket.assigns.blocks
 
@@ -163,9 +150,8 @@ defmodule BlogoWeb.EditorLive.Edit do
     {:noreply, assign(socket, slash_for: uid, selected: uid, slash_query: "", slash_at: 0)}
   end
 
-  # The palette advertises /t, /h, /tb. Before this they were decoration: the
-  # menu opened and then ignored every key, so the letters landed in the
-  # paragraph as text and Enter inserted a line break.
+  # The palette advertises /t, /h, /tb; without this they were decoration, and
+  # the letters landed in the paragraph as text.
   def handle_event("slash_key", %{"key" => key}, socket) do
     matches = slash_matches(socket.assigns.slash_query)
 
@@ -211,13 +197,9 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   def handle_event("slash_close", _params, socket), do: {:noreply, assign(socket, slash_for: nil)}
 
-  # An input outside a form sends `%{"value" => ...}`, so the field it belongs
-  # to travels as a phx-value and is matched against a fixed list — never
-  # `String.to_atom` on something that arrived from a browser.
-  # The panel and the sheet heading are forms, so a change event carries the
-  # fields by name and `phx-debounce` saves while the writer types. The previous
-  # version listened for blur on loose inputs: a writer who typed a caption and
-  # reloaded without clicking elsewhere lost it, while the badge said "salvo".
+  # Forms with `phx-debounce`, not blur on loose inputs: a writer who typed a
+  # caption and reloaded without clicking elsewhere used to lose it while the
+  # badge said "salvo".
   def handle_event("head", params, socket) do
     socket =
       Enum.reduce(@editable, socket, fn key, acc ->
@@ -244,9 +226,8 @@ defmodule BlogoWeb.EditorLive.Edit do
     end
   end
 
-  # The commonest case by far: the article already contains the figure that
-  # should be on its cover, and retyping its data would be a second copy to
-  # keep in sync.
+  # The article usually already holds the figure its cover wants; retyping the
+  # data would be a second copy to keep in sync.
   def handle_event("hero_from_block", _params, socket) do
     case Enum.find(socket.assigns.blocks, &(&1["type"] == "diagram")) do
       nil ->
@@ -340,8 +321,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   @impl true
   def handle_info(:autosave, socket), do: {:noreply, save(socket)}
 
-  # "salvo há 1 minuto" stayed on screen for an hour. The badge re-renders on a
-  # tick rather than only when something else happens to change.
+  # Without a tick, "salvo há 1 minuto" stayed on screen for an hour.
   def handle_info(:tick, socket) do
     Process.send_after(self(), :tick, 30_000)
     {:noreply, assign(socket, now: DateTime.utc_now())}
@@ -362,8 +342,7 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   defp save(socket) do
     case Content.save_post(socket.assigns.post, attrs_of(socket)) do
-      # Two tabs on one post used to be last-write-wins in silence. The write
-      # is refused and the writer decides which version survives.
+      # Two tabs on one post were last-write-wins in silence.
       {:error, :stale} ->
         put_flash(
           socket,
@@ -381,8 +360,7 @@ defmodule BlogoWeb.EditorLive.Edit do
     end
   end
 
-  # Inserting selects what was inserted. Without this the palette kept
-  # inserting after the same old block, so four blocks added in a row came out
+  # Selecting what was inserted; without it four blocks added in a row came out
   # in reverse order.
   defp insert_block(socket, type, after_uid) do
     block = new_block(type)
@@ -413,10 +391,7 @@ defmodule BlogoWeb.EditorLive.Edit do
     |> assign_derived()
   end
 
-  # Choosing a form starts a hero with an empty dataset; clearing the form
-  # removes it. The data is JSON because a diagram carries numbers no prose
-  # expresses, and a broken edit keeps the previous figure rather than blanking
-  # the cover.
+  # A broken edit keeps the previous figure rather than blanking the cover.
   defp build_hero(_current, %{"form" => ""}), do: {:ok, nil}
 
   defp build_hero(current, %{"form" => form} = params) do
@@ -461,8 +436,8 @@ defmodule BlogoWeb.EditorLive.Edit do
     ]
   end
 
-  # What each form is for, under the selector rather than inside it: an option
-  # long enough to explain itself is an option too long to read in a select.
+  # Under the selector, not inside it: an option long enough to explain itself
+  # is too long to read in a select.
   defp form_hint("fluxo"), do: "por onde um caso passa"
   defp form_hint("distribuicao"), do: "o quanto dois grupos se sobrepõem"
   defp form_hint("antes_depois"), do: "o que uma mudança custou"
@@ -472,9 +447,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   defp form_hint("intervalo"), do: "o que a amostra permite concluir"
   defp form_hint(_), do: nil
 
-  # The shape each form expects, so nobody has to guess the schema from an
-  # empty box. This is the only place the editor explains a data format, and it
-  # exists because the alternative is trial and error.
+  # The shape each form expects; the alternative is guessing from an empty box.
   defp hero_hint("fluxo"), do: ~S|{"steps": [{"label": "passo", "accent": true}]}|
 
   defp hero_hint("distribuicao"),
@@ -509,9 +482,8 @@ defmodule BlogoWeb.EditorLive.Edit do
     "Este post foi alterado noutro lugar depois que você abriu. Recarregue para ver a versão nova — o que está na tela não foi gravado."
   end
 
-  # The refusal speaks the words the screen uses. The changeset says "hero",
-  # which appears nowhere in the interface — a writer who read it had no way to
-  # connect it to the "Diagrama de capa" panel two centimetres to the right.
+  # The refusal speaks the words the screen uses: the changeset says "hero",
+  # which appears nowhere in the interface.
   defp first_error(changeset) do
     changeset
     |> Ecto.Changeset.traverse_errors(fn {msg, _opts} -> msg end)
@@ -527,9 +499,8 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   # ── block bookkeeping ─────────────────────────────────────────────────────
 
-  # Each block gets an id that lives only in this session. It is what
-  # `phx-update="ignore"` keys on, so it has to be stable while the block
-  # exists and unique while two blocks do.
+  # Session-only id, which `phx-update="ignore"` keys on: stable while the block
+  # exists, unique while two do.
   defp put_blocks(socket, blocks) do
     {blocks, _n} =
       Enum.map_reduce(blocks, 0, fn block, n ->
@@ -544,10 +515,8 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   defp clean_blocks(blocks), do: Enum.map(blocks, &Map.delete(&1, "_uid"))
 
-  # The post as it would be if saved right now: the row, with what the writer
-  # has typed on top. Everything that reads the document — the preview, the
-  # checklist, the search snippet, the markdown — reads this, so none of them
-  # can disagree with the others.
+  # The post as it would be if saved now. Preview, checklist, search snippet and
+  # markdown all read this, so none of them can disagree with the others.
   defp working_post(socket) do
     socket.assigns.post
     |> Map.merge(socket.assigns.fields)
@@ -560,16 +529,14 @@ defmodule BlogoWeb.EditorLive.Edit do
     end)
   end
 
-  # A paragraph field is a list; everything else is a scalar. Splitting on the
-  # blank line here means the rich mode produces the same block a markdown
-  # paste would.
+  # Splitting here means rich mode produces the same block a markdown paste
+  # would.
   defp put_field(block, "paragraphs", value) do
     Map.put(block, "paragraphs", String.split(value, ~r/\n{2,}/, trim: true))
   end
 
-  # A structured block is edited as its own markdown, so what comes back is
-  # parsed with the same reader the markdown mode uses. A broken edit keeps the
-  # previous block instead of replacing it with nothing.
+  # Parsed with the same reader markdown mode uses; a broken edit keeps the
+  # previous block rather than replacing it with nothing.
   defp put_field(block, "_markdown", value) do
     case Markdown.from_markdown(value) do
       {:ok, %{body: %{"blocks" => [parsed | _]}}} -> Map.merge(parsed, %{"_uid" => block["_uid"]})
@@ -1156,10 +1123,9 @@ defmodule BlogoWeb.EditorLive.Edit do
     """
   end
 
-  # A table, a diagram and a key-numbers block carry structure that no prose
-  # editor expresses well. They are shown as they will look, and edited as the
-  # markdown that produces them — the same text the markdown mode uses, so
-  # there is no third representation to learn.
+  # Structured blocks are shown as they will look and edited as their own
+  # markdown — the same text markdown mode uses, so there is no third
+  # representation to learn.
   defp block_body(%{block: %{"type" => type}} = assigns)
        when type in ~w(table diagram keynumbers) do
     assigns = assign(assigns, :source, block_markdown(assigns.block))
@@ -1253,8 +1219,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   attr :value, :string, default: nil
   attr :uid, :string, required: true
 
-  # A caption is a sentence, not a value: an input of one line hid the end of
-  # every caption of normal length and showed the inline markup raw.
+  # A caption is a sentence: a one-line input hid the end of every normal one.
   defp attachment(assigns) do
     ~H"""
     <div class={"ed-attach #{@value in [nil, ""] && "ed-attach--empty"}"}>
