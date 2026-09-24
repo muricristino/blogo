@@ -33,7 +33,7 @@ defmodule BlogoWeb.FeedController do
 
     body = """
     <?xml version="1.0" encoding="utf-8"?>
-    <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="pt-BR">
+    <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="#{Content.site_language()}">
       <title>#{esc(Content.site_name(site))}</title>
       #{if site.description, do: "<subtitle>#{esc(site.description)}</subtitle>", else: ""}
       <link href="#{base}/feed.xml" rel="self" type="application/atom+xml"/>
@@ -59,9 +59,12 @@ defmodule BlogoWeb.FeedController do
     |> String.trim()
   end
 
+  # Each entry says which language it is in: the feed declares what the blog
+  # mostly writes, and an entry that is the exception has to say so or a reader
+  # is told the wrong thing about it.
   defp entrada(post, base) do
     """
-      <entry>
+      <entry xml:lang="#{post.language}">
         <title>#{esc(post.title)}</title>
         <link href="#{base}/#{post.slug}" rel="alternate" type="text/html"/>
         <id>#{base}/#{post.slug}</id>

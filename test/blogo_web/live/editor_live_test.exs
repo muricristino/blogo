@@ -284,6 +284,18 @@ defmodule BlogoWeb.EditorLiveTest do
       assert saved.meta_description == "Para a busca."
     end
 
+    # The article's language is a property of the article, so the editor writes
+    # it — and the row is read back, because a change written into the struct
+    # before the changeset never reaches the column.
+    test "the language the article is written in saves too", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      live |> form("#ed-publish", %{"language" => "en"}) |> render_change()
+      render_click(live, "save", %{})
+
+      assert Content.get_post!(post.id).language == "en"
+    end
+
     test "os marcadores também", %{conn: conn, post: post} do
       {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
 

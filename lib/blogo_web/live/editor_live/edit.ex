@@ -51,7 +51,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   # handing that struct to `cast/3` leaves nothing to compare against, so the
   # column is never written and the screen keeps showing a value the database
   # never received. That shipped once, with the save badge turning green.
-  @editable ~w(title subtitle slug kind meta_description)a
+  @editable ~w(title subtitle slug kind language meta_description)a
 
   defp fields_of(post) do
     post
