@@ -11,6 +11,12 @@ permissions:
 
 jobs:
   deploy:
+    # webo-deploy commits its own scaffold back to main while it deploys, and
+    # that push retriggers this workflow — so one merge restarted the container
+    # two or three times, and a reader arriving in the wrong window saw the site
+    # down. The chain stops here instead of relying on the scaffold happening to
+    # be byte-identical.
+    if: "!startsWith(github.event.head_commit.message, 'chore: webo scaffold')"
     runs-on: ubuntu-latest
     steps:
       - name: "📥 Check out app"
