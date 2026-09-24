@@ -26,6 +26,10 @@
   <article class="stack" style="gap:26px">
     <header class="stack" style="gap:16px">
       <span class="kicker">{@post.kind} · {Enum.join(@post.topics, " · ")}</span>
+      <a :if={@series} href={~p"/serie/#{@series.slug}"} class="serie-badge">
+        Parte {part_of(@series, @post)} de {length(@series.posts)} em
+        <strong>{@series.name}</strong>
+      </a>
       <h1 class="h1">{@post.title}</h1>
       <p :if={@post.subtitle} class="dek">{BlogoWeb.Blocks.inline(@post.subtitle)}</p>
 

@@ -100,11 +100,9 @@
           <div class="stat">
             <span class="stat-n">{@total}</span><span class="small">artigos</span>
           </div>
-          <div class="stat">
-            <span class="stat-n mono" style="font-family:'IBM Plex Mono',monospace;font-size:26px">1.204</span>
-            <span class="small">assinantes</span>
+          <div :if={@series != []} class="stat">
+            <span class="stat-n">{length(@series)}</span><span class="small">séries</span>
           </div>
-          <div class="stat"><span class="stat-n">3</span><span class="small">séries</span></div>
         </div>
       </div>
 
@@ -140,29 +138,20 @@
     </aside>
   </div>
 
-  <section
-    :if={@series != []}
-    style="margin-top:46px;padding-top:30px;border-top:1px solid var(--line)"
-  >
-    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:18px">
+  <section :if={@series != []} class="serie-section">
+    <div class="serie-section-head">
       <h2 class="h2">Séries</h2>
       <span class="small">Leituras em ordem, do começo ao fim</span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
-      <article
-        :for={s <- @series}
-        class="card"
-        style="padding:20px 22px;display:flex;flex-direction:column;gap:9px"
-      >
-        <span class="micro">{s.parts} partes</span>
-        <h3 class="h3">{s.title}</h3>
-        <p class="small">{s.dek}</p>
-        <div style="height:3px;border-radius:2px;background:color-mix(in srgb,var(--accent) 14%,transparent);margin-top:6px">
-          <div style={"height:100%;border-radius:2px;background:var(--accent);width:#{s.done / s.parts * 100}%"}>
-          </div>
-        </div>
-        <span class="small mono">{status_serie(s)}</span>
-      </article>
+    <div class="serie-grid">
+      <a :for={s <- @series} href={~p"/serie/#{s.slug}"} class="card serie-card">
+        <span class="micro">{parts_label(length(s.posts))}</span>
+        <h3 class="h3">{s.name}</h3>
+        <p :if={s.description} class="small">{s.description}</p>
+        <span class="small serie-card-first">
+          Começa em “{List.first(s.posts).title}”
+        </span>
+      </a>
     </div>
   </section>
 </div>

@@ -30,6 +30,10 @@ defmodule Blogo.Content.Post do
 
     belongs_to :author, Blogo.Content.Author
 
+    # An article belongs to at most one series and knows where it sits in it.
+    belongs_to :series, Blogo.Content.Series
+    field :series_position, :integer
+
     timestamps(type: :utc_datetime)
   end
 
@@ -47,15 +51,34 @@ defmodule Blogo.Content.Post do
       :meta_description,
       :body,
       :hero,
-      :author_id
+      :author_id,
+      :series_id,
+      :series_position
     ])
     |> optimistic_lock(:lock_version)
     |> validate_required([:title, :slug, :author_id])
     |> validate_inclusion(:kind, @kinds)
     |> validate_inclusion(:status, @statuses)
     |> unique_constraint(:slug)
+    |> unique_constraint(:series_position,
+      name: :posts_series_position_index,
+      message: "já é ocupada por outro artigo desta série"
+    )
     |> assoc_constraint(:author)
     |> validate_hero()
+    |> validate_series()
+  end
+
+  # A position without a series is a number that means nothing, and a series
+  # without a position has no place in the reading order.
+  defp validate_series(changeset) do
+    case {get_field(changeset, :series_id), get_field(changeset, :series_position)} do
+      {nil, nil} -> changeset
+      {nil, _} -> add_error(changeset, :series_position, "precisa de uma série")
+      {_, nil} -> add_error(changeset, :series_position, "é obrigatória quando há série")
+      {_, n} when n < 1 -> add_error(changeset, :series_position, "começa em 1")
+      _ -> changeset
+    end
   end
 
   # An article carries a diagram, and the rule is enforced at publication
