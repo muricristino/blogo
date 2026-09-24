@@ -84,6 +84,23 @@ defmodule BlogoWeb.PanelLive.Index do
     end
   end
 
+  # This one saves on the click instead of waiting for the form's "Salvar".
+  # A switch that looks flipped and was never written is the same silent loss
+  # as a save badge that lies, and it sits outside the form so that flipping it
+  # cannot throw away a name someone is in the middle of typing.
+  def handle_event("destaque_figura", %{"ligado" => ligado}, socket) do
+    case Content.update_site(%{"featured_hero" => ligado}) do
+      {:ok, site} ->
+        {:noreply,
+         socket
+         |> assign(site: site)
+         |> put_flash(:info, aviso_destaque(site.featured_hero))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível guardar essa escolha.")}
+    end
+  end
+
   def handle_event("autor_abrir", _params, socket) do
     {:noreply, assign(socket, autor_aberto?: not socket.assigns.autor_aberto?)}
   end
@@ -183,6 +200,14 @@ defmodule BlogoWeb.PanelLive.Index do
   defp rotulo(:title), do: "O título"
   defp rotulo(:slug), do: "O endereço"
   defp rotulo(field), do: to_string(field)
+
+  defp aviso_destaque(true),
+    do: "O card em destaque volta a desenhar o diagrama do artigo."
+
+  defp aviso_destaque(false),
+    do:
+      "O card em destaque fica só com o texto. O diagrama continua no artigo e na imagem " <>
+        "que aparece quando alguém compartilha o link."
 
   defp load_site(socket) do
     site = Content.the_site()
@@ -656,6 +681,31 @@ defmodule BlogoWeb.PanelLive.Index do
       <div :if={not @unnamed? and not @aberto?} class="pn-author-now">
         <span class="pn-author-name">{@site.name}</span>
         <span :if={@site.description} class="small">{@site.description}</span>
+      </div>
+
+      <div class="pn-site-switch">
+        <span class="pn-site-switch-text">
+          <span class="micro">Figura no card em destaque</span>
+          <span class="small">
+            Ligada por padrão: o primeiro card da home desenha o diagrama do artigo. Desligada, o
+            destaque fica só com o texto — título maior na largura inteira do card. O diagrama
+            continua obrigatório no artigo publicado e continua sendo a imagem que aparece quando
+            alguém compartilha o link.
+          </span>
+        </span>
+
+        <span class="seg">
+          <button
+            :for={{rotulo, ligada} <- [{"Ligada", true}, {"Desligada", false}]}
+            type="button"
+            class={@site.featured_hero == ligada && "is-on"}
+            phx-click="destaque_figura"
+            phx-value-ligado={to_string(ligada)}
+            aria-pressed={to_string(@site.featured_hero == ligada)}
+          >
+            {rotulo}
+          </button>
+        </span>
       </div>
 
       <.form
