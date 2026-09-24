@@ -15,7 +15,7 @@ defmodule BlogoWeb.TopicController do
   def show(conn, %{"slug" => slug}) do
     case Content.posts_by_topic_slug(slug) do
       nil ->
-        conn |> put_status(:not_found) |> text("Não encontrado")
+        conn |> put_status(:not_found) |> text(gettext("Not found"))
 
       topic ->
         base = BlogoWeb.Endpoint.url()
@@ -39,6 +39,11 @@ defmodule BlogoWeb.TopicController do
   end
 
   defp descricao(%{name: name, posts: posts}) do
-    "#{length(posts)} #{if length(posts) == 1, do: "artigo", else: "artigos"} sobre #{name}."
+    ngettext(
+      "%{count} article about %{topic}.",
+      "%{count} articles about %{topic}.",
+      length(posts),
+      topic: name
+    )
   end
 end

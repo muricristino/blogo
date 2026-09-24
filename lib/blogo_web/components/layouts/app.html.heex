@@ -1,7 +1,10 @@
 <.defs />
 
 <div style="position:sticky;top:0;z-index:5">
-  <nav class="bar">
+  <%!-- The chrome says which language it is in, because the document around it
+        may be in another one: an article keeps the language it was written in,
+        and a reader with the menu in English still gets the Portuguese text. --%>
+  <nav class="bar" lang={@locale_tag}>
     <a class="brand" href={~p"/"}>
       <svg
         width="20"
@@ -22,7 +25,9 @@
     </a>
 
     <div style="display:flex;align-items:center;gap:4px">
-      <a class="navlink" href={~p"/"} aria-current={@nav == :artigos && "page"}>Artigos</a>
+      <a class="navlink" href={~p"/"} aria-current={@nav == :artigos && "page"}>
+        {gettext("Articles")}
+      </a>
 
       <%!-- One link per fixed page, named by its title. No pages, no links —
             a "Sobre" that leads nowhere is worse than no "Sobre". --%>
@@ -35,7 +40,8 @@
     </div>
 
     <div style="display:flex;align-items:center;gap:8px">
-      <button class="iconbtn" type="button" aria-label="Buscar">
+      <.language_picker place="bar" locale={@locale} return_to={assigns[:current_path] || "/"} />
+      <button class="iconbtn" type="button" aria-label={gettext("Search")}>
         <svg
           width="17"
           height="17"
@@ -49,7 +55,7 @@
           <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
         </svg>
       </button>
-      <button class="iconbtn" type="button" id="theme-toggle" aria-label="Alternar tema">
+      <button class="iconbtn" type="button" id="theme-toggle" aria-label={gettext("Toggle theme")}>
         <svg
           width="17"
           height="17"
@@ -71,16 +77,15 @@
 
 {@inner_content}
 
-<footer class="pad site-foot">
+<footer class="pad site-foot" lang={@locale_tag}>
   <div class="shell" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap">
     <span class="small">
-      {@site_name}<span :if={@current_author}> · escrito por {@current_author.name}<span :if={
-        @current_author.city
-      }> em {@current_author.city}</span></span>
+      {@site_name}<span :if={@current_author}> · {byline(@current_author)}</span>
     </span>
-    <span class="small" style="display:flex;gap:16px">
+    <span class="small" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <.language_picker place="foot" locale={@locale} return_to={assigns[:current_path] || "/"} />
       <a href={~p"/feed.xml"}>Feed</a>
-      <a href={~p"/sitemap.xml"}>Arquivo</a>
+      <a href={~p"/sitemap.xml"}>{gettext("Archive")}</a>
       <a :for={page <- assigns[:pages] || []} href={~p"/#{page.slug}"}>{page.title}</a>
     </span>
   </div>

@@ -72,6 +72,9 @@ defmodule BlogoWeb.PostController do
               else: SEO.article(post, base)
             )
         })
+        # What `<html lang>` declares: the language of the article, which does
+        # not change when the reader changes the menu.
+        |> assign(:content_language, post.language)
         |> assign(:read_token, BlogoWeb.ReadController.token(post.slug))
         |> render(:show,
           post: post,
@@ -86,7 +89,7 @@ defmodule BlogoWeb.PostController do
   # than 404, so a link made years ago still lands on the article it meant.
   defp moved_or_missing(conn, slug) do
     case Content.post_by_former_slug(slug) do
-      nil -> conn |> put_status(:not_found) |> text("Não encontrado")
+      nil -> conn |> put_status(:not_found) |> text(gettext("Not found"))
       post -> conn |> put_status(:moved_permanently) |> redirect(to: ~p"/#{post.slug}")
     end
   end

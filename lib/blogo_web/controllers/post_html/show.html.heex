@@ -1,7 +1,7 @@
 <div class="shell pad article-grid">
   <aside :if={@sections != []} class="toc-col">
     <nav class="toc">
-      <span class="micro" style="padding:0 10px 8px">Neste artigo</span>
+      <span class="micro" style="padding:0 10px 8px">{gettext("In this article")}</span>
       <a
         :for={{sec, i} <- Enum.with_index(@sections)}
         href={"##{sec["id"]}"}
@@ -13,20 +13,22 @@
       </a>
 
       <div style="margin-top:20px;padding:0 10px">
-        <span class="micro">Progresso</span>
+        <span class="micro">{gettext("Progress")}</span>
         <p class="small mono" style="margin-top:6px">
-          <span id="read-pct">0%</span>
-          · <span id="read-left">{@post.reading_minutes}</span>
-          min restantes
+          <span id="read-pct">0%</span> · <span id="read-left">{@post.reading_minutes}</span>
+          {gettext("min left")}
         </p>
       </div>
     </nav>
   </aside>
 
+  <%!-- No `lang` here: on an article page the document itself is the article,
+        so `<html lang>` already says it and the menu around it is what carries
+        an exception. --%>
   <article class="stack" style="gap:26px">
     <header class="stack" style="gap:16px">
       <span :if={@post.kind != "pagina"} class="kicker">
-        {@post.kind}
+        {kind_label(@post.kind)}
         <span :for={topic <- @post.topics}>
           · <a href={~p"/tag/#{Blogo.Content.topic_slug(topic)}"} class="kicker-link">{topic}</a>
         </span>
@@ -44,7 +46,7 @@
           <span class="sep">·</span>
           <span>{format_date_long(@post.published_at)}</span>
           <span class="sep">·</span>
-          <span>{@post.reading_minutes} min de leitura</span>
+          <span>{gettext("%{minutes} min read", minutes: @post.reading_minutes)}</span>
         </span>
         <span style="display:flex;gap:7px;margin-left:auto">
           <span :for={t <- @post.topics} class="tag">{t}</span>
@@ -68,7 +70,7 @@
       class="card"
       style="padding:26px 28px;display:flex;flex-direction:column;gap:18px"
     >
-      <span class="kicker">Em resumo</span>
+      <span class="kicker">{gettext("In short")}</span>
       <div class="stats">
         <div :for={item <- @summary["items"] || []} class="stat">
           <span class={["statn", item["accent"] && "is-accent"]}>{item["value"]}</span>
