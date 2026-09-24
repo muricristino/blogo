@@ -19,12 +19,17 @@ defmodule BlogoWeb.SEO do
   attr :json_ld, :any, default: nil
   attr :image, :string, default: nil
   attr :site_name, :string, default: nil
+  attr :markdown, :string, default: nil
 
   def head(assigns) do
     ~H"""
     <title>{@title}</title>
     <meta :if={@description} name="description" content={@description} />
     <link rel="canonical" href={@canonical} />
+    <%!-- The same article as markdown. It is how a model finds the text form
+          without guessing an address, and `rel="alternate"` is what keeps it a
+          second representation rather than a second page. --%>
+    <link :if={@markdown} rel="alternate" type="text/markdown" href={@markdown} />
 
     <meta property="og:type" content={@type} />
     <meta property="og:title" content={@title} />

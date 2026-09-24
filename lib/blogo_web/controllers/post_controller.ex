@@ -59,6 +59,7 @@ defmodule BlogoWeb.PostController do
           title: "#{post.title} · #{Content.site_name(site)}",
           description: post.meta_description || post.subtitle,
           canonical: "#{base}/#{post.slug}",
+          markdown: "#{base}/#{post.slug}.md",
           image: "#{base}/imagem/#{post.slug}.png",
           type: if(page?, do: "profile", else: "article"),
           site_name: Content.site_name(site),
