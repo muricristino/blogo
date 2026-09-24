@@ -16,8 +16,11 @@ defmodule BlogoWeb.Router do
   end
 
   pipeline :browser do
-    plug :accepts, ["html"]
     plug BlogoWeb.CanonicalHost
+    # Before `:accepts`, which speaks HTML and would refuse a client that asks
+    # for markdown at the address built to serve it.
+    plug BlogoWeb.MarkdownAlternate
+    plug :accepts, ["html"]
     plug :fetch_session
     # After the session, because a language the reader picked is in it, and
     # before anything that renders, because every template asks Gettext.
@@ -55,6 +58,7 @@ defmodule BlogoWeb.Router do
     get "/", PostController, :index
     get "/sitemap.xml", SitemapController, :index
     get "/robots.txt", SitemapController, :robots
+    get "/llms.txt", SitemapController, :llms
     get "/feed.xml", FeedController, :index
     get "/tag/:slug", TopicController, :show
     get "/autor/:slug", PageController, :author

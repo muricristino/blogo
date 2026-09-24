@@ -1,16 +1,17 @@
 defmodule BlogoWeb.SitemapController do
   @moduledoc """
-  The files nobody reads with their eyes: the sitemap for a search crawler and
-  `robots.txt` for every crawler.
+  The three files nobody reads with their eyes: the sitemap for a search
+  crawler, `robots.txt` for every crawler, and `llms.txt` for whatever is
+  feeding a generative model.
 
-  Both are generated from the database on request. A site that publishes an
-  article or changes its mind about AI crawlers has nothing to regenerate and
-  no file to forget.
+  All three are generated from the database on request. A site that renames
+  itself, publishes an article or changes its mind about AI crawlers has
+  nothing to regenerate and no file to forget.
   """
   use BlogoWeb, :controller
 
   alias Blogo.Content
-  alias Blogo.Content.Crawlers
+  alias Blogo.Content.{Crawlers, Llms}
 
   def index(conn, _params) do
     base = BlogoWeb.Endpoint.url()
@@ -40,6 +41,35 @@ defmodule BlogoWeb.SitemapController do
     conn
     |> put_resp_content_type("text/plain")
     |> send_resp(200, body)
+  end
+
+  @doc """
+  The site's map for a generative model.
+
+  An install that answered "no AI crawler at all" does not serve it: a file
+  whose only audience is a model has no business existing next to a robots.txt
+  that tells every model to stay out. That is one decision, in one place, with
+  the same answer on both surfaces.
+  """
+  def llms(conn, _params) do
+    site = Content.the_site()
+
+    if Crawlers.policy(site) == "none" do
+      conn |> put_status(:not_found) |> text("Não encontrado")
+    else
+      body =
+        Llms.llms_txt(%{
+          site: site,
+          author: Content.the_author(),
+          posts: Content.list_published(),
+          pages: Content.list_pages(),
+          base_url: BlogoWeb.Endpoint.url()
+        })
+
+      conn
+      |> put_resp_content_type("text/plain")
+      |> send_resp(200, body)
+    end
   end
 
   defp url_entry({loc, nil}), do: "  <url><loc>#{loc}</loc></url>"
