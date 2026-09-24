@@ -17,11 +17,12 @@
     />
     <meta :if={assigns[:preview?]} name="robots" content="noindex, nofollow" />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <%!-- Editor and panel share one stylesheet; the public pages never load it. --%>
     <link
-      :if={assigns[:editor?]}
+      :if={assigns[:admin?]}
       phx-track-static
       rel="stylesheet"
-      href={~p"/assets/css/editor.css"}
+      href={~p"/assets/css/admin.css"}
     />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>

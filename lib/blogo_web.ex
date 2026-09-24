@@ -88,7 +88,6 @@ defmodule BlogoWeb do
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
-      import BlogoWeb.CoreComponents
       import BlogoWeb.Blocks, only: [render_blocks: 1]
       import BlogoWeb.Diagrams, only: [defs: 1, diagram: 1]
       import BlogoWeb.SEO, only: [head: 1]

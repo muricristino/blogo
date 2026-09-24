@@ -29,7 +29,7 @@ defmodule BlogoWeb.PanelLive.Index do
        page_title: "Painel",
        # The admin stylesheet is keyed on this flag; the panel is the same
        # surface as the editor and shares `.bar`, `.card` and `.btn`.
-       editor?: true,
+       admin?: true,
        period: 30,
        filter: "todos"
      )

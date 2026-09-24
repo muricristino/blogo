@@ -25,7 +25,7 @@ defmodule BlogoWeb.AuthController do
 
   def new(conn, _params) do
     conn
-    |> assign(:editor?, true)
+    |> assign(:admin?, true)
     |> assign(:mode, Clerk.mode())
     |> assign(:publishable_key, Clerk.publishable_key())
     |> render(:new)
@@ -64,7 +64,7 @@ defmodule BlogoWeb.AuthController do
       :error ->
         conn
         |> put_flash(:error, "Senha incorreta.")
-        |> assign(:editor?, true)
+        |> assign(:admin?, true)
         |> assign(:mode, Clerk.mode())
         |> assign(:publishable_key, Clerk.publishable_key())
         |> render(:new)

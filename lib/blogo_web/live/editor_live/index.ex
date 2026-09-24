@@ -9,7 +9,7 @@ defmodule BlogoWeb.EditorLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(page_title: "Posts", editor?: true) |> load()}
+    {:ok, socket |> assign(page_title: "Posts", admin?: true) |> load()}
   end
 
   defp load(socket), do: assign(socket, posts: Content.list_posts())
