@@ -52,6 +52,28 @@ defmodule Blogo.Content.SiteTest do
       assert Site.unnamed?(Content.the_site())
     end
 
+    test "the figure on the featured card starts on, so nothing changes on upgrade" do
+      assert Content.the_site().featured_hero
+    end
+
+    test "turning the figure off reaches the database as a boolean" do
+      # The panel sends the string a button carries, not a boolean.
+      {:ok, _} = Content.update_site(%{"featured_hero" => "false"})
+      assert Content.the_site().featured_hero == false
+
+      {:ok, _} = Content.update_site(%{"featured_hero" => "true"})
+      assert Content.the_site().featured_hero == true
+    end
+
+    # Saving the name is a different form from the switch, and it must not
+    # carry the switch back to its default on its way through.
+    test "saving the name leaves the figure where it was" do
+      {:ok, _} = Content.update_site(%{"featured_hero" => "false"})
+      {:ok, _} = Content.update_site(%{"name" => "Diário de bordo"})
+
+      assert Content.the_site().featured_hero == false
+    end
+
     test "the description is kept and bounded" do
       {:ok, _} = Content.update_site(%{"name" => "X", "description" => "Uma linha."})
       assert Content.the_site().description == "Uma linha."

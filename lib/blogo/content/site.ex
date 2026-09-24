@@ -7,8 +7,12 @@ defmodule Blogo.Content.Site do
   owns the `Person` in the structured data. On a one-author blog they often
   match, and they are still two decisions.
 
-  Nothing here has a default. An unconfigured install falls back to its own
+  Nothing here has a default name. An unconfigured install falls back to its own
   hostname on the public side — a fact — and the panel says what to fill in.
+
+  `featured_hero` is the one field that does have a default, because it is a
+  choice about layout rather than an identity that has to be filled in: the
+  featured card draws the article's diagram until someone says otherwise.
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -16,13 +20,14 @@ defmodule Blogo.Content.Site do
   schema "site" do
     field :name, :string
     field :description, :string
+    field :featured_hero, :boolean, default: true
 
     timestamps(type: :utc_datetime)
   end
 
   def changeset(site, attrs) do
     site
-    |> cast(attrs, [:name, :description])
+    |> cast(attrs, [:name, :description, :featured_hero])
     |> update_change(:name, &blank_to_nil/1)
     |> update_change(:description, &blank_to_nil/1)
     |> validate_length(:name, max: 60)
