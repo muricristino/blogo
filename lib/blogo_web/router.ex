@@ -39,6 +39,7 @@ defmodule BlogoWeb.Router do
     get "/sitemap.xml", SitemapController, :index
     get "/robots.txt", SitemapController, :robots
     get "/autor/:slug", AuthorController, :show
+    get "/serie/:slug", SeriesController, :show
     get "/imagem/:slug", CardController, :show
 
     # A entrada não se anuncia em lugar nenhum do site público.

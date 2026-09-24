@@ -30,6 +30,7 @@ defmodule BlogoWeb.PreviewController do
       blocks: blocks,
       summary: summary,
       sections: Enum.filter(blocks, &(&1["type"] == "section")),
+      series: Blogo.Content.series_of(post),
       page_title: post.title
     )
   end
