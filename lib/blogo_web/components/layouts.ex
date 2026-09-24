@@ -28,6 +28,29 @@ defmodule BlogoWeb.Layouts do
   def byline(author), do: gettext("written by %{name}", name: author.name)
 
   @doc """
+  The footer credit: the site's name, and the author's only when it adds
+  something.
+
+  On a blog someone runs under their own name the two are the same string, and
+  the footer read "Muri Cristino · written by Muri Cristino in São Paulo".
+  Neither half was wrong on its own — the name came from the site, the sentence
+  came from the byline — which is why nothing caught it until both were on the
+  page. Where they match, only the place is left to say.
+  """
+  def foot_credit(site_name, nil), do: site_name
+
+  def foot_credit(site_name, author) do
+    if String.downcase(String.trim(site_name)) == String.downcase(String.trim(author.name)) do
+      case author.city do
+        city when is_binary(city) and city != "" -> "#{site_name} · #{city}"
+        _ -> site_name
+      end
+    else
+      "#{site_name} · #{byline(author)}"
+    end
+  end
+
+  @doc """
   The language of the interface, as two buttons.
 
   A form and not a link: it changes what the session remembers, and a GET that

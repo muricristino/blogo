@@ -69,7 +69,22 @@ const audit = (comEstilo) => {
     if (ch > 75) out.push({ tipo: "medida", detalhe: `~${Math.round(ch)} caracteres em ${el.className.split(" ")[0]}` })
   }
 
-  // 6. classe sem regra — só na primeira largura, porque não depende dela
+  // 6. ícone espremido: um SVG que declara largura e é desenhado menor
+  //
+  // As checagens acima medem estouro, e um filho de flex cede espaço em vez de
+  // transbordar — o logo do cabeçalho foi desenhado com 3px de largura a 320px
+  // sem nada rolar para o lado. O que se afirma aqui é que um ícone com tamanho
+  // declarado tem o tamanho que declarou.
+  for (const el of document.querySelectorAll("svg[width]")) {
+    const querido = parseFloat(el.getAttribute("width"))
+    const real = el.getBoundingClientRect().width
+    if (querido > 0 && real < querido - 1) {
+      const onde = el.parentElement?.className?.toString().split(" ")[0] || el.parentElement?.tagName?.toLowerCase()
+      out.push({ tipo: "ícone espremido", detalhe: `${Math.round(real)}px onde pede ${querido}px, em .${onde}` })
+    }
+  }
+
+  // 7. classe sem regra — só na primeira largura, porque não depende dela
   //
   // As checagens acima medem se o layout quebra. Nenhuma delas vê uma página
   // que nunca teve estilo: /autor/:slug usava sete classes que não existiam no
