@@ -19,6 +19,9 @@ defmodule BlogoWeb.Router do
     plug :accepts, ["html"]
     plug BlogoWeb.CanonicalHost
     plug :fetch_session
+    # After the session, because a language the reader picked is in it, and
+    # before anything that renders, because every template asks Gettext.
+    plug BlogoWeb.Locale
     plug :fetch_live_flash
     plug :put_root_layout, html: {BlogoWeb.Layouts, :root}
     plug :protect_from_forgery
@@ -57,6 +60,7 @@ defmodule BlogoWeb.Router do
     get "/autor/:slug", PageController, :author
     get "/autor/:slug/foto", AuthorPhotoController, :show
     get "/imagem/:slug", CardController, :show
+    post "/idioma", LocaleController, :update
 
     # A entrada não se anuncia em lugar nenhum do site público.
     get "/auth/login", AuthController, :new
@@ -75,7 +79,7 @@ defmodule BlogoWeb.Router do
     pipe_through [:browser, :admin]
 
     live_session :painel,
-      on_mount: {BlogoWeb.AdminAuth, :ensure_admin},
+      on_mount: [{BlogoWeb.AdminAuth, :ensure_admin}, {BlogoWeb.Locale, :set_locale}],
       layout: {BlogoWeb.Layouts, :editor} do
       live "/", PanelLive.Index, :index
     end
@@ -85,7 +89,7 @@ defmodule BlogoWeb.Router do
     pipe_through [:browser, :admin]
 
     live_session :editor,
-      on_mount: {BlogoWeb.AdminAuth, :ensure_admin},
+      on_mount: [{BlogoWeb.AdminAuth, :ensure_admin}, {BlogoWeb.Locale, :set_locale}],
       layout: {BlogoWeb.Layouts, :editor} do
       live "/", EditorLive.Index, :index
       live "/:id", EditorLive.Edit, :edit

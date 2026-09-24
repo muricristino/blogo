@@ -8,6 +8,12 @@ defmodule Blogo.MixProject do
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      # References in the .pot are file paths without line numbers. With the
+      # lines in, any edit above a translated string rewrites its entry, so
+      # `gettext.extract --check-up-to-date` in CI fails changes that added no
+      # string at all — and three people editing templates at once would each
+      # be rewriting the others' references.
+      gettext: [write_reference_line_numbers: false],
       aliases: aliases(),
       deps: deps()
     ]
@@ -80,6 +86,10 @@ defmodule Blogo.MixProject do
       ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      # The flow for a new interface string: extract it and merge it into both
+      # .po files, so it arrives translated or visibly untranslated rather than
+      # silently English.
+      "gettext.sync": ["gettext.extract --merge"],
       "assets.setup": ["esbuild.install --if-missing"],
       "assets.build": ["esbuild blogo"],
       "assets.deploy": [
