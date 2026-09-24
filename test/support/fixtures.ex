@@ -21,6 +21,23 @@ defmodule Blogo.Fixtures do
     author
   end
 
+  @doc """
+  Bytes that a real image starts with.
+
+  The application reads the format from the first bytes rather than from the
+  name or the content type the browser claims, so a header plus filler is
+  exactly what it inspects. Nothing here decodes the image, and a fixture that
+  needed a real encoder would test the encoder.
+  """
+  def png(size \\ 96), do: <<0x89, "PNG\r\n", 0x1A, 0x0A>> <> filler(size - 8)
+  def jpeg(size \\ 96), do: <<0xFF, 0xD8, 0xFF, 0xE0>> <> filler(size - 4)
+
+  def webp(size \\ 96),
+    do: "RIFF" <> <<size - 8::little-32>> <> "WEBP" <> filler(size - 12)
+
+  defp filler(n) when n > 0, do: :binary.copy(<<0>>, n)
+  defp filler(_), do: ""
+
   def post(attrs \\ %{}) do
     a = attrs[:author] || author()
 
