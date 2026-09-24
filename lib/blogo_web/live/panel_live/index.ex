@@ -859,6 +859,16 @@ defmodule BlogoWeb.PanelLive.Index do
             este site, e entra nos dados estruturados como a imagem da pessoa que assina.
           </span>
 
+          <%!-- A foto é pública. Quem sobe uma foto de celular não tem como
+                saber que ela carrega a coordenada de onde foi tirada, então a
+                tela diz que isso é apagado — e diz o efeito colateral, que é
+                a única coisa que a pessoa precisa fazer a respeito. --%>
+          <span class="small">
+            Os metadados são apagados antes de gravar, inclusive o GPS de onde a foto foi tirada.
+            Por isso uma foto que dependia da rotação registrada pelo celular pode sair deitada:
+            gire antes de subir.
+          </span>
+
           <span :for={msg <- upload_errors(@upload)} class="small ed-warn">{erro_foto(msg)}</span>
 
           <div :for={entry <- @upload.entries} class="pn-foto-entry">

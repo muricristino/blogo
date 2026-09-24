@@ -182,7 +182,7 @@ defmodule BlogoWeb.PanelAuthorTest do
     # the guard: the limit is enforced where the bytes are written.
     test "a file past the limit does not reach the database", %{conn: conn} do
       %{live: live, author: author} = panel(conn)
-      big = Fixtures.png(Blogo.Content.Author.max_photo_bytes() + 1)
+      big = Fixtures.png(width: 900, height: 800, noise: true)
 
       assert {:error, _} = render_upload(pick(live, "grande.png", big), "grande.png")
 

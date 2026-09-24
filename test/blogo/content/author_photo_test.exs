@@ -69,7 +69,10 @@ defmodule Blogo.Content.AuthorPhotoTest do
     # browser is asked to refuse it too, but the browser is not the guard.
     test "a photo past the limit is refused" do
       author = Fixtures.author()
-      big = Fixtures.png(Author.max_photo_bytes() + 1)
+      # A real image, not a blob: noise does not compress, so the pixels alone
+      # carry it past the ceiling.
+      big = Fixtures.png(width: 900, height: 800, noise: true)
+      assert byte_size(big) > Author.max_photo_bytes()
 
       assert {:error, changeset} = Content.put_author_photo(author, big)
       assert "passa de 2 MB" in errors_on(changeset).photo
@@ -118,6 +121,71 @@ defmodule Blogo.Content.AuthorPhotoTest do
 
     test "a slug nobody has is not an error" do
       assert Content.author_photo("ninguem") == nil
+    end
+  end
+
+  describe "what gets stored is stripped of its metadata" do
+    @photo_with_gps Path.join(__DIR__, "../../support/fotos/com_gps.jpg")
+
+    # A photograph out of a real encoder, carrying a real Exif block with real
+    # GPS tags in it — the file a phone would hand over. `/autor/:slug/foto` is
+    # public, so whatever stays in this column is published.
+    test "a photo's GPS coordinates never reach the database" do
+      author = Fixtures.author()
+      original = File.read!(@photo_with_gps)
+
+      assert String.contains?(original, "Exif\0\0")
+      assert String.contains?(original, "BLOGO-CASA-DO-AUTOR")
+
+      assert {:ok, _} = Content.put_author_photo(author, original)
+
+      saved = stored(author).data
+      refute String.contains?(saved, "BLOGO-CASA-DO-AUTOR")
+      refute String.contains?(saved, "Exif\0\0")
+      refute String.contains?(saved, "Photoshop")
+      assert byte_size(saved) < byte_size(original)
+    end
+
+    test "and the photograph still is one afterwards" do
+      author = Fixtures.author()
+      {:ok, _} = Content.put_author_photo(author, File.read!(@photo_with_gps))
+
+      saved = stored(author).data
+
+      # Same picture: the frame header a decoder reads the size from still says
+      # what it said, and the file still opens and closes as a JPEG.
+      {at, _} = :binary.match(saved, <<0xFF, 0xC0>>)
+
+      <<_::binary-size(at), 0xFF, 0xC0, _length::16, _precision, height::16, width::16,
+        _::binary>> = saved
+
+      assert {width, height} == {160, 160}
+      assert <<0xFF, 0xD8, _::binary>> = saved
+      assert String.ends_with?(saved, <<0xFF, 0xD9>>)
+    end
+
+    # A file that cannot be taken apart cannot be stripped, and storing it as
+    # it came is the one outcome this must never have.
+    test "an image that does not parse is refused rather than stored intact" do
+      author = Fixtures.author()
+      truncated = :binary.part(File.read!(@photo_with_gps), 0, 400)
+
+      assert {:error, changeset} = Content.put_author_photo(author, truncated)
+      assert "está corrompida: não deu para ler a imagem inteira" in errors_on(changeset).photo
+      assert stored(author).data == nil
+    end
+
+    # The digest is the cache key for the bytes that will be served, so it has
+    # to be taken after the strip, not before.
+    test "the digest is of the cleaned bytes, not of the file that arrived" do
+      author = Fixtures.author()
+      original = File.read!(@photo_with_gps)
+      {:ok, _} = Content.put_author_photo(author, original)
+
+      saved = stored(author)
+
+      assert saved.digest == Base.encode16(:crypto.hash(:sha256, saved.data), case: :lower)
+      refute saved.digest == Base.encode16(:crypto.hash(:sha256, original), case: :lower)
     end
   end
 

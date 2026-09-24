@@ -9,11 +9,12 @@ defmodule BlogoWeb.AuthorPhotoControllerTest do
   alias Blogo.Content
   alias Blogo.Fixtures
 
-  defp with_photo(bytes \\ nil) do
+  # What is served is what was stored, which is not what was uploaded: the
+  # metadata is stripped on the way in.
+  defp with_photo(upload \\ nil) do
     author = Fixtures.author()
-    bytes = bytes || Fixtures.png()
-    {:ok, _} = Content.put_author_photo(author, bytes)
-    %{author: Content.get_author!(author.id), bytes: bytes}
+    {:ok, _} = Content.put_author_photo(author, upload || Fixtures.png())
+    %{author: Content.get_author!(author.id), bytes: Content.author_photo(author.slug).data}
   end
 
   test "the bytes come back, as the type they actually are", %{conn: conn} do
