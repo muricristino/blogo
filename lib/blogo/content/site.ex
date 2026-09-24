@@ -26,6 +26,12 @@ defmodule Blogo.Content.Site do
     # `Blogo.Content.Crawlers`.
     field :ai_crawlers, :string
 
+    # A measurement boundary, not configuration: the day the panel started
+    # telling an AI referral apart from a search. Written by the migration, and
+    # never from a form — nothing on screen may move the line under a figure
+    # that was already collected.
+    field :ai_referrals_since, :date
+
     timestamps(type: :utc_datetime)
   end
 

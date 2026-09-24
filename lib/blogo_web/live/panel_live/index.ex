@@ -340,15 +340,35 @@ defmodule BlogoWeb.PanelLive.Index do
       totals: Analytics.totals(range),
       previous: previous_totals(period),
       daily: Analytics.daily(range),
-      sources: Analytics.sources(range),
+      sources: rotular(Analytics.sources(range)),
       curve: curve,
       drop: Analytics.steepest_drop(curve),
       queue: Analytics.queue(),
       measuring?: Analytics.measuring?(),
       since: since,
+      ia_desde: ia_desde(socket.assigns.site, since),
       counts: counts(posts)
     )
   end
+
+  # O gráfico escreve o nome da origem como ele está guardado, e "ia" sozinho
+  # num eixo não se lê.
+  defp rotular(sources) do
+    Enum.map(sources, fn row -> %{row | source: rotulo_origem(row.source)} end)
+  end
+
+  defp rotulo_origem("ia"), do: "resposta de IA"
+  defp rotulo_origem(source), do: source
+
+  # A quebra "resposta de IA" passou a existir num dia. Leitura anterior a ele
+  # foi classificada sem ela e está em busca ou outros, então o painel diz isso
+  # em vez de deixar a fatia parecer pequena. Só diz quando existe leitura mais
+  # antiga que a quebra — senão é ressalva sobre nada.
+  defp ia_desde(%{ai_referrals_since: %Date{} = dia}, %Date{} = since) do
+    if Date.compare(since, dia) == :lt, do: dia, else: nil
+  end
+
+  defp ia_desde(_site, _since), do: nil
 
   defp previous_totals(period) do
     case Analytics.previous_window(period) do
@@ -441,6 +461,18 @@ defmodule BlogoWeb.PanelLive.Index do
                 rows={@sources}
                 label={"Origem do tráfego: " <> Enum.map_join(@sources, ", ", &"#{&1.source} #{&1.pct} por cento")}
               />
+
+              <p :if={@ia_desde} class="small">
+                A origem “resposta de IA” só passou a ser separada em {data_curta(@ia_desde)}.
+                Leitura anterior a esse dia está em busca ou outros, porque a quebra não existia
+                quando ela foi registrada.
+              </p>
+
+              <p :if={@sources != []} class="small">
+                Isto conta quem chegou aqui, não quem raspou a página: a medição depende de
+                JavaScript no navegador, e crawler de IA não executa. O que eles buscaram está no
+                log do servidor.
+              </p>
             </figure>
 
             <figure class="card pn-chart">

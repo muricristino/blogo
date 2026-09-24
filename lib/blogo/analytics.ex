@@ -53,6 +53,7 @@ defmodule Blogo.Analytics do
     case String.downcase(utm) do
       "newsletter" <> _ -> "newsletter"
       "email" <> _ -> "newsletter"
+      s when s in ~w(chatgpt openai claude perplexity gemini copilot ia ai) -> "ia"
       s when s in ~w(google bing duckduckgo ecosia) -> "busca"
       s when s in ~w(linkedin twitter x facebook instagram reddit bluesky) -> "redes"
       _ -> "outros"
@@ -67,8 +68,43 @@ defmodule Blogo.Analytics do
     end
   end
 
+  # Hosts an assistant sends a reader from. Checked before search, because
+  # gemini.google.com is a Google host and is not a search result — and because
+  # the two answer different questions: a search result was chosen from a list,
+  # an AI answer was quoted into one.
+  #
+  # Only the assistants that are their own surface are here. Copilot links carry
+  # bing.com and Gemini's grounding sits inside Google's search page, so some of
+  # this traffic is indistinguishable from search at the referrer level and is
+  # counted as search. That undercounts "ia"; inventing the difference would be
+  # worse.
+  @ai_referrers ~w(
+    chatgpt.com chat.openai.com openai.com
+    claude.ai
+    perplexity.ai
+    gemini.google.com
+    copilot.microsoft.com copilot.cloud.microsoft m365.cloud.microsoft
+    meta.ai
+    grok.com x.ai
+    chat.mistral.ai
+    chat.deepseek.com
+    you.com poe.com phind.com
+  )
+
+  @doc "Whether a referrer host belongs to an AI assistant."
+  def ai_referrer?(host) when is_binary(host) do
+    Enum.any?(@ai_referrers, &(host == &1 or String.ends_with?(host, "." <> &1)))
+  end
+
+  def ai_referrer?(_host), do: false
+
+  def ai_referrers, do: @ai_referrers
+
   defp classify_host(host) do
     cond do
+      ai_referrer?(host) ->
+        "ia"
+
       host =~ ~r/(^|\.)(google|bing|duckduckgo|ecosia|yahoo|search\.brave|startpage)\./ ->
         "busca"
 
