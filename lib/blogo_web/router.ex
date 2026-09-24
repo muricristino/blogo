@@ -17,6 +17,7 @@ defmodule BlogoWeb.Router do
 
   pipeline :browser do
     plug :accepts, ["html"]
+    plug BlogoWeb.CanonicalHost
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {BlogoWeb.Layouts, :root}
