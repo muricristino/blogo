@@ -235,6 +235,27 @@ stylesheet. That catches a page the CSS never reached, and it caught one inline
 `style` doing what a class was named for. It does not check that the rule does
 what the screen needs — only that there is one.
 
+### The audit measures overflow, and four things do not overflow
+
+Each of these shipped clean for weeks, because the page held together while
+being wrong:
+
+- **Text with no CSS at all.** `/autor/:slug` used seven classes that were not
+  in `app.css`; unstyled text does not overflow, shrink, or come out too small.
+- **Text inside an SVG.** Chart labels scale with the viewBox, so a 700-wide
+  chart in a 320px card drew 10.5px labels at about four.
+- **An icon squeezed by a flex sibling.** The header logo was drawn 3px wide at
+  320px; a flex child gives up width instead of overflowing.
+- **A column that is too narrow.** `.article-grid` puts a 220px rail first, and
+  the aside that fills it is conditional — so a page with no sections laid its
+  whole text out in 220px, handles running one letter per line. Nothing
+  overflowed: the text simply fitted.
+
+The audit now checks the last two directly, and **it runs above 768px**. This
+project is mobile-first by rule, and for a long time that was read as "audit
+phones", which left every width above the largest breakpoint measured by nobody
+— which is precisely where the rail defect lived.
+
 ### The audit does not see SVG text
 
 `test/mobile_audit.mjs` measures HTML text nodes. Chart labels are `<text>`

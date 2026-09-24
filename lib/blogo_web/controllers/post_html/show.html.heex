@@ -1,4 +1,4 @@
-<div class="shell pad article-grid">
+<div class={["shell pad article-grid", @sections == [] && "article-grid--solo"]}>
   <aside :if={@sections != []} class="toc-col">
     <nav class="toc">
       <span class="micro" style="padding:0 10px 8px">{gettext("In this article")}</span>

@@ -8,7 +8,7 @@ const ADMIN = process.env.ADMIN_PASSWORD
 const ADMIN_PAGES = ADMIN
   ? [["/painel", "painel"], ["/editor", "lista do editor"], ["/editor/1", "editor"]]
   : []
-const WIDTHS = [320, 360, 390, 414, 768]
+const WIDTHS = [320, 360, 390, 414, 768, 1024, 1280, 1600]
 
 const audit = (comEstilo) => {
   const out = []
@@ -84,7 +84,30 @@ const audit = (comEstilo) => {
     }
   }
 
-  // 7. classe sem regra — só na primeira largura, porque não depende dela
+  // 7. texto empilhado: uma caixa estreita demais para o que ela guarda
+  //
+  // As outras checagens medem estouro. Uma coluna estreita demais não estoura:
+  // o texto se acomoda dentro dela, uma letra por linha, e nada rola para o
+  // lado. Foi assim que o /sobre passou meses limpo desenhando o artigo inteiro
+  // dentro do trilho de 220px acima de 1080px.
+  //
+  // O sintoma medível é uma caixa cuja altura só se explica pelo texto ter
+  // quebrado quase a cada caractere.
+  for (const el of document.querySelectorAll("p, a, span, h1, h2, h3, li")) {
+    const txt = (el.textContent || "").trim()
+    if (txt.length < 6 || el.children.length) continue
+    const r = el.getBoundingClientRect()
+    if (!r.width || !r.height) continue
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.2
+    const linhas = Math.round(r.height / lh)
+    // Mais linhas do que um terço dos caracteres significa quebra a cada duas
+    // ou três letras, que nenhum texto pede.
+    if (linhas >= 4 && linhas > txt.length / 3) {
+      out.push({ tipo: "texto empilhado", detalhe: `${linhas} linhas para ${txt.length} caracteres em ${r.width.toFixed(0)}px — "${txt.slice(0, 22)}"` })
+    }
+  }
+
+  // 8. classe sem regra — só na primeira largura, porque não depende dela
   //
   // As checagens acima medem se o layout quebra. Nenhuma delas vê uma página
   // que nunca teve estilo: /autor/:slug usava sete classes que não existiam no
