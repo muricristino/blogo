@@ -82,6 +82,22 @@ defmodule Blogo.Content do
   def create_author(attrs), do: %Author{} |> Author.changeset(attrs) |> Repo.insert()
   def create_post(attrs), do: %Post{} |> Post.changeset(attrs) |> Repo.insert()
 
+  @doc """
+  The author this blog belongs to. A single-author blog by design, so the first
+  row is the answer; the panel edits this one.
+  """
+  def the_author, do: Author |> order_by(asc: :id) |> limit(1) |> Repo.one()
+
+  def get_author!(id), do: Repo.get!(Author, id)
+
+  def update_author(%Author{} = author, attrs) do
+    author |> Author.profile_changeset(attrs) |> Repo.update()
+  end
+
+  def change_author(%Author{} = author, attrs \\ %{}) do
+    Author.profile_changeset(author, attrs)
+  end
+
   def upsert_author(attrs) do
     case get_author_by_slug(attrs.slug) do
       nil -> create_author(attrs)
@@ -167,6 +183,17 @@ defmodule Blogo.Content do
   restores the same URL rather than orphaning the links that already point at it.
   """
   def unpublish_post(%Post{} = post), do: save_post(post, %{status: "draft"})
+
+  @doc """
+  Deletes a draft.
+
+  Only a draft: a published article has an address someone may have linked, and
+  deleting it turns that link into a 404 with nothing to put in its place. To
+  remove one, unpublish it first — which is a decision with a step of its own.
+  """
+  def delete_draft(%Post{status: "published"}), do: {:error, :published}
+
+  def delete_draft(%Post{} = post), do: Repo.delete(post)
 
   defp reading_minutes(attrs, post) do
     blocks =
