@@ -459,7 +459,7 @@ defmodule BlogoWeb.PanelLive.Index do
       </div>
 
       <div style="display:flex;align-items:center;gap:8px">
-        <a class="navlink pn-asreader" href={~p"/"}>Ver como leitor</a>
+        <a class="navlink" href={~p"/"}>Ver como leitor</a>
         <.link class="btn btn--s" href={~p"/auth/logout"} method="delete">Sair</.link>
       </div>
     </nav>
@@ -518,7 +518,7 @@ defmodule BlogoWeb.PanelLive.Index do
       <span class="micro">{@label}</span>
 
       <span class="kpi-row">
-        <span class={"kpi-v #{!@value && "kpi-v--none"}"}>{@value || "—"}</span>
+        <span class={["kpi-v", !@value && "kpi-v--none"]}>{@value || "—"}</span>
         <span :if={@delta} class={"delta delta--#{@delta.direction}"}>{@delta.text}</span>
       </span>
 
@@ -552,7 +552,7 @@ defmodule BlogoWeb.PanelLive.Index do
           <tr :for={post <- @posts}>
             <td data-label="Título">
               {post.title}
-              <span class={"small pn-post-meta #{parado?(post) && "pn-stalled"}"}>
+              <span class={["small pn-post-meta", parado?(post) && "pn-stalled"]}>
                 {meta_do_post(post)}
               </span>
             </td>

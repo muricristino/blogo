@@ -2,7 +2,7 @@ import { chromium, devices } from "/Users/murilo/code/axolutions/agrosn/new-belc
 
 const BASE = process.env.BASE || "https://ember-pebble-maple.axolutions.com.br"
 // Uma tela nova entra aqui no mesmo commit que a cria.
-const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/autor/muri-cristino", "autor"], ["/auth/login", "entrada"], ["/serie/avaliar-sem-se-enganar", "série"], ["/tag/avaliacao", "tópico"]]
+const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/sobre", "sobre"], ["/auth/login", "entrada"], ["/tag/avaliacao", "tópico"]]
 // O editor exige senha, então entra por aqui antes de ser medido.
 const ADMIN = process.env.ADMIN_PASSWORD
 const ADMIN_PAGES = ADMIN
@@ -10,7 +10,7 @@ const ADMIN_PAGES = ADMIN
   : []
 const WIDTHS = [320, 360, 390, 414, 768]
 
-const audit = () => {
+const audit = (comEstilo) => {
   const out = []
   const doc = document.documentElement
 
@@ -69,6 +69,33 @@ const audit = () => {
     if (ch > 75) out.push({ tipo: "medida", detalhe: `~${Math.round(ch)} caracteres em ${el.className.split(" ")[0]}` })
   }
 
+  // 6. classe sem regra — só na primeira largura, porque não depende dela
+  //
+  // As checagens acima medem se o layout quebra. Nenhuma delas vê uma página
+  // que nunca teve estilo: /autor/:slug usava sete classes que não existiam no
+  // CSS e passava limpa em todas as larguras, por semanas, porque texto sem
+  // regra nenhuma não estoura, não encolhe e não fica pequeno demais.
+  if (comEstilo) {
+    const declaradas = new Set()
+    const varrer = regras => {
+      for (const r of regras) {
+        if (r.selectorText)
+          for (const m of r.selectorText.matchAll(/\.(-?[_a-zA-Z][-\w]*)/g)) declaradas.add(m[1])
+        if (r.cssRules) varrer(r.cssRules)
+      }
+    }
+    // Uma folha de outra origem recusa .cssRules; nenhuma delas declara classe nossa.
+    for (const f of document.styleSheets) { try { varrer(f.cssRules) } catch {} }
+
+    // O LiveView põe as suas próprias classes de estado no <html> e nos
+    // formulários; não são nossas para estilizar.
+    const orfas = new Map()
+    for (const el of document.querySelectorAll("body *"))
+      for (const c of el.classList)
+        if (!declaradas.has(c) && !c.startsWith("phx-")) orfas.set(c, (orfas.get(c) || 0) + 1)
+    for (const [c, n] of orfas) out.push({ tipo: "classe sem regra", detalhe: `.${c} (${n}x)` })
+  }
+
   const resumo = {}
   for (const v of out) (resumo[v.tipo] ||= []).push(v.detalhe)
   return resumo
@@ -99,7 +126,7 @@ for (const [path, nome] of [...PAGES, ...ADMIN_PAGES]) {
     }
     await p.goto(BASE + path, { waitUntil: "networkidle" })
     await p.waitForTimeout(400)
-    const r = await p.evaluate(audit)
+    const r = await p.evaluate(audit, w === WIDTHS[0])
     const tipos = Object.keys(r)
     if (!tipos.length) console.log(`  ${w}px  ✓ limpo`)
     else for (const t of tipos) {

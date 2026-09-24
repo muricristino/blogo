@@ -2,7 +2,7 @@
 
 Verifica, em cada tela e em cada largura a partir de 320px, as regras que o
 `CLAUDE.md` define: rolagem horizontal, alvo de toque, tamanho de texto e
-medida de linha.
+medida de linha. E, uma vez por tela, se toda classe usada ali existe no CSS.
 
 ```sh
 mix phx.server                         # noutro terminal
@@ -48,6 +48,20 @@ sobrescrever.
 | `alvo` | alvo de toque abaixo de 44px, ou 32px se for link secundário |
 | `fonte` | texto de leitura abaixo de 16px |
 | `medida` | linha acima de ~75 caracteres |
+| `classe sem regra` | a classe está no HTML e não existe em folha nenhuma |
 
 Um elemento dentro de uma caixa com `overflow-x: auto` não é violação: tabela,
 código e diagrama rolam dentro de si mesmos por desenho.
+
+## Por que existe a checagem de classe sem regra
+
+As outras cinco medem se o layout **quebra**. Uma página que nunca teve estilo
+não quebra: ela passa limpa em todas as larguras. `/autor/:slug` viveu assim
+desde o primeiro commit — sete das oito classes do template não existiam no
+`app.css`, e a auditoria mediu aquela página por semanas sem ver nada.
+
+A checagem roda só na primeira largura, porque não depende de largura, e compara
+o que o HTML usa com o que as folhas carregadas declaram. Ela não sabe se a
+regra faz o que a tela precisa; sabe apenas que existe alguma. Uma classe de
+gancho para JS, sem estilo por desenho, aparece aqui e deve virar atributo
+`data-` em vez de silenciar a checagem.

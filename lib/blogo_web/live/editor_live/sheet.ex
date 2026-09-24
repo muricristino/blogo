@@ -82,7 +82,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
   defp editable_block(assigns) do
     ~H"""
     <div
-      class={"blk t-body #{@selected == @block["_uid"] && "blk--sel"}"}
+      class={["blk t-body", @selected == @block["_uid"] && "blk--sel"]}
       phx-click="select"
       phx-value-uid={@block["_uid"]}
     >
@@ -436,7 +436,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
       <p :if={@query != ""} class="small" style="padding:4px 10px">/{@query}</p>
       <div
         :for={{{type, label, key}, i} <- Enum.with_index(@items)}
-        class={"sitem #{i == @at && "is-on"}"}
+        class={["sitem", i == @at && "is-on"]}
         phx-click="insert"
         phx-value-type={type}
         phx-value-after={@uid}
@@ -457,7 +457,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
 
   defp attachment(assigns) do
     ~H"""
-    <div class={"ed-attach #{@value in [nil, ""] && "ed-attach--empty"}"}>
+    <div class={["ed-attach", @value in [nil, ""] && "ed-attach--empty"]}>
       <span class="ed-attach-plus" aria-hidden="true">{if @field == "caption", do: "+", else: "›"}</span>
       <textarea
         id={"att-#{@uid}-#{@field}"}

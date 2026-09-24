@@ -74,35 +74,13 @@ defmodule BlogoWeb.EditorLive.Panel do
 
         <label class="ed-field" style="margin-bottom:12px">
           <span class="micro">Tipo</span>
+          <%!-- "pagina" is how a fixed page is written: the author picks it here
+                and the page leaves the index, the feed and the topics. --%>
           <select class="input" name="kind">
-            <option :for={k <- ~w(ensaio nota)} value={k} selected={@fields.kind == k}>{k}</option>
-          </select>
-        </label>
-
-        <label class="ed-field" style="margin-bottom:12px">
-          <span class="micro">Série</span>
-          <select class="input" name="series_id">
-            <option value="">nenhuma</option>
-            <option
-              :for={s <- @all_series}
-              value={s.id}
-              selected={to_string(@fields.series_id) == to_string(s.id)}
-            >
-              {s.name}
+            <option :for={k <- Blogo.Content.Post.kinds()} value={k} selected={@fields.kind == k}>
+              {k}
             </option>
           </select>
-        </label>
-
-        <label :if={@fields.series_id} class="ed-field" style="margin-bottom:12px">
-          <span class="micro">Posição na série</span>
-          <input
-            class="input mono"
-            type="number"
-            min="1"
-            name="series_position"
-            value={@fields.series_position}
-            phx-debounce="400"
-          />
         </label>
 
         <div class="ed-field">
@@ -230,7 +208,7 @@ defmodule BlogoWeb.EditorLive.Panel do
             placeholder="O resumo que aparece no Google"
           >{@fields.meta_description}</textarea>
         </label>
-        <p class={"small #{not @search.fits? && "ed-warn"}"} style="margin-top:8px">
+        <p class={["small", not @search.fits? && "ed-warn"]} style="margin-top:8px">
           {if @search.fits?,
             do: "Título e resumo dentro do limite",
             else: "Título ou resumo passa do limite e vai ser cortado"}

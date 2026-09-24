@@ -8,11 +8,11 @@ defmodule BlogoWeb.SitemapController do
 
     posts = Content.list_published()
 
+    # Fixed pages belong here even though they are kept out of the index: a
+    # page nobody links from a listing is a page a crawler finds only here.
     urls =
       [{base <> "/", nil}] ++
-        Enum.map(posts, &{"#{base}/#{&1.slug}", &1.updated_at}) ++
-        Enum.map(Enum.uniq_by(posts, & &1.author_id), &{"#{base}/autor/#{&1.author.slug}", nil}) ++
-        Enum.map(Content.list_series(), &{"#{base}/serie/#{&1.slug}", &1.updated_at}) ++
+        Enum.map(posts ++ Content.list_pages(), &{"#{base}/#{&1.slug}", &1.updated_at}) ++
         Enum.map(Content.list_topics(), &{"#{base}/tag/#{&1.slug}", nil})
 
     body = """

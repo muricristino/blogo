@@ -38,7 +38,6 @@ defmodule BlogoWeb.EditorLive.Edit do
        timer: nil,
        error: nil,
        hero_error: nil,
-       all_series: Content.list_all_series(),
        undo: nil,
        now: DateTime.utc_now(),
        markdown: Markdown.to_markdown(post)
@@ -52,7 +51,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   # handing that struct to `cast/3` leaves nothing to compare against, so the
   # column is never written and the screen keeps showing a value the database
   # never received. That shipped once, with the save badge turning green.
-  @editable ~w(title subtitle slug kind meta_description series_id series_position)a
+  @editable ~w(title subtitle slug kind meta_description)a
 
   defp fields_of(post) do
     post
@@ -61,8 +60,6 @@ defmodule BlogoWeb.EditorLive.Edit do
   end
 
   # "" would fail to cast and silently keep the old value.
-  defp normalise(:series_id, ""), do: nil
-  defp normalise(:series_position, ""), do: nil
   defp normalise(_key, value), do: value
 
   # ── events ────────────────────────────────────────────────────────────────

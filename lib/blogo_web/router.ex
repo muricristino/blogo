@@ -12,6 +12,7 @@ defmodule BlogoWeb.Router do
     conn
     |> Plug.Conn.assign(:site, site)
     |> Plug.Conn.assign(:site_name, Blogo.Content.site_name(site))
+    |> Plug.Conn.assign(:pages, Blogo.Content.list_pages())
   end
 
   pipeline :browser do
@@ -52,8 +53,7 @@ defmodule BlogoWeb.Router do
     get "/robots.txt", SitemapController, :robots
     get "/feed.xml", FeedController, :index
     get "/tag/:slug", TopicController, :show
-    get "/autor/:slug", AuthorController, :show
-    get "/serie/:slug", SeriesController, :show
+    get "/autor/:slug", PageController, :author
     get "/imagem/:slug", CardController, :show
 
     # A entrada não se anuncia em lugar nenhum do site público.

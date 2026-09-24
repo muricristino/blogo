@@ -34,28 +34,6 @@ defmodule BlogoWeb.SEOTest do
       [article] = json_ld(html) |> Enum.filter(&(&1["@type"] == "Article"))
       assert is_integer(article["wordCount"])
     end
-
-    # The series page listed its articles; the articles never said they
-    # belonged to one. Half a link is not a link.
-    test "says which series it is part of", %{conn: conn} do
-      {:ok, series} =
-        Content.upsert_series(%{slug: "uma-serie", name: "Uma série", description: "…"})
-
-      post = Fixtures.post(%{series_id: series.id, series_position: 1})
-      html = conn |> get(~p"/#{post.slug}") |> html_response(200)
-
-      [article] = json_ld(html) |> Enum.filter(&(&1["@type"] == "Article"))
-      assert article["isPartOf"]["name"] == "Uma série"
-      assert article["isPartOf"]["@id"] =~ "/serie/uma-serie#series"
-    end
-
-    test "an article outside a series says nothing about one", %{conn: conn} do
-      post = Fixtures.post()
-      html = conn |> get(~p"/#{post.slug}") |> html_response(200)
-
-      [article] = json_ld(html) |> Enum.filter(&(&1["@type"] == "Article"))
-      refute Map.has_key?(article, "isPartOf")
-    end
   end
 
   describe "the site's own name" do

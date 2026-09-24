@@ -73,10 +73,9 @@ defmodule BlogoWeb.SEO do
 
   `image` points at the card the site already renders — it is where a search
   engine takes the figure for a rich result, and Open Graph alone does not
-  reach it. `isPartOf` is the other half of the series link: the series page
-  lists its articles, and without this the article never says it belongs.
+  reach it.
   """
-  def article(post, base_url, series \\ nil) do
+  def article(post, base_url) do
     %{
       "@context" => "https://schema.org",
       "@type" => "Article",
@@ -91,19 +90,9 @@ defmodule BlogoWeb.SEO do
       "wordCount" => word_count(post),
       "keywords" => Enum.join(post.topics, ", "),
       "author" => person(post.author, base_url),
-      "publisher" => person(post.author, base_url),
-      "isPartOf" => series && part_of(series, base_url)
+      "publisher" => person(post.author, base_url)
     }
     |> drop_empty()
-  end
-
-  defp part_of(series, base_url) do
-    %{
-      "@type" => "CreativeWorkSeries",
-      "@id" => "#{base_url}/serie/#{series.slug}#series",
-      "name" => series.name,
-      "url" => "#{base_url}/serie/#{series.slug}"
-    }
   end
 
   defp word_count(post) do
@@ -113,53 +102,38 @@ defmodule BlogoWeb.SEO do
     end
   end
 
-  @doc "The author page, which is where the Person entity actually lives."
-  def profile_page(author, posts, base_url) do
+  @doc """
+  The home page as the site itself.
+
+  It used to declare a ProfilePage, which put the Person on a page that is not
+  about the person. The Person still reaches a search engine through every
+  article, and through the about page when one exists.
+  """
+  def site(site, base_url) do
     %{
       "@context" => "https://schema.org",
-      "@type" => "ProfilePage",
-      "mainEntity" => person(author, base_url),
-      "hasPart" =>
-        Enum.map(posts, fn p ->
-          %{
-            "@type" => "Article",
-            "headline" => p.title,
-            "url" => "#{base_url}/#{p.slug}",
-            "datePublished" => p.published_at && DateTime.to_iso8601(p.published_at)
-          }
-        end)
+      "@type" => "WebSite",
+      "@id" => "#{base_url}/#site",
+      "name" => Blogo.Content.site_name(site),
+      "description" => site.description,
+      "url" => "#{base_url}/",
+      "inLanguage" => "pt-BR"
     }
     |> drop_empty()
   end
 
   @doc """
-  A series as an ordered list, which is what tells a search engine these
-  articles are one body of work read in a given order.
+  The about page, which is where the Person entity lives.
+
+  The same Person also travels inside every Article as author and publisher —
+  one stable `@id` across all of them is what lets a search for the name find
+  the writing.
   """
-  def series(series, base_url) do
+  def profile_page(author, base_url) do
     %{
       "@context" => "https://schema.org",
-      "@type" => "CollectionPage",
-      "@id" => "#{base_url}/serie/#{series.slug}#series",
-      "name" => series.name,
-      "description" => series.description,
-      "inLanguage" => "pt-BR",
-      "mainEntity" => %{
-        "@type" => "ItemList",
-        "itemListOrder" => "https://schema.org/ItemListOrderAscending",
-        "numberOfItems" => length(series.posts),
-        "itemListElement" =>
-          series.posts
-          |> Enum.with_index(1)
-          |> Enum.map(fn {post, i} ->
-            %{
-              "@type" => "ListItem",
-              "position" => i,
-              "url" => "#{base_url}/#{post.slug}",
-              "name" => post.title
-            }
-          end)
-      }
+      "@type" => "ProfilePage",
+      "mainEntity" => person(author, base_url)
     }
     |> drop_empty()
   end

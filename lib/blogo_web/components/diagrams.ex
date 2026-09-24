@@ -41,7 +41,7 @@ defmodule BlogoWeb.Diagrams do
         <% w = div(400, max(length(@steps), 1))
         x = i * (w + 14) %>
         <rect
-          class={"d-node #{step["accent"] && "d-node--a"}"}
+          class={["d-node", step["accent"] && "d-node--a"]}
           x={x}
           y="26"
           width={w}
@@ -145,7 +145,7 @@ defmodule BlogoWeb.Diagrams do
         <% x = 108 + rem(i, 2) * 140
         y = 20 + div(i, 2) * 64 %>
         <rect
-          class={"d-node #{cell["accent"] && "d-node--a"}"}
+          class={["d-node", cell["accent"] && "d-node--a"]}
           x={x}
           y={y}
           width="130"
@@ -229,7 +229,7 @@ defmodule BlogoWeb.Diagrams do
             i == n - 1 -> 470
             true -> x
           end %>
-        <circle cx={x} cy="76" r="6" class={"d-node #{ev["accent"] && "d-node--a"}"} />
+        <circle cx={x} cy="76" r="6" class={["d-node", ev["accent"] && "d-node--a"]} />
         <text class="d-num" x={lx} y="44" text-anchor={anchor}>{ev["time"]}</text>
         <text class="d-labm" x={lx} y="60" text-anchor={anchor}>{ev["label"]}</text>
         <text class="d-labm" x={lx} y="100" text-anchor={anchor} style={tone_style(ev["tone"])}>
@@ -265,7 +265,7 @@ defmodule BlogoWeb.Diagrams do
           cx={scale(row["point"])}
           cy={y}
           r="5"
-          class={"d-node #{row["accent"] && "d-node--a"}"}
+          class={["d-node", row["accent"] && "d-node--a"]}
         />
         <text class="d-labm" x={scale(row["point"])} y={y - 18} text-anchor="middle">
           {row["note"]}

@@ -195,7 +195,7 @@ quietly:
 typed in the editor. Every form has to degrade on incomplete data rather than
 raise: a missing number used to raise inside `bell/3` and take down the
 article's public page, not just the card.
-||||||| d68e02b
+
 ## A panel may not invent a number
 
 Everything on `/painel` is counted from the `reads` table. Three states look
@@ -221,6 +221,19 @@ and showed 3% beside a card reading 25%.
 fingerprint, no IP. Nothing can tell whether a hundred reads are a hundred
 readers or one reader reloading, so the wording never says "leitores" where it
 means "leituras".
+
+### What the audit sees, and what it does not
+
+`test/mobile_audit.mjs` measures whether a layout **breaks**. A page that never
+had any styling does not break, so for weeks it measured `/autor/:slug` — whose
+template used seven classes that were not in `app.css` — and reported it clean at
+every width. Text with no rule at all does not overflow, does not shrink and is
+not too small.
+
+So the audit now also checks that every class in the DOM exists in some loaded
+stylesheet. That catches a page the CSS never reached, and it caught one inline
+`style` doing what a class was named for. It does not check that the rule does
+what the screen needs — only that there is one.
 
 ### The audit does not see SVG text
 
