@@ -17,7 +17,12 @@ defmodule BlogoWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  # `robots.txt` is deliberately not here: it is generated from the crawler
+  # choice in the panel. A file with that name would be served by Plug.Static
+  # before the router ever saw the request, and the panel would go on showing a
+  # choice nobody was obeying.
+  def static_paths,
+    do: ~w(assets fonts images favicon.ico favicon.svg apple-touch-icon.png)
 
   def router do
     quote do

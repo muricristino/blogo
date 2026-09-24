@@ -14,6 +14,13 @@
     <% else %>
       <title>{assigns[:page_title] || assigns[:site_name] || "blog"}</title>
     <% end %>
+    <%!-- The tab carries the same open book the header draws. SVG first, because
+          it is the one that stays sharp at every size a browser asks for; the
+          .ico is only for the ones that still ignore SVG. --%>
+    <link rel="icon" href={~p"/favicon.svg"} type="image/svg+xml" />
+    <link rel="icon" href={~p"/favicon.ico"} sizes="32x32" />
+    <link rel="apple-touch-icon" href={~p"/apple-touch-icon.png"} />
+    <meta name="theme-color" content="#2563eb" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
