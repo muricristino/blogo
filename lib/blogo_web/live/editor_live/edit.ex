@@ -44,6 +44,7 @@ defmodule BlogoWeb.EditorLive.Edit do
        timer: nil,
        error: nil,
        hero_error: nil,
+       all_series: Content.list_all_series(),
        undo: nil,
        now: DateTime.utc_now(),
        markdown: Markdown.to_markdown(post)
@@ -59,13 +60,20 @@ defmodule BlogoWeb.EditorLive.Edit do
   # showing a value the database never received. That bug shipped in the first
   # version of this file and nothing on screen contradicted it — the save badge
   # still turned green.
-  @editable ~w(title subtitle slug kind meta_description)a
+  @editable ~w(title subtitle slug kind meta_description series_id series_position)a
 
   defp fields_of(post) do
     post
     |> Map.take([:topics, :hero | @editable])
     |> Map.new(fn {k, v} -> {k, v} end)
   end
+
+  # A select sends "" for "nenhuma" and a number input sends a string. Both
+  # have to reach the changeset as nil rather than as "", which would fail to
+  # cast and silently keep the old value.
+  defp normalise(:series_id, ""), do: nil
+  defp normalise(:series_position, ""), do: nil
+  defp normalise(_key, value), do: value
 
   # ── events ────────────────────────────────────────────────────────────────
 
@@ -214,7 +222,7 @@ defmodule BlogoWeb.EditorLive.Edit do
     socket =
       Enum.reduce(@editable, socket, fn key, acc ->
         case Map.fetch(params, to_string(key)) do
-          {:ok, value} -> put_field_value(acc, key, value)
+          {:ok, value} -> put_field_value(acc, key, normalise(key, value))
           :error -> acc
         end
       end)
@@ -1340,6 +1348,32 @@ defmodule BlogoWeb.EditorLive.Edit do
           <select class="input" name="kind">
             <option :for={k <- ~w(ensaio nota)} value={k} selected={@fields.kind == k}>{k}</option>
           </select>
+        </label>
+
+        <label class="ed-field" style="margin-bottom:12px">
+          <span class="micro">Série</span>
+          <select class="input" name="series_id">
+            <option value="">nenhuma</option>
+            <option
+              :for={s <- @all_series}
+              value={s.id}
+              selected={to_string(@fields.series_id) == to_string(s.id)}
+            >
+              {s.name}
+            </option>
+          </select>
+        </label>
+
+        <label :if={@fields.series_id} class="ed-field" style="margin-bottom:12px">
+          <span class="micro">Posição na série</span>
+          <input
+            class="input mono"
+            type="number"
+            min="1"
+            name="series_position"
+            value={@fields.series_position}
+            phx-debounce="400"
+          />
         </label>
 
         <div class="ed-field">

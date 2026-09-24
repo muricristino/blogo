@@ -3,7 +3,7 @@ defmodule Blogo.Content do
 
   import Ecto.Query, warn: false
   alias Blogo.Repo
-  alias Blogo.Content.{Author, Post}
+  alias Blogo.Content.{Author, Post, Series}
 
   def list_published do
     from(p in Post,
@@ -23,6 +23,61 @@ defmodule Blogo.Content do
   end
 
   def get_author_by_slug(slug), do: Repo.get_by(Author, slug: slug)
+
+  # ── series ────────────────────────────────────────────────────────────────
+
+  @doc """
+  Every series that has at least one published article, with those articles in
+  reading order.
+
+  A series with nothing published in it is not shown: an empty reading order is
+  a promise of nothing.
+  """
+  def list_series do
+    Series
+    |> order_by(asc: :name)
+    |> preload(posts: ^published_parts_query())
+    |> Repo.all()
+    |> Enum.reject(&(&1.posts == []))
+  end
+
+  def get_series_by_slug(slug) do
+    Series
+    |> where(slug: ^slug)
+    |> preload(posts: ^published_parts_query())
+    |> Repo.one()
+  end
+
+  @doc "Every series, for the editor's picker — including the empty ones."
+  def list_all_series, do: Series |> order_by(asc: :name) |> Repo.all()
+
+  def upsert_series(attrs) do
+    case Repo.get_by(Series, slug: attrs.slug) do
+      nil -> %Series{} |> Series.changeset(attrs) |> Repo.insert()
+      series -> series |> Series.changeset(attrs) |> Repo.update()
+    end
+  end
+
+  defp published_parts_query do
+    from(p in Post,
+      where: p.status == "published" and p.published_at <= ^DateTime.utc_now(),
+      order_by: [asc: p.series_position],
+      preload: [:author]
+    )
+  end
+
+  @doc """
+  The series an article belongs to, with its siblings — what the article page
+  needs to say "parte 2 de 3" and link the rest.
+  """
+  def series_of(%Post{series_id: nil}), do: nil
+
+  def series_of(%Post{series_id: id}) do
+    Series
+    |> where(id: ^id)
+    |> preload(posts: ^published_parts_query())
+    |> Repo.one()
+  end
 
   def create_author(attrs), do: %Author{} |> Author.changeset(attrs) |> Repo.insert()
   def create_post(attrs), do: %Post{} |> Post.changeset(attrs) |> Repo.insert()
@@ -55,7 +110,7 @@ defmodule Blogo.Content do
     |> Repo.all()
   end
 
-  def get_post!(id), do: Post |> Repo.get!(id) |> Repo.preload(:author)
+  def get_post!(id), do: Post |> Repo.get!(id) |> Repo.preload([:author, :series])
 
   @doc """
   Starts a draft. It has no slug and no body yet, so it cannot be published

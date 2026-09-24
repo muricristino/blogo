@@ -350,3 +350,135 @@ a{color:var(--accent);text-underline-offset:.2em}
    what is left so the shape survives the reduction. */
 .thumb .hero circle{r:18}
 .thumb .hero line,.thumb .hero path{stroke-width:5}
+
+/* ── séries ─────────────────────────────────────────────────────────────── */
+
+.serie-section {
+  margin-top: 46px;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+}
+
+.serie-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.serie-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.serie-card {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.serie-card-first {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--ink3);
+}
+
+/* A badge no artigo é o único caminho do meio de uma série para o resto dela. */
+.serie-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--ink2);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.serie-badge strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.serie-page {
+  padding-top: 38px;
+}
+
+.serie-head {
+  gap: 14px;
+  max-width: 640px;
+}
+
+.serie-parts {
+  list-style: none;
+  padding: 0;
+  margin: 34px 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.serie-part {
+  border-top: 1px solid var(--line);
+}
+
+.serie-part:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.serie-part-link {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 20px 0;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.serie-n {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 12.5px;
+  padding-top: 3px;
+}
+
+.serie-part-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.serie-thumb {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .serie-badge {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 720px) {
+  .serie-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .serie-thumb {
+    display: flex;
+    flex: 0 0 auto;
+  }
+}

@@ -2,6 +2,11 @@ alias Blogo.Content
 
 author = Content.get_author_by_slug("muri-cristino")
 
+# A ordem de leitura da série: montar o conjunto vem antes de medir com ele, e
+# comparar dois modelos vem depois de saber medir um.
+serie = Content.get_series_by_slug("avaliar-sem-se-enganar")
+na_serie = %{"conjunto-de-180-casos" => 1, "mcnemar-em-ruby" => 3}
+
 texto = fn paras -> %{"type" => "text", "paragraphs" => paras} end
 
 outros = [
@@ -190,7 +195,9 @@ for o <- outros do
       meta_description: o.subtitle,
       hero: o.hero,
       body: %{"blocks" => o.blocks},
-      author_id: author.id
+      author_id: author.id,
+      series_id: serie && na_serie[o.slug] && serie.id,
+      series_position: na_serie[o.slug]
     })
 end
 

@@ -104,6 +104,38 @@ defmodule BlogoWeb.SEO do
     |> drop_empty()
   end
 
+  @doc """
+  A series as an ordered list, which is what tells a search engine these
+  articles are one body of work read in a given order.
+  """
+  def series(series, base_url) do
+    %{
+      "@context" => "https://schema.org",
+      "@type" => "CollectionPage",
+      "@id" => "#{base_url}/serie/#{series.slug}#series",
+      "name" => series.name,
+      "description" => series.description,
+      "inLanguage" => "pt-BR",
+      "mainEntity" => %{
+        "@type" => "ItemList",
+        "itemListOrder" => "https://schema.org/ItemListOrderAscending",
+        "numberOfItems" => length(series.posts),
+        "itemListElement" =>
+          series.posts
+          |> Enum.with_index(1)
+          |> Enum.map(fn {post, i} ->
+            %{
+              "@type" => "ListItem",
+              "position" => i,
+              "url" => "#{base_url}/#{post.slug}",
+              "name" => post.title
+            }
+          end)
+      }
+    }
+    |> drop_empty()
+  end
+
   defp drop_empty(map) do
     map
     |> Enum.reject(fn {_k, v} -> is_nil(v) or v == "" or v == [] end)
