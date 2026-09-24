@@ -34,30 +34,92 @@ function loadClerk(publishableKey) {
   })
 }
 
-// Clerk derives its own shades from concrete colours, so these are the hex
-// values behind the tokens rather than the `var()` the stylesheet uses.
-const appearance = {
-  variables: {
-    colorPrimary: "#2563eb",
-    colorText: "#101828",
-    colorTextSecondary: "#626c7a",
-    colorBackground: "transparent",
-    colorInputBackground: "#ffffff",
-    borderRadius: "11px",
-    fontFamily: "'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif"
-  },
-  elements: {
-    // Clerk ships its own card, and mounted inside ours that reads as a card
-    // in a card. The page already says where you are and why.
-    // clerk-js v5 wraps the card in a `cardBox` that carries the width and the
-    // shadow; styling only `card` leaves that box at its own size, which is
-    // what pushed the form outside ours.
-    rootBox: { width: "100%" },
-    cardBox: { width: "100%", maxWidth: "100%", boxShadow: "none", border: "0" },
-    card: { boxShadow: "none", border: "0", padding: "0", background: "transparent" },
-    header: { display: "none" },
-    footer: { display: "none" },
-    formButtonPrimary: { fontSize: "14px", textTransform: "none" }
+// Clerk computes its own shades from concrete colours: it understands neither
+// `var()` nor a media query, so the theme has to be resolved here and handed
+// over already decided. Passing the light values unconditionally is what put
+// dark text on a dark card and a white input in the middle of a dark page.
+function dark() {
+  const set = document.documentElement.getAttribute("data-theme")
+  return set ? set === "dark" : matchMedia("(prefers-color-scheme: dark)").matches
+}
+
+// The same tokens app.css defines, written out — see the `:root[data-theme]`
+// blocks there. A colour that drifts from them shows up as a login that does
+// not look like the rest of the site.
+const palette = () =>
+  dark()
+    ? {
+        colorPrimary: "#2563eb",
+        colorText: "#eef4ff",
+        colorTextSecondary: "rgba(255,255,255,.62)",
+        colorBackground: "transparent",
+        colorInputBackground: "rgba(255,255,255,.05)",
+        colorInputText: "#eef4ff",
+        colorNeutral: "#ffffff",
+        colorDanger: "#fb7185",
+        colorSuccess: "#34d399",
+        colorWarning: "#fbbf24"
+      }
+    : {
+        colorPrimary: "#2563eb",
+        colorText: "#101828",
+        colorTextSecondary: "#626c7a",
+        colorBackground: "transparent",
+        colorInputBackground: "#ffffff",
+        colorInputText: "#101828",
+        colorNeutral: "#101828",
+        colorDanger: "#be123c",
+        colorSuccess: "#047857",
+        colorWarning: "#b45309"
+      }
+
+// The border, the divider and the muted labels, per theme. These are literal
+// because Clerk's `appearance` is passed to its own style engine, not written
+// into this document — `var(--line)` handed to it resolves against wherever it
+// injects the rule, which is not somewhere our `:root` reaches. Same reason the
+// social card carries its own stylesheet; see `lib/blogo/card.ex`.
+const edges = () =>
+  dark()
+    ? { line: "rgba(147,197,253,.15)", muted: "rgba(255,255,255,.44)", field: "rgba(255,255,255,.05)", ink: "#eef4ff" }
+    : { line: "#e6ebf3", muted: "#8c95a1", field: "rgba(255,255,255,.7)", ink: "#101828" }
+
+// Rebuilt on demand rather than fixed at module load: the theme can change
+// after the component is mounted, and a palette captured once would keep the
+// login in whichever theme the page happened to open in.
+function buildAppearance() {
+  const e = edges()
+
+  return {
+    variables: {
+      ...palette(),
+      borderRadius: "11px",
+      fontFamily: "'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif"
+    },
+    elements: {
+      // Clerk ships its own card, and mounted inside ours that reads as a card
+      // in a card. The page already says where you are and why.
+      // clerk-js v5 wraps the card in a `cardBox` that carries the width and the
+      // shadow; styling only `card` leaves that box at its own size, which is
+      // what pushed the form outside ours.
+      rootBox: { width: "100%" },
+      cardBox: { width: "100%", maxWidth: "100%", boxShadow: "none", border: "0" },
+      // The social button is an outlined box, and its border comes from the
+      // neutral shade Clerk derives — which lands on almost nothing over a dark
+      // card. It is stated instead of computed.
+      socialButtonsBlockButton: {
+        borderColor: e.line,
+        color: e.ink,
+        backgroundColor: e.field
+      },
+      dividerLine: { backgroundColor: e.line },
+      dividerText: { color: e.muted },
+      formFieldLabel: { color: e.muted },
+      formFieldInput: { borderColor: e.line },
+      card: { boxShadow: "none", border: "0", padding: "0", background: "transparent" },
+      header: { display: "none" },
+      footer: { display: "none" },
+      formButtonPrimary: { fontSize: "14px", textTransform: "none" }
+    }
   }
 }
 
@@ -107,6 +169,54 @@ function fail(message) {
   box.hidden = false
 }
 
+function mountSignIn(Clerk, mount) {
+  Clerk.mountSignIn(mount, {
+    appearance: buildAppearance(),
+    afterSignInUrl: window.location.pathname,
+    afterSignUpUrl: window.location.pathname
+  })
+}
+
+// Clerk resolves its shades once, when it is given an appearance, so a theme
+// change afterwards leaves the component in the old one — dark text on a dark
+// card, which is the bug this page had to begin with.
+//
+// `__unstable__updateProps` looks like the way to re-apply one. It exists, it
+// accepts the call and it returns without throwing — and it changes nothing.
+// An API that fails silently is worse than one that is missing, because the
+// obvious fallback (catch and remount) never runs. So the component is simply
+// mounted again, which is the only thing that demonstrably works.
+//
+// Remounting resets the flow, so it only happens while the form is untouched.
+// Someone who has already typed an address is mid-login, and sending them back
+// to the start to fix a colour is the worse trade; their card stays in the
+// previous theme until the page is reloaded.
+function watchTheme(Clerk, mount) {
+  let current = dark()
+
+  const untouched = () =>
+    [...mount.querySelectorAll("input")].every(i => i.value === "")
+
+  const reapply = () => {
+    if (dark() === current) return
+    current = dark()
+
+    if (Clerk.user || !untouched()) return
+
+    Clerk.unmountSignIn(mount)
+    mountSignIn(Clerk, mount)
+  }
+
+  // Two separate paths: the site's own toggle writes `data-theme` on <html>,
+  // and with no preference stored the system setting decides.
+  new MutationObserver(reapply).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"]
+  })
+
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reapply)
+}
+
 async function start() {
   if (!mount) return
 
@@ -116,11 +226,13 @@ async function start() {
   let Clerk
   try {
     Clerk = await loadClerk(publishableKey)
-    await Clerk.load({ appearance, localization })
+    await Clerk.load({ appearance: buildAppearance(), localization })
   } catch (error) {
     fail("Não foi possível carregar o login. Verifique a conexão e recarregue.")
     return
   }
+
+  watchTheme(Clerk, mount)
 
   // Already signed in with Clerk but no Phoenix session yet — which is what a
   // reload of this page looks like. Exchange the token instead of showing a
@@ -131,11 +243,7 @@ async function start() {
   installTouchTargets()
   // A altura mínima existe só para a caixa não saltar durante o carregamento.
   mount.style.minHeight = "auto"
-  Clerk.mountSignIn(mount, {
-    appearance,
-    afterSignInUrl: window.location.pathname,
-    afterSignUpUrl: window.location.pathname
-  })
+  mountSignIn(Clerk, mount)
 
   Clerk.addListener(({ user }) => {
     if (user) exchange(Clerk, sessionPath)
