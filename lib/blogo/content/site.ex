@@ -22,16 +22,21 @@ defmodule Blogo.Content.Site do
     field :description, :string
     field :featured_hero, :boolean, default: true
 
+    # Nil is "nobody decided yet", which the panel says in words. See
+    # `Blogo.Content.Crawlers`.
+    field :ai_crawlers, :string
+
     timestamps(type: :utc_datetime)
   end
 
   def changeset(site, attrs) do
     site
-    |> cast(attrs, [:name, :description, :featured_hero])
+    |> cast(attrs, [:name, :description, :featured_hero, :ai_crawlers])
     |> update_change(:name, &blank_to_nil/1)
     |> update_change(:description, &blank_to_nil/1)
     |> validate_length(:name, max: 60)
     |> validate_length(:description, max: 160)
+    |> validate_inclusion(:ai_crawlers, Blogo.Content.Crawlers.policies())
   end
 
   @doc "True when this install still has to be named."

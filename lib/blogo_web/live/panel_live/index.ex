@@ -19,6 +19,7 @@ defmodule BlogoWeb.PanelLive.Index do
   alias Blogo.Analytics
   alias Blogo.Content
   alias Blogo.Content.Author
+  alias Blogo.Content.Crawlers
 
   @periods [{7, "7 dias"}, {30, "30 dias"}, {90, "90 dias"}, {:all, "Tudo"}]
 
@@ -109,6 +110,30 @@ defmodule BlogoWeb.PanelLive.Index do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Não foi possível guardar essa escolha.")}
+  # A opção salva no clique: não existe rascunho de "só citação", e um estado
+  # marcado na tela sem nada no banco é a mentira que a regra do badge de salvo
+  # existe para impedir.
+  def handle_event("crawlers_salvar", %{"ai_crawlers" => value}, socket) do
+    case Content.update_site(%{"ai_crawlers" => value}) do
+      {:ok, site} ->
+        # Only the assigns this choice owns, never `load_site/1`: rebuilding
+        # `site_form` from the row would throw away a name someone is halfway
+        # through typing, which the featured-figure switch beside it already
+        # had to learn.
+        {:noreply,
+         socket
+         |> assign(
+           site: site,
+           crawlers: Crawlers.policy(site),
+           crawlers_chosen?: Crawlers.chosen?(site)
+         )
+         |> put_flash(
+           :info,
+           "Escolha salva. O /robots.txt já responde com ela: #{Crawlers.summary(value)}"
+         )}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Essa escolha não existe.")}
     end
   end
 
@@ -275,7 +300,9 @@ defmodule BlogoWeb.PanelLive.Index do
       site: site,
       site_name: Content.site_name(site),
       site_unnamed?: Blogo.Content.Site.unnamed?(site),
-      site_form: to_form(Content.change_site(site))
+      site_form: to_form(Content.change_site(site)),
+      crawlers: Crawlers.policy(site),
+      crawlers_chosen?: Crawlers.chosen?(site)
     )
   end
 
@@ -305,6 +332,7 @@ defmodule BlogoWeb.PanelLive.Index do
     posts = Content.list_posts()
     per_post = Analytics.by_post(range)
     curve = Analytics.depth_curve(range)
+    since = Analytics.collecting_since()
 
     assign(socket,
       posts: posts,
@@ -317,7 +345,7 @@ defmodule BlogoWeb.PanelLive.Index do
       drop: Analytics.steepest_drop(curve),
       queue: Analytics.queue(),
       measuring?: Analytics.measuring?(),
-      since: Analytics.collecting_since(),
+      since: since,
       counts: counts(posts)
     )
   end
@@ -444,6 +472,8 @@ defmodule BlogoWeb.PanelLive.Index do
           form={@site_form}
           aberto?={@site_aberto?}
         />
+
+        <.crawlers_card chosen?={@crawlers_chosen?} policy={@crawlers} />
 
         <.author_card
           :if={@author}
@@ -806,6 +836,59 @@ defmodule BlogoWeb.PanelLive.Index do
           <button type="submit" class="btn btn--p">Salvar</button>
         </div>
       </.form>
+    </section>
+    """
+  end
+
+  attr :chosen?, :boolean, required: true
+  attr :policy, :string, required: true
+
+  defp crawlers_card(assigns) do
+    ~H"""
+    <section class="card pn-author">
+      <div class="pn-author-head">
+        <span>
+          <span class="h3">O que crawler de IA pode fazer</span>
+          <span class="small">
+            Esta instalação é sua, e essa escolha é sua. O robots.txt é gerado a partir dela —
+            não existe outro lugar onde ela more.
+          </span>
+        </span>
+        <a class="btn btn--s btn--sm" href="/robots.txt" target="_blank" rel="noopener">
+          Ver o robots.txt
+        </a>
+      </div>
+
+      <p :if={not @chosen?} class="pn-site-todo">
+        Ninguém decidiu isso ainda, então vale o padrão: <strong>só citação</strong>. Ele está
+        marcado abaixo e já é o que o robots.txt responde. Marcar outra opção decide de verdade.
+      </p>
+
+      <%!-- Botão em vez de radio: o alvo de toque é a linha inteira, e um radio
+            nativo desenha 18px que nenhuma regra de CSS aumenta sem deformar o
+            controle. `aria-pressed` é o que diz qual está valendo. --%>
+      <div class="pn-choices" role="group" aria-label="O que crawler de IA pode fazer">
+        <button
+          :for={option <- Crawlers.options()}
+          type="button"
+          class={["pn-choice", @policy == option.value && "is-on"]}
+          aria-pressed={to_string(@policy == option.value)}
+          phx-click="crawlers_salvar"
+          phx-value-ai_crawlers={option.value}
+        >
+          <span class="pn-choice-mark" aria-hidden="true"></span>
+          <span class="pn-choice-text">
+            <span class="pn-choice-name">{option.label}</span>
+            <span class="small">{option.description}</span>
+          </span>
+        </button>
+      </div>
+
+      <p class="small">
+        Gemini lê com o Googlebot e Copilot com o Bingbot, os mesmos agentes da busca deles.
+        Nenhuma escolha aqui alcança os dois sem tirar o blog da busca também, e o robots.txt
+        diz isso por escrito para quem for conferir.
+      </p>
     </section>
     """
   end
