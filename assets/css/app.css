@@ -310,6 +310,30 @@ a{color:var(--accent);text-underline-offset:.2em}
 .feat-title { font-size: clamp(26px, 7vw, 40px); }
 .h1, .h2, .feat-title, .item-title { overflow-wrap: break-word; }
 
+/* A linha de tópicos, data e duração do destaque. Estava em estilo inline, que
+   nenhuma media query alcança. */
+.feat-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* O destaque sem figura, quando o painel desliga o diagrama na home.
+   O mesmo card com um vazio no lugar do diagrama parece defeito, então o texto
+   ocupa o espaço: uma coluna em qualquer largura, título um passo maior e
+   subtítulo em corpo de leitura, com espaço para mais de uma linha. O banho de
+   cor que era do painel da figura passa para o card inteiro — é o que continua
+   dizendo "em destaque" quando não há mais figura para dizê-lo. */
+.feat--plain .feat-text {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  gap: 18px;
+}
+.feat--plain .feat-title { font-size: clamp(29px, 8vw, 52px); }
+/* A medida não passa de ~70 caracteres nem quando a coluna é a página toda. */
+.feat--plain .dek { font-size: 18px; max-width: 62ch; }
+
+@media (min-width: 760px) {
+  .feat--plain { grid-template-columns: 1fr; }
+  .feat--plain .feat-text { padding: 44px 36px; }
+  .feat--plain .dek { font-size: 21px; }
+}
+
 /* O resumo. Três colunas fixas não cabiam a 320px: os números têm 40px e
    impõem uma largura mínima que empurrava a página. Agora as colunas
    quebram quando não cabem, em vez de o card estourar. */

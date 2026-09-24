@@ -27,6 +27,10 @@ defmodule BlogoWeb.PostController do
     |> render(:index,
       posts: rest,
       featured: featured,
+      # Whether the featured card draws the article's diagram. Off, the card is
+      # a text block that fills the whole width instead of a card with a gap
+      # where a figure used to be.
+      featured_hero: site.featured_hero,
       author: author,
       topics: Content.list_topics(),
       total: length(posts),
