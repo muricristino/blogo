@@ -149,6 +149,93 @@ defmodule BlogoWeb.PanelAuthorTest do
     end
   end
 
+  describe "the photo" do
+    # The bytes, read back out of Postgres. `:photo` is `load_in_query: false`,
+    # so the struct the panel holds does not carry them — which is the point,
+    # and also why asserting on it would prove nothing.
+    defp stored_photo(author) do
+      Blogo.Repo.one(
+        from a in Blogo.Content.Author,
+          where: a.id == ^author.id,
+          select: %{data: a.photo, type: a.photo_type, digest: a.photo_digest}
+      )
+    end
+
+    defp pick(live, name, content, type \\ "image/png") do
+      live
+      |> file_input("#pn-foto-form", :foto, [%{name: name, content: content, type: type}])
+    end
+
+    test "choosing a file puts it in the database, with no Salvar to press", %{conn: conn} do
+      %{live: live, author: author} = panel(conn)
+      bytes = Fixtures.png()
+
+      render_upload(pick(live, "eu.png", bytes), "eu.png")
+
+      saved = stored_photo(author)
+      assert saved.data == bytes
+      assert saved.type == "image/png"
+      assert saved.digest
+    end
+
+    # The browser is asked to refuse an oversized file, but the browser is not
+    # the guard: the limit is enforced where the bytes are written.
+    test "a file past the limit does not reach the database", %{conn: conn} do
+      %{live: live, author: author} = panel(conn)
+      big = Fixtures.png(Blogo.Content.Author.max_photo_bytes() + 1)
+
+      assert {:error, _} = render_upload(pick(live, "grande.png", big), "grande.png")
+
+      assert stored_photo(author).data == nil
+    end
+
+    # The name and the content type come from whoever uploads, so they are not
+    # evidence. This file passes the extension check and still is not a photo.
+    test "a file that only calls itself a PNG is refused", %{conn: conn} do
+      %{live: live, author: author} = panel(conn)
+
+      render_upload(pick(live, "eu.png", "<svg onload=alert(1)></svg>"), "eu.png")
+
+      assert stored_photo(author).data == nil
+      assert :sys.get_state(live.pid).socket.assigns.flash["error"] =~ "foto"
+    end
+
+    test "a second photo replaces the first", %{conn: conn} do
+      %{live: live, author: author} = panel(conn)
+
+      render_upload(pick(live, "eu.png", Fixtures.png()), "eu.png")
+      first = stored_photo(author)
+
+      render_upload(pick(live, "outra.jpg", Fixtures.jpeg(), "image/jpeg"), "outra.jpg")
+      second = stored_photo(author)
+
+      assert second.type == "image/jpeg"
+      refute second.digest == first.digest
+    end
+
+    test "removing it empties the column rather than leaving a dangling type", %{conn: conn} do
+      %{live: live, author: author} = panel(conn)
+      render_upload(pick(live, "eu.png", Fixtures.png()), "eu.png")
+
+      render_click(live, "foto_remover", %{})
+
+      assert stored_photo(author) == %{data: nil, type: nil, digest: nil}
+    end
+
+    test "the photo saved here is what the article serves", %{conn: conn} do
+      %{live: live, author: author} = panel(conn)
+      post = Fixtures.post(%{author: author})
+      bytes = Fixtures.png()
+
+      render_upload(pick(live, "eu.png", bytes), "eu.png")
+
+      assert build_conn() |> get(~p"/autor/#{author.slug}/foto") |> response(200) == bytes
+
+      assert build_conn() |> get(~p"/#{post.slug}") |> html_response(200) =~
+               "/autor/#{author.slug}/foto"
+    end
+  end
+
   describe "drafts" do
     setup %{conn: conn} do
       %{conn: sign_in(conn)}

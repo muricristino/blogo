@@ -1657,10 +1657,81 @@
   gap: 4px;
 }
 
+/* A foto fica ao lado do nome quando o card está fechado: é o resumo do
+   perfil, e um perfil sem rosto é o que esta tela existe para resolver. */
 .pn-author-now {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pn-author-said {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
+}
+
+/* A 320px a foto fica acima dos controles; a partir de 560px, ao lado. */
+.pn-foto {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--field-bg);
+}
+
+.pn-foto > * {
+  min-width: 0;
+}
+
+/* Veste a foto e, quando não há foto, as iniciais que ficam no lugar dela. */
+.pn-foto-face {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.pn-foto-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Um <input type=file> tem a altura que o navegador quiser, e a regra do
+   projeto pede 44px debaixo do dedo. */
+.pn-foto-input {
+  min-height: 44px;
+  max-width: 100%;
+  font-size: 14px;
+  color: var(--ink3);
+}
+
+.pn-foto-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+@media (min-width: 560px) {
+  .pn-foto {
+    flex-direction: row;
+    align-items: flex-start;
+  }
 }
 
 .pn-author-name {
