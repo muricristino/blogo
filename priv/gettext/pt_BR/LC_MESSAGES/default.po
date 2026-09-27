@@ -391,3 +391,14 @@ msgstr "Tente uma palavra só, ou"
 #, elixir-autogen, elixir-format
 msgid "browse every article"
 msgstr "veja todos os artigos"
+
+#: lib/blogo_web/controllers/post_html.ex
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Who writes here"
+msgstr "Quem escreve aqui"
+
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Who wrote this"
+msgstr "Quem escreveu"

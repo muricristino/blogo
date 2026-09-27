@@ -61,7 +61,7 @@
     <.author_note
       :if={@post.kind == "pagina"}
       author={@post.author}
-      label="Quem escreve aqui"
+      label={gettext("Who writes here")}
       bio={false}
     />
 
@@ -94,7 +94,7 @@
     <.author_note
       :if={@post.kind != "pagina"}
       author={@post.author}
-      label="Quem escreveu"
+      label={gettext("Who wrote this")}
     />
   </article>
 </div>
