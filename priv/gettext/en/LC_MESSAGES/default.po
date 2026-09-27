@@ -391,3 +391,14 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "browse every article"
 msgstr ""
+
+#: lib/blogo_web/controllers/post_html.ex
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Who writes here"
+msgstr ""
+
+#: lib/blogo_web/controllers/post_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Who wrote this"
+msgstr ""

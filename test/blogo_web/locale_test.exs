@@ -263,4 +263,49 @@ defmodule BlogoWeb.LocaleTest do
   # `:sys.get_state` and not an assign helper, because LiveViewTest exposes the
   # rendered page and not the socket, and the socket is the thing under test.
   defp socket_assigns(view), do: :sys.get_state(view.pid).socket.assigns
+
+  # The author card's label reached the component as an attribute, and the
+  # component's own fallback lived in `attr :label, default:`. Neither is a
+  # place Gettext extracts from, so both stayed Portuguese while the menu around
+  # them turned English. A `default:` is worse than missed: it is evaluated once
+  # at compile time, so it would freeze whichever language the build ran in.
+  describe "the author card's label" do
+    test "follows the interface, not the article", %{conn: conn} do
+      post = Fixtures.post(%{language: "pt-BR", title: "Um artigo em português"})
+
+      en =
+        conn
+        |> put_req_header("accept-language", "en-US,en;q=0.9")
+        |> get(~p"/#{post.slug}")
+        |> html_response(200)
+
+      assert en =~ "Who wrote this"
+      refute en =~ "Quem escreveu"
+    end
+
+    test "and is Portuguese for a Portuguese reader", %{conn: conn} do
+      post = Fixtures.post()
+
+      pt =
+        conn
+        |> put_req_header("accept-language", "pt-BR,pt;q=0.9")
+        |> get(~p"/#{post.slug}")
+        |> html_response(200)
+
+      assert pt =~ "Quem escreveu"
+    end
+
+    test "the fixed page uses its own wording, also translated", %{conn: conn} do
+      page = Fixtures.post(%{kind: "pagina"})
+
+      en =
+        conn
+        |> put_req_header("accept-language", "en-US,en;q=0.9")
+        |> get(~p"/#{page.slug}")
+        |> html_response(200)
+
+      assert en =~ "Who writes here"
+      refute en =~ "Quem escreve"
+    end
+  end
 end

@@ -168,7 +168,7 @@ defmodule BlogoWeb.PostHTML do
   verifies a link against, and it is what IndieAuth reads.
   """
   attr :author, :map, required: true
-  attr :label, :string, default: "Quem escreve"
+  attr :label, :string, default: nil
   attr :bio, :boolean, default: true
 
   def author_note(assigns) do
@@ -177,7 +177,7 @@ defmodule BlogoWeb.PostHTML do
       <.ava author={@author} class="au-face" />
 
       <div class="au-body">
-        <span class="kicker">{@label}</span>
+        <span class="kicker">{@label || gettext("Who writes here")}</span>
         <p class="au-name">{@author.name}</p>
         <p :if={@author.headline} class="small au-role">
           {@author.headline}<span :if={@author.city}> · {@author.city}</span>
