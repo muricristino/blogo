@@ -65,25 +65,25 @@
       bio={false}
     />
 
-    <section
-      :if={@summary}
-      class="card"
-      style="padding:26px 28px;display:flex;flex-direction:column;gap:18px"
-    >
+    <%!-- The summary is whichever of the two an article has. They do not share a
+          shape: three numbers in a row is not a sentence, and a sentence split
+          into three columns is not a quote. --%>
+    <section :if={@summary} class={["card", "resumo", "resumo--#{@summary["type"]}"]}>
       <span class="kicker">{gettext("In short")}</span>
-      <div class="stats">
+
+      <div :if={@summary["type"] == "keynumbers"} class="stats">
         <div :for={item <- @summary["items"] || []} class="stat">
           <span class={["statn", item["accent"] && "is-accent"]}>{item["value"]}</span>
           <span class="small">{item["label"]}</span>
         </div>
       </div>
-      <p
-        :if={@summary["note"]}
-        class="small"
-        style="border-top:1px solid var(--line);padding-top:14px"
-      >
-        {@summary["note"]}
-      </p>
+
+      <blockquote :if={@summary["type"] == "quote"} class="resumo-quote">
+        {BlogoWeb.Blocks.inline(@summary["text"])}
+        <cite :if={@summary["cite"]} class="small resumo-cite">{@summary["cite"]}</cite>
+      </blockquote>
+
+      <p :if={@summary["note"]} class="small resumo-note">{@summary["note"]}</p>
     </section>
 
     <.render_blocks blocks={@blocks} />

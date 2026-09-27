@@ -115,8 +115,13 @@ defmodule Blogo.Content.Post do
   def hero?(_), do: false
 
   @doc """
-  The blocks as the article page shows them: the key-numbers block lifted out
-  to become the summary, and sections numbered.
+  The blocks as the article page shows them: the summary lifted out of the flow,
+  and sections numbered.
+
+  The summary is the first `keynumbers` **or** `quote` block, whichever comes
+  first. Not every article has a number worth putting at the top, and forcing
+  one is like forcing a diagram — it claims a precision the text does not have.
+  A sentence the article is willing to stand behind does the same job.
 
   It lives here rather than in the controller because the preview renders the
   same article and must not drift from it — two copies of this would mean a
@@ -128,8 +133,10 @@ defmodule Blogo.Content.Post do
     {summary, number_sections(blocks)}
   end
 
+  @summary_kinds ~w(keynumbers quote)
+
   defp pop_summary(blocks) do
-    case Enum.split_while(blocks, &(&1["type"] != "keynumbers")) do
+    case Enum.split_while(blocks, &(&1["type"] not in @summary_kinds)) do
       {before, [summary | rest]} -> {summary, before ++ rest}
       {all, []} -> {nil, all}
     end

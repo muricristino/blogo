@@ -368,6 +368,18 @@ a{color:var(--accent);text-underline-offset:.2em}
 .stats > * { min-width: 0; }
 @media (min-width: 760px) { .resumo { padding: 26px 28px; gap: 18px; } .stats { gap: 22px; } }
 
+/* The note was an inline border-top, which no media query could have reached. */
+.resumo-note { border-top: 1px solid var(--line); padding-top: 14px; }
+
+/* A quoted summary is one sentence, so it gets the measure and the size of
+   something meant to be read, not the three-column grid the numbers use. */
+.resumo-quote { margin: 0; font-family: 'Newsreader', Georgia, serif; font-size: 21px; line-height: 1.5; color: var(--ink); max-width: 46ch; }
+.resumo--quote { border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.resumo-cite { display: block; margin-top: 10px; font-style: normal; font-family: 'IBM Plex Sans', sans-serif; color: var(--ink3); }
+
+@media (min-width: 760px) { .resumo-quote { font-size: 24px; } }
+
+
 /* Todo link de texto vira alvo de 44px no dedo. Um link de 21px de altura
    acerta-se com o mouse e erra-se com o polegar. */
 @media (pointer: coarse) {
