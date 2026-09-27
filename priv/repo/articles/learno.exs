@@ -40,13 +40,15 @@ texto = fn paragrafos -> %{"type" => "text", "paragraphs" => paragrafos} end
       "Um amigo me disse que estava indo bem em inglês. Assistia série sem legenda, entendia reunião, lia documentação. Seis meses depois travou numa entrevista em que precisou *produzir* uma frase sob pressão, e concluiu que tinha regredido.",
       "Ele não regrediu. Ele nunca tinha medido a coisa certa."
     ]),
+    # O resumo do alto do artigo. Uma frase, e não três números: os números que
+    # esta skill produz são limiares de configuração, e três deles em tipo de
+    # 40px afirmam uma precisão que o texto não está defendendo.
     %{
-      "type" => "keynumbers",
-      "items" => [
-        %{"value" => "2", "label" => "portões que uma missão precisa passar"},
-        %{"value" => "75", "label" => "nota que confirma um conceito"},
-        %{"value" => "3", "label" => "fontes de domínio, com proveniência"}
-      ]
+      "type" => "quote",
+      "text" =>
+        "Uma seção que a pessoa achou fácil e na qual tirou 55 vale mais do que qualquer um " <>
+          "dos dois fatos isolados: é a lacuna que ela não consegue ver.",
+      "cite" => "learno — SKILL.md"
     },
     texto.([
       "O **learno** é uma skill que ensina uma coisa ao longo de várias sessões. Ela escreve as aulas, agenda revisões, mantém um banco do que você demonstrou e abre cada encontro dizendo onde você está. Fui ler o que ela faz esperando um gerador de conteúdo, e encontrei um conjunto de decisões sobre medição que eu reconheci — são as mesmas que eu uso quando avalio um modelo."
@@ -112,13 +114,6 @@ texto = fn paragrafos -> %{"type" => "text", "paragraphs" => paragrafos} end
       "Esta é a parte que me fez escrever o artigo.",
       "Ao fim de cada aula, a skill pergunta duas coisas — o que confundiu, e o que pareceu fácil demais — e então **cruza a resposta com a nota**. Não é uma pesquisa de satisfação. É a coleta do único dado que o aluno tem e o sistema não."
     ]),
-    %{
-      "type" => "callout",
-      "variant" => "note",
-      "title" => "A frase que resume",
-      "text" =>
-        "Uma seção que a pessoa achou fácil e na qual tirou 55 vale mais do que qualquer um dos dois fatos isolados: é a lacuna que ela não consegue ver."
-    },
     texto.([
       "Achar fácil e ir mal é o ponto cego. A pessoa não vai pedir ajuda ali, porque para ela aquilo está resolvido. Achar difícil e ir bem é o oposto e não é problema: ela já sabe onde pisar com cuidado.",
       "É o mesmo raciocínio de olhar a matriz de confusão em vez da acurácia. O número agregado diz que o modelo acerta 87%; a matriz diz *quais* ele erra, e é ali que se decide se dá para usar. Nota agregada de aula diz que foi bem; o cruzamento diz onde ela vai desabar daqui a um mês."
