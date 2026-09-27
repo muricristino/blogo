@@ -9,6 +9,7 @@ defmodule BlogoWeb.FaviconTest do
 
   @svg "priv/static/favicon.svg"
   @png "priv/static/apple-touch-icon.png"
+  @ico "priv/static/favicon.ico"
   @header "lib/blogo_web/components/layouts/app.html.heex"
 
   defp read(path), do: Path.join(File.cwd!(), path) |> File.read!()
@@ -32,6 +33,35 @@ defmodule BlogoWeb.FaviconTest do
       assert path in header,
              "the favicon draws a path the header no longer has — the logo changed in one place"
     end
+  end
+
+  # The one file nobody had written: it arrived with the generator, as a
+  # transparent 64x64 PNG named .ico, and survived the favicon work because the
+  # tests asked about the two files that had just been made. A browser that does
+  # not take an SVG icon falls back to this one and shows nothing.
+  test "the .ico is really an ICO, and carries more than one size" do
+    ico = read(@ico)
+
+    # ICONDIR: reserved 0, type 1 (icon), then the image count.
+    assert <<0, 0, 1, 0, count::16-little, rest::binary>> = ico
+    assert count >= 2, "an .ico carrying one size has no reason to exist beside the SVG"
+
+    sizes =
+      for i <- 0..(count - 1) do
+        <<_::binary-size(i * 16), w, h, _::binary>> = rest
+        {w, h}
+      end
+
+    assert {16, 16} in sizes
+    assert {32, 32} in sizes
+    refute Enum.any?(sizes, &(&1 == {0, 0})), "a size of 0 means 256px, which this is not"
+  end
+
+  test "the .ico is not the generator's transparent placeholder" do
+    ico = read(@ico)
+
+    refute match?(<<137, 80, 78, 71, _::binary>>, ico), "it is a PNG wearing an .ico name"
+    assert byte_size(ico) > 500
   end
 
   test "the touch icon is a real PNG, not an empty file" do
