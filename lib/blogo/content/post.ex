@@ -7,7 +7,7 @@ defmodule Blogo.Content.Post do
   # kind rather than a flag because an article is already one of several kinds,
   # and a second axis saying "but not really an article" would be one more
   # thing to remember at every query.
-  @kinds ~w(ensaio nota pagina)
+  @kinds ~w(artigo nota pagina)
   @statuses ~w(draft scheduled published)
 
   # BCP 47 tags, because `<html lang>`, `xml:lang` and `inLanguage` are the only
@@ -24,7 +24,7 @@ defmodule Blogo.Content.Post do
     field :title, :string
     field :subtitle, :string
     field :slug, :string
-    field :kind, :string, default: "ensaio"
+    field :kind, :string, default: "artigo"
     field :status, :string, default: "draft"
     field :published_at, :utc_datetime
     field :reading_minutes, :integer

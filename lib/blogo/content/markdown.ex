@@ -112,13 +112,20 @@ defmodule Blogo.Content.Markdown do
        title: meta["titulo"],
        subtitle: meta["resumo"],
        slug: meta["endereco"],
-       kind: meta["tipo"] || "ensaio",
+       kind: kind_from(meta["tipo"]),
        meta_description: meta["busca"],
        topics: parse_list(meta["marcadores"])
      }
      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
      |> Map.new()}
   end
+
+  # A document written before the rename still says `tipo: ensaio`. Reading it
+  # has to keep working, or a markdown file saved yesterday comes back as a kind
+  # the schema refuses. Writing always uses the current word.
+  defp kind_from(nil), do: "artigo"
+  defp kind_from("ensaio"), do: "artigo"
+  defp kind_from(tipo), do: tipo
 
   defp parse_list(nil), do: nil
 

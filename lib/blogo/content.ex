@@ -189,7 +189,7 @@ defmodule Blogo.Content do
       title: "Sem título",
       slug: "rascunho-#{System.unique_integer([:positive])}",
       status: "draft",
-      kind: "ensaio",
+      kind: "artigo",
       # One empty paragraph, so a new draft opens with somewhere to type instead
       # of a blank sheet whose only affordance is a dashed button.
       body: %{"blocks" => [%{"type" => "text", "paragraphs" => [""]}]},

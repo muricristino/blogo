@@ -94,16 +94,6 @@ msgstr "Mais lidos este mês"
 msgid "Not found"
 msgstr "Não encontrado"
 
-#: lib/blogo_web/controllers/post_html/index.html.heex
-#, elixir-autogen, elixir-format
-msgid "One essay a week, written by one person. No link roundups, no sponsorship, no tracking beyond counting reads."
-msgstr "Um ensaio por semana, escrito por uma pessoa só. Sem curadoria de links, sem patrocínio, sem rastreamento além da contagem de leituras."
-
-#: lib/blogo_web/controllers/post_html/index.html.heex
-#, elixir-autogen, elixir-format
-msgid "One essay a week. No link roundups, no product newsletter."
-msgstr "Um ensaio por semana. Sem curadoria de links, sem newsletter de novidades."
-
 #: lib/blogo_web/controllers/post_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Progress"
@@ -111,8 +101,8 @@ msgstr "Progresso"
 
 #: lib/blogo_web/controllers/post_html/index.html.heex
 #, elixir-autogen, elixir-format
-msgid "Read the essay"
-msgstr "Ler o ensaio"
+msgid "Read the article"
+msgstr "Ler o artigo"
 
 #: lib/blogo_web/components/layouts/app.html.heex
 #, elixir-autogen, elixir-format
@@ -150,11 +140,6 @@ msgid "article"
 msgid_plural "articles"
 msgstr[0] "artigo"
 msgstr[1] "artigos"
-
-#: lib/blogo_web/controllers/post_html.ex
-#, elixir-autogen, elixir-format
-msgid "essay"
-msgstr "ensaio"
 
 #: lib/blogo_web/controllers/post_html/show.html.heex
 #, elixir-autogen, elixir-format
@@ -351,3 +336,19 @@ msgstr "%{day} %{month} %{year}"
 #, elixir-autogen, elixir-format
 msgid "written by %{name} in %{city}"
 msgstr "escrito por %{name} em %{city}"
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "post kind"
+msgid "article"
+msgstr "artigo"
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "One article a week, written by one person. No link roundups, no sponsorship, no tracking beyond counting reads."
+msgstr "Um artigo por semana, escrito por uma pessoa só. Sem curadoria de links, sem patrocínio, sem rastreamento além da contagem de leituras."
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "One article a week. No link roundups, no product newsletter."
+msgstr "Um artigo por semana. Sem curadoria de links, sem newsletter de novidades."
