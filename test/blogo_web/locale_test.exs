@@ -22,7 +22,7 @@ defmodule BlogoWeb.LocaleTest do
       html = conn |> en() |> get(~p"/") |> html_response(200)
 
       assert html =~ "Most read this month"
-      assert html =~ "Read the essay"
+      assert html =~ "Read the article"
       assert html =~ "min read"
       refute html =~ "Mais lidos este mês"
     end
@@ -33,7 +33,7 @@ defmodule BlogoWeb.LocaleTest do
       html = conn |> pt() |> get(~p"/") |> html_response(200)
 
       assert html =~ "Mais lidos este mês"
-      assert html =~ "Ler o ensaio"
+      assert html =~ "Ler o artigo"
       assert html =~ "min de leitura"
       refute html =~ "Most read this month"
     end

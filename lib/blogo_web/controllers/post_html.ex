@@ -38,7 +38,7 @@ defmodule BlogoWeb.PostHTML do
   typed, so they belong to the interface. Topics, which the author types, stay
   exactly as written.
   """
-  def kind_label("ensaio"), do: gettext("essay")
+  def kind_label("artigo"), do: pgettext("post kind", "article")
   def kind_label("nota"), do: gettext("note")
   def kind_label("pagina"), do: gettext("page")
   def kind_label(other), do: other

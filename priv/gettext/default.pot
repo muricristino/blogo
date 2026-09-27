@@ -94,16 +94,6 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
-#: lib/blogo_web/controllers/post_html/index.html.heex
-#, elixir-autogen, elixir-format
-msgid "One essay a week, written by one person. No link roundups, no sponsorship, no tracking beyond counting reads."
-msgstr ""
-
-#: lib/blogo_web/controllers/post_html/index.html.heex
-#, elixir-autogen, elixir-format
-msgid "One essay a week. No link roundups, no product newsletter."
-msgstr ""
-
 #: lib/blogo_web/controllers/post_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Progress"
@@ -111,7 +101,7 @@ msgstr ""
 
 #: lib/blogo_web/controllers/post_html/index.html.heex
 #, elixir-autogen, elixir-format
-msgid "Read the essay"
+msgid "Read the article"
 msgstr ""
 
 #: lib/blogo_web/components/layouts/app.html.heex
@@ -150,11 +140,6 @@ msgid "article"
 msgid_plural "articles"
 msgstr[0] ""
 msgstr[1] ""
-
-#: lib/blogo_web/controllers/post_html.ex
-#, elixir-autogen, elixir-format
-msgid "essay"
-msgstr ""
 
 #: lib/blogo_web/controllers/post_html/show.html.heex
 #, elixir-autogen, elixir-format
@@ -350,4 +335,20 @@ msgstr ""
 #: lib/blogo_web/components/layouts.ex
 #, elixir-autogen, elixir-format
 msgid "written by %{name} in %{city}"
+msgstr ""
+
+#: lib/blogo_web/controllers/post_html.ex
+#, elixir-autogen, elixir-format
+msgctxt "post kind"
+msgid "article"
+msgstr ""
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "One article a week, written by one person. No link roundups, no sponsorship, no tracking beyond counting reads."
+msgstr ""
+
+#: lib/blogo_web/controllers/post_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "One article a week. No link roundups, no product newsletter."
 msgstr ""

@@ -11,7 +11,7 @@ texto = fn paragrafos -> %{"type" => "text", "paragraphs" => paragrafos} end
     "Uma skill que ensina ao longo de meses e trata o aluno como eu trato um classificador: " <>
       "definindo o critério antes, medindo o que importa e desconfiando do que parece fácil.",
   slug: "fluencia-e-facil-de-fingir",
-  kind: "ensaio",
+  kind: "artigo",
   topics: ["aprendizado", "método", "avaliação"],
   reading_minutes: 9,
   meta_description:

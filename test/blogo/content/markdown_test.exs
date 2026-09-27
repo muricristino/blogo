@@ -32,7 +32,7 @@ defmodule Blogo.Content.MarkdownTest do
         title: "O teste que concorda com você",
         subtitle: "Oito exemplos disseram separação perfeita.",
         slug: "o-teste-que-concorda",
-        kind: "ensaio",
+        kind: "artigo",
         topics: ["avaliação", "classificadores"],
         meta_description: "Comparação medida.",
         body: %{"blocks" => []}
@@ -214,7 +214,7 @@ defmodule Blogo.Content.MarkdownTest do
       titulo: O teste que concorda com você
       resumo: Oito exemplos disseram separação perfeita.
       endereco: o-teste-que-concorda
-      tipo: ensaio
+      tipo: artigo
       marcadores: [avaliação, método]
       ---
 
