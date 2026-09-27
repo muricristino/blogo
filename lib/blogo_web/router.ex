@@ -61,6 +61,7 @@ defmodule BlogoWeb.Router do
     get "/llms.txt", SitemapController, :llms
     get "/feed.xml", FeedController, :index
     get "/tag/:slug", TopicController, :show
+    get "/busca", SearchController, :show
     get "/autor/:slug", PageController, :author
     get "/autor/:slug/foto", AuthorPhotoController, :show
     get "/imagem/:slug", CardController, :show

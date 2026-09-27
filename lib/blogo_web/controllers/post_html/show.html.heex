@@ -68,7 +68,10 @@
     <%!-- The summary is whichever of the two an article has. They do not share a
           shape: three numbers in a row is not a sentence, and a sentence split
           into three columns is not a quote. --%>
-    <section :if={@summary} class={["card", "resumo", "resumo--#{@summary["type"]}"]}>
+    <section
+      :if={@summary}
+      class={["card", "resumo", @summary["type"] == "quote" && "resumo--quote"]}
+    >
       <span class="kicker">{gettext("In short")}</span>
 
       <div :if={@summary["type"] == "keynumbers"} class="stats">

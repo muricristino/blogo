@@ -105,6 +105,8 @@ msgid "Read the article"
 msgstr ""
 
 #: lib/blogo_web/components/layouts/app.html.heex
+#: lib/blogo_web/controllers/search_controller.ex
+#: lib/blogo_web/controllers/search_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Search"
 msgstr ""
@@ -351,4 +353,41 @@ msgstr ""
 #: lib/blogo_web/controllers/post_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "One article a week. No link roundups, no product newsletter."
+msgstr ""
+
+#: lib/blogo_web/controllers/search_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "%{count} result"
+msgid_plural "%{count} results"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/blogo_web/controllers/search_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "A word from the article"
+msgstr ""
+
+#: lib/blogo_web/controllers/search_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Looks inside the articles, not only their titles."
+msgstr ""
+
+#: lib/blogo_web/controllers/search_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Nothing matches %{query}."
+msgstr ""
+
+#: lib/blogo_web/controllers/search_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Search: %{query}"
+msgstr ""
+
+#: lib/blogo_web/controllers/search_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Try a single word, or"
+msgstr ""
+
+#: lib/blogo_web/controllers/search_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "browse every article"
 msgstr ""

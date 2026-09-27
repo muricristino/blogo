@@ -41,7 +41,7 @@
 
     <div style="display:flex;align-items:center;gap:8px">
       <.language_picker place="bar" locale={@locale} return_to={assigns[:current_path] || "/"} />
-      <button class="iconbtn" type="button" aria-label={gettext("Search")}>
+      <a class="iconbtn" href={~p"/busca"} aria-label={gettext("Search")}>
         <svg
           width="17"
           height="17"
@@ -54,7 +54,7 @@
         >
           <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
         </svg>
-      </button>
+      </a>
       <button class="iconbtn" type="button" id="theme-toggle" aria-label={gettext("Toggle theme")}>
         <svg
           width="17"

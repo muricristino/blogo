@@ -158,7 +158,7 @@ a{color:var(--accent);text-underline-offset:.2em}
 .statn{font-family:'Newsreader',Georgia,serif;font-size:40px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
 .statn.is-accent{color:var(--accent)}
 .tag{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink2);background:color-mix(in srgb,var(--accent) 7%,transparent);border:1px solid color-mix(in srgb,var(--accent) 17%,transparent);text-decoration:none}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font-size:14px;font-weight:550;cursor:pointer;text-decoration:none;border:1px solid transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font-size:14px;font-weight:550;cursor:pointer;text-decoration:none;border:1px solid var(--line);background:var(--field-bg);color:var(--ink)}
 .btn--p{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn--s{background:var(--field-bg);color:var(--ink);border-color:var(--line)}
 .cmt{display:grid;grid-template-columns:38px 1fr;column-gap:14px;padding:18px 0;border-top:1px solid var(--line)}
@@ -378,6 +378,17 @@ a{color:var(--accent);text-underline-offset:.2em}
 .resumo-cite { display: block; margin-top: 10px; font-style: normal; font-family: 'IBM Plex Sans', sans-serif; color: var(--ink3); }
 
 @media (min-width: 760px) { .resumo-quote { font-size: 24px; } }
+
+/* A busca. O campo é o conteúdo da página, então ele tem tamanho de leitura e
+   não de controle acessório — e 16px é o mínimo, senão o iOS dá zoom ao focar. */
+.busca-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.busca-input { flex: 1 1 14rem; min-width: 0; height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--field-bg); color: var(--ink); font-size: 16px; font-family: inherit; }
+.busca-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.busca-go { height: 48px; flex: 0 0 auto; }
+.busca-hint { color: var(--ink4); margin-top: 6px; }
+.busca-vazio { padding: 22px 20px; display: flex; flex-direction: column; gap: 8px; }
+.busca-vazio-h { font-family: 'Newsreader', Georgia, serif; font-size: 20px; color: var(--ink); margin: 0; }
+
 
 
 /* Todo link de texto vira alvo de 44px no dedo. Um link de 21px de altura
