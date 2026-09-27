@@ -2,7 +2,7 @@ import { chromium, devices } from "/Users/murilo/code/axolutions/agrosn/new-belc
 
 const BASE = process.env.BASE || "https://ember-pebble-maple.axolutions.com.br"
 // Uma tela nova entra aqui no mesmo commit que a cria.
-const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/sobre", "sobre"], ["/auth/login", "entrada"], ["/tag/avaliacao", "tópico"]]
+const PAGES = [["/", "índice"], ["/laya-x-jev", "artigo"], ["/sobre", "sobre"], ["/auth/login", "entrada"], ["/tag/avaliacao", "tópico"], ["/busca", "busca"], ["/busca?q=classificador", "busca com resultado"]]
 // O editor exige senha, então entra por aqui antes de ser medido.
 const ADMIN = process.env.ADMIN_PASSWORD
 const ADMIN_PAGES = ADMIN

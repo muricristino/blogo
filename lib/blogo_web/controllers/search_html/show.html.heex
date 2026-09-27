@@ -1,0 +1,59 @@
+<div class="shell pad listing">
+  <header class="stack listing-head">
+    <h1 class="h1">{gettext("Search")}</h1>
+
+    <form class="busca-form" method="get" action={~p"/busca"} role="search">
+      <label class="sr-only" for="busca-q">{gettext("Search")}</label>
+      <input
+        id="busca-q"
+        class="busca-input"
+        type="search"
+        name="q"
+        value={@query}
+        autofocus
+        autocomplete="off"
+        placeholder={gettext("A word from the article")}
+      />
+      <button class="btn btn--p busca-go" type="submit">{gettext("Search")}</button>
+    </form>
+  </header>
+
+  <%!-- Three states, not two: nobody has searched yet, someone searched and
+        nothing matched, and results. The middle one is an answer, not an
+        error — it says what was looked for and what to do next. --%>
+  <p :if={@query == ""} class="small busca-hint">
+    {gettext("Looks inside the articles, not only their titles.")}
+  </p>
+
+  <section :if={@query != "" && @results == []} class="card busca-vazio">
+    <p class="busca-vazio-h">{gettext("Nothing matches %{query}.", query: @query)}</p>
+    <p class="small">
+      {gettext("Try a single word, or")} <a href={~p"/"}>{gettext("browse every article")}</a>.
+    </p>
+  </section>
+
+  <span :if={@results != []} class="kicker">
+    {ngettext("%{count} result", "%{count} results", length(@results), count: length(@results))}
+  </span>
+
+  <ol :if={@results != []} class="listing-items">
+    <li :for={post <- @results} class="listing-item">
+      <a href={~p"/#{post.slug}"} class="listing-link">
+        <span class="listing-text">
+          <span class="item-title" lang={post.language}>{post.title}</span>
+          <span :if={post.subtitle} class="item-dek" lang={post.language}>
+            {BlogoWeb.Blocks.inline(post.subtitle)}
+          </span>
+          <span class="item-meta">
+            <span class="mono">{post.reading_minutes} min</span>
+            <span>·</span>
+            <span class="mono">{BlogoWeb.PostHTML.format_date(post.published_at)}</span>
+          </span>
+        </span>
+        <span :if={post.hero} class="thumb listing-thumb">
+          <BlogoWeb.PostHTML.hero post={post} />
+        </span>
+      </a>
+    </li>
+  </ol>
+</div>

@@ -24,6 +24,66 @@ defmodule Blogo.Content do
   end
 
   @doc """
+  Published posts matching what someone typed, best first.
+
+  `websearch_to_tsquery` and not `plainto_tsquery`: it is the one that
+  understands quotes and `or` the way a person expects from a search box, and it
+  never raises on punctuation — `plainto_tsquery` turning a stray `&` into a
+  syntax error is a 500 on a page whose whole input is a stranger's typing.
+
+  Asked in three dictionaries, matching the ones the column is indexed under. A
+  Portuguese stem finds nothing in an English article and the other way round,
+  and which one to use is not something a search box can know. `simple` is there
+  because tags are indexed whole — a tag is a label, not prose — and because a
+  word the stemmer mangles is still findable by typing it exactly.
+
+  What this does **not** do: Portuguese snowball turns `medições` into `mediçõ`
+  and `medição` into `mediçã`, so that pair does not meet. Regular plurals do
+  (`classificadores` and `classificador` both reach `classific`). Fixing the
+  irregular ones means a dictionary, not a query.
+
+  Fixed pages are included: "Sobre" is a real answer to someone searching the
+  author's name. Drafts are not — this is public.
+
+  `search` is named in the fragment rather than declared on the schema: Postgres
+  maintains it and nothing here ever reads it, so a field would only be a thing
+  to keep in step.
+  """
+  def search(query) when is_binary(query) do
+    case String.trim(query) do
+      "" ->
+        []
+
+      q ->
+        from(p in Post,
+          where:
+            p.status == "published" and p.published_at <= ^DateTime.utc_now() and
+              fragment(
+                "search @@ (websearch_to_tsquery('portuguese', ?) || websearch_to_tsquery('english', ?) || websearch_to_tsquery('simple', ?))",
+                ^q,
+                ^q,
+                ^q
+              ),
+          order_by: [
+            desc:
+              fragment(
+                "ts_rank(search, websearch_to_tsquery('portuguese', ?) || websearch_to_tsquery('english', ?) || websearch_to_tsquery('simple', ?))",
+                ^q,
+                ^q,
+                ^q
+              ),
+            desc: p.published_at
+          ],
+          limit: 50,
+          preload: [:author]
+        )
+        |> Repo.all()
+    end
+  end
+
+  def search(_), do: []
+
+  @doc """
   The published fixed pages, in the order they were published — which is the
   order the navigation shows them in.
   """
