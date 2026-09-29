@@ -379,6 +379,8 @@ defmodule BlogoWeb.LocaleTest do
       assert html =~ ~s(hreflang="pt-BR")
       assert html =~ ~s(hreflang="en")
       assert html =~ ~s(hreflang="x-default")
+      # Not whichever language happens to have the most posts: the site's own.
+      assert html =~ ~s(hreflang="x-default" href="http://localhost:4002/com-irmao")
       assert html =~ "/with-a-sibling"
 
       alone = conn |> get(~p"/#{Fixtures.post().slug}") |> html_response(200)
