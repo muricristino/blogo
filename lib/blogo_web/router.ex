@@ -61,6 +61,7 @@ defmodule BlogoWeb.Router do
     get "/sitemap.xml", SitemapController, :index
     get "/robots.txt", SitemapController, :robots
     get "/llms.txt", SitemapController, :llms
+    get "/manifest.json", SitemapController, :manifest
     get "/feed.xml", FeedController, :index
     get "/tag/:slug", TopicController, :show
     get "/busca", SearchController, :show

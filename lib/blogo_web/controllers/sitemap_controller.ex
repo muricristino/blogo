@@ -37,6 +37,40 @@ defmodule BlogoWeb.SitemapController do
     conn |> put_resp_content_type("application/xml") |> send_resp(200, body)
   end
 
+  @doc """
+  The web app manifest: what Android reads to make a shortcut.
+
+  Generated like everything else here rather than written as a file, because the
+  site's name comes from the panel. A manifest with a name baked into it would
+  be the one thing about the installation that does not obey the panel — and the
+  place where it shows is a person's home screen.
+
+  The icons are `maskable`: Android crops a shortcut icon to whatever shape the
+  launcher uses, so the mark sits inside the safe zone with the background
+  running to the edges.
+  """
+  def manifest(conn, _params) do
+    site = Content.the_site()
+    name = Content.site_name(site)
+
+    body =
+      Jason.encode!(%{
+        name: name,
+        short_name: name,
+        description: site.description,
+        start_url: "/",
+        display: "browser",
+        background_color: "#0a1120",
+        theme_color: "#2563eb",
+        icons: [
+          %{src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable"},
+          %{src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable"}
+        ]
+      })
+
+    conn |> put_resp_content_type("application/manifest+json") |> send_resp(200, body)
+  end
+
   def robots(conn, _params) do
     body = Crawlers.robots_txt(Content.the_site(), BlogoWeb.Endpoint.url())
 

@@ -22,7 +22,8 @@ defmodule BlogoWeb do
   # before the router ever saw the request, and the panel would go on showing a
   # choice nobody was obeying.
   def static_paths,
-    do: ~w(assets fonts images favicon.ico favicon.svg apple-touch-icon.png)
+    do:
+      ~w(assets fonts images favicon.ico favicon.svg apple-touch-icon.png icon-192.png icon-512.png)
 
   def router do
     quote do

@@ -19,7 +19,12 @@
           .ico is only for the ones that still ignore SVG. --%>
     <link rel="icon" href={~p"/favicon.svg"} type="image/svg+xml" />
     <link rel="icon" href={~p"/favicon.ico"} sizes="16x16 32x32 48x48" />
+    <%!-- Android takes a shortcut's icon from the manifest, or from a large PNG
+          here — the 48px in the .ico is the biggest thing the tab needs and far
+          too small for a home screen, which is why it showed a globe. --%>
+    <link rel="icon" type="image/png" sizes="192x192" href={~p"/icon-192.png"} />
     <link rel="apple-touch-icon" href={~p"/apple-touch-icon.png"} />
+    <link rel="manifest" href={~p"/manifest.json"} />
     <meta name="theme-color" content="#2563eb" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
