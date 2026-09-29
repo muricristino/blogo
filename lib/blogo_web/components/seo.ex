@@ -21,6 +21,10 @@ defmodule BlogoWeb.SEO do
   attr :site_name, :string, default: nil
   attr :markdown, :string, default: nil
 
+  # {BCP 47 tag, absolute url} for every published version of this article,
+  # including itself.
+  attr :alternates, :list, default: []
+
   def head(assigns) do
     ~H"""
     <title>{@title}</title>
@@ -30,6 +34,21 @@ defmodule BlogoWeb.SEO do
           without guessing an address, and `rel="alternate"` is what keeps it a
           second representation rather than a second page. --%>
     <link :if={@markdown} rel="alternate" type="text/markdown" href={@markdown} />
+
+    <%!-- The same article in another language: a different document at a
+          different address, not a second copy of this one. Which is why each
+          keeps its own `canonical` pointing at itself — `hreflang` is what says
+          they belong together, and it has to be reciprocal or a search engine
+          ignores the lot.
+
+          Only emitted when there is more than one, because a page declaring
+          itself the sole alternate of itself says nothing and asks to be read
+          as something. `x-default` goes to the site's own language, which is
+          where a reader whose language we do not have should land. --%>
+    <%= if length(@alternates) > 1 do %>
+      <link :for={{tag, url} <- @alternates} rel="alternate" hreflang={tag} href={url} />
+      <link rel="alternate" hreflang="x-default" href={default_alternate(@alternates)} />
+    <% end %>
 
     <meta property="og:type" content={@type} />
     <meta property="og:title" content={@title} />
@@ -216,5 +235,17 @@ defmodule BlogoWeb.SEO do
     map
     |> Enum.reject(fn {_k, v} -> is_nil(v) or v == "" or v == [] end)
     |> Map.new()
+  end
+
+  # The site's own language when it is among the versions, otherwise the first.
+  # Something has to be `x-default`, and pointing it at a language nobody
+  # configured would be a guess.
+  defp default_alternate(alternates) do
+    site = Blogo.Content.site_language()
+
+    case Enum.find(alternates, fn {tag, _} -> tag == site end) do
+      {_tag, url} -> url
+      nil -> alternates |> List.first() |> elem(1)
+    end
   end
 end

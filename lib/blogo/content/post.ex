@@ -12,7 +12,7 @@ defmodule Blogo.Content.Post do
 
   # BCP 47 tags, because `<html lang>`, `xml:lang` and `inLanguage` are the only
   # things that read this.
-  @languages ~w(pt-BR en)
+  @languages ~w(pt-BR en es)
 
   @doc "The kinds a post may be, in the order the editor offers them."
   def kinds, do: @kinds
@@ -30,6 +30,10 @@ defmodule Blogo.Content.Post do
     field :reading_minutes, :integer
     field :topics, {:array, :string}, default: []
     field :meta_description, :string
+
+    # Which article this one is a version of. Every post has a group; a post
+    # nobody has translated is simply the only member of its own.
+    field :translation_group, Ecto.UUID
 
     # The language of this post's own words — not the language of the reader's
     # menu, which is a different decision and lives in the session. Translating
@@ -72,6 +76,7 @@ defmodule Blogo.Content.Post do
       :topics,
       :meta_description,
       :language,
+      :translation_group,
       :body,
       :hero,
       :author_id

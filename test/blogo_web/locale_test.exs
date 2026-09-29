@@ -308,4 +308,98 @@ defmodule BlogoWeb.LocaleTest do
       refute en =~ "Quem escreve"
     end
   end
+
+  # Picking a language on an article that exists in it means "give me this in
+  # English", not "repaint the menu and leave the Portuguese text".
+  describe "picking a language on an article" do
+    test "goes to the sibling when there is one", %{conn: conn} do
+      pt = Fixtures.post(%{language: "pt-BR", slug: "o-original"})
+      group = Blogo.Repo.reload!(pt).translation_group
+
+      Fixtures.post(%{
+        language: "en",
+        slug: "the-original",
+        translation_group: group,
+        author: pt.author
+      })
+
+      conn =
+        conn
+        |> Phoenix.ConnTest.init_test_session(%{})
+        |> post(~p"/idioma", %{"locale" => "en", "return_to" => "/o-original"})
+
+      assert redirected_to(conn) == "/the-original"
+    end
+
+    test "stays put when there is not", %{conn: conn} do
+      post = Fixtures.post(%{language: "pt-BR", slug: "sozinho"})
+
+      conn =
+        conn
+        |> Phoenix.ConnTest.init_test_session(%{})
+        |> post(~p"/idioma", %{"locale" => "en", "return_to" => "/#{post.slug}"})
+
+      assert redirected_to(conn) == "/sozinho"
+    end
+
+    test "a path that is not an article is left alone", %{conn: conn} do
+      conn =
+        conn
+        |> Phoenix.ConnTest.init_test_session(%{})
+        |> post(~p"/idioma", %{"locale" => "en", "return_to" => "/tag/avaliacao"})
+
+      assert redirected_to(conn) == "/tag/avaliacao"
+    end
+
+    # The field comes from the form, so it comes from whoever is asking.
+    test "an address somewhere else is refused", %{conn: conn} do
+      conn =
+        conn
+        |> Phoenix.ConnTest.init_test_session(%{})
+        |> post(~p"/idioma", %{"locale" => "en", "return_to" => "//evil.example"})
+
+      assert redirected_to(conn) == "/"
+    end
+  end
+
+  describe "hreflang" do
+    test "is reciprocal, and only appears when there is more than one", %{conn: conn} do
+      pt = Fixtures.post(%{language: "pt-BR", slug: "com-irmao"})
+      group = Blogo.Repo.reload!(pt).translation_group
+
+      Fixtures.post(%{
+        language: "en",
+        slug: "with-a-sibling",
+        translation_group: group,
+        author: pt.author
+      })
+
+      html = conn |> get(~p"/com-irmao") |> html_response(200)
+
+      assert html =~ ~s(hreflang="pt-BR")
+      assert html =~ ~s(hreflang="en")
+      assert html =~ ~s(hreflang="x-default")
+      assert html =~ "/with-a-sibling"
+
+      alone = conn |> get(~p"/#{Fixtures.post().slug}") |> html_response(200)
+      refute alone =~ "hreflang"
+    end
+
+    test "each version's canonical points at itself", %{conn: conn} do
+      pt = Fixtures.post(%{language: "pt-BR", slug: "um-lado"})
+      group = Blogo.Repo.reload!(pt).translation_group
+
+      Fixtures.post(%{
+        language: "en",
+        slug: "one-side",
+        translation_group: group,
+        author: pt.author
+      })
+
+      for slug <- ~w(um-lado one-side) do
+        html = conn |> get(~p"/#{slug}") |> html_response(200)
+        assert html =~ ~s(rel="canonical" href="http://localhost:4002/#{slug}")
+      end
+    end
+  end
 end

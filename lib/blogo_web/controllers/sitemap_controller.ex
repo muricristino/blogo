@@ -16,13 +16,15 @@ defmodule BlogoWeb.SitemapController do
   def index(conn, _params) do
     base = BlogoWeb.Endpoint.url()
 
-    posts = Content.list_published()
+    # Every version in every language, not one per article: each translation is
+    # its own address with its own text, and a crawler that never sees the
+    # English one cannot index it. Fixed pages are here too — a page no listing
+    # links to is a page a crawler finds only here.
+    posts = Content.list_all_published()
 
-    # Fixed pages belong here even though they are kept out of the index: a
-    # page nobody links from a listing is a page a crawler finds only here.
     urls =
       [{base <> "/", nil}] ++
-        Enum.map(posts ++ Content.list_pages(), &{"#{base}/#{&1.slug}", &1.updated_at}) ++
+        Enum.map(posts, &{"#{base}/#{&1.slug}", &1.updated_at}) ++
         Enum.map(Content.list_topics(), &{"#{base}/tag/#{&1.slug}", nil})
 
     body = """
