@@ -6,7 +6,9 @@ defmodule BlogoWeb.PostController do
   alias BlogoWeb.SEO
 
   def index(conn, _params) do
-    posts = Content.list_published()
+    # One article per translation group, preferring this reader's language.
+    # Filtering instead would empty the page until everything is translated.
+    posts = Content.list_published(conn.assigns[:locale_tag])
     {featured, rest} = split_featured(posts)
     author = featured && featured.author
     base = base_url(conn)
@@ -48,6 +50,13 @@ defmodule BlogoWeb.PostController do
         site = Content.the_site()
         {summary, blocks} = Post.for_reading(post)
         page? = post.kind == "pagina"
+        siblings = Content.translations_of(post)
+
+        # This version included: `hreflang` has to be reciprocal, and a set that
+        # leaves out the page declaring it is not a set.
+        alternates =
+          [{post.language, "#{base}/#{post.slug}"}] ++
+            Enum.map(siblings, fn {lang, slug} -> {lang, "#{base}/#{slug}"} end)
 
         conn
         |> assign(:current_author, post.author)
@@ -60,6 +69,7 @@ defmodule BlogoWeb.PostController do
           description: post.meta_description || post.subtitle,
           canonical: "#{base}/#{post.slug}",
           markdown: "#{base}/#{post.slug}.md",
+          alternates: alternates,
           image: "#{base}/imagem/#{post.slug}.png",
           type: if(page?, do: "profile", else: "article"),
           site_name: Content.site_name(site),
@@ -77,6 +87,10 @@ defmodule BlogoWeb.PostController do
         # not change when the reader changes the menu.
         |> assign(:content_language, post.language)
         |> assign(:read_token, BlogoWeb.ReadController.token(post.slug))
+        # Picking a language on an article that exists in it goes to that
+        # article. Staying put and only repainting the menu would be the one
+        # thing a reader does not mean by pressing EN on a Portuguese text.
+        |> assign(:translations, siblings)
         |> render(:show,
           post: post,
           blocks: blocks,

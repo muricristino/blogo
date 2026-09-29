@@ -44,7 +44,8 @@ defmodule BlogoWeb.Locale do
   # {gettext locale, BCP 47 tag, what the reader sees, what fits on a button}
   @locales [
     {"pt_BR", "pt-BR", "Português", "PT"},
-    {"en", "en", "English", "EN"}
+    {"en", "en", "English", "EN"},
+    {"es", "es", "Español", "ES"}
   ]
 
   @default "pt_BR"

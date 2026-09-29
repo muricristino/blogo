@@ -12,7 +12,9 @@ defmodule BlogoWeb.Router do
     conn
     |> Plug.Conn.assign(:site, site)
     |> Plug.Conn.assign(:site_name, Blogo.Content.site_name(site))
-    |> Plug.Conn.assign(:pages, Blogo.Content.list_pages())
+    # After the Locale plug, so the navigation links the fixed page this reader
+    # can read rather than whichever one happens to be first.
+    |> Plug.Conn.assign(:pages, Blogo.Content.list_pages(conn.assigns[:locale_tag]))
   end
 
   pipeline :browser do
