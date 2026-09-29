@@ -98,4 +98,51 @@ defmodule BlogoWeb.FaviconTest do
     refute "robots.txt" in BlogoWeb.static_paths()
     refute File.exists?(Path.join(File.cwd!(), "priv/static/robots.txt"))
   end
+
+  # Android takes a shortcut's icon from the manifest or from a large PNG, not
+  # from the 48px in the .ico — which is why the home screen showed a globe
+  # while the tab was fine.
+  describe "the Android shortcut" do
+    test "the manifest is served and names the site from the database", %{conn: conn} do
+      Blogo.Content.update_site(%{"name" => "Um Nome Qualquer"})
+
+      body = conn |> get(~p"/manifest.json") |> response(200)
+      manifest = Jason.decode!(body)
+
+      assert manifest["name"] == "Um Nome Qualquer"
+      assert manifest["start_url"] == "/"
+      assert manifest["theme_color"]
+    end
+
+    test "it offers the two sizes Android asks for, and they are maskable" do
+      manifest = build_conn() |> get(~p"/manifest.json") |> response(200) |> Jason.decode!()
+
+      sizes = Enum.map(manifest["icons"], & &1["sizes"])
+      assert "192x192" in sizes
+      assert "512x512" in sizes
+
+      # Without `maskable`, a launcher that crops to a circle cuts the drawing.
+      assert Enum.all?(manifest["icons"], &String.contains?(&1["purpose"], "maskable"))
+    end
+
+    # The .ico shipped for weeks as a transparent PNG with the wrong extension,
+    # answering 200 the whole time. Responding is not being.
+    test "the icons are PNGs of the size they claim" do
+      for {file, expected} <- [{"icon-192.png", 192}, {"icon-512.png", 512}] do
+        png = read("priv/static/#{file}")
+
+        assert <<137, 80, 78, 71, 13, 10, 26, 10, _::binary-size(4), "IHDR", w::32, h::32,
+                 _::binary>> = png
+
+        assert {w, h} == {expected, expected}
+      end
+    end
+
+    test "the page points at the manifest and at a large icon", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      assert html =~ ~s(rel="manifest")
+      assert html =~ "/icon-192.png"
+    end
+  end
 end
