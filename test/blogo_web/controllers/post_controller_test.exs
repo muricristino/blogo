@@ -30,7 +30,7 @@ defmodule BlogoWeb.PostControllerTest do
       assert html =~ "application/ld+json"
       # The author entity is what makes a name search find the article, so the
       # article has to point at the author page's @id and not just a string.
-      assert html =~ "/autor/#{p.author.slug}#person"
+      assert html =~ "/#person"
     end
 
     test "a draft is not reachable by slug", %{conn: conn} do

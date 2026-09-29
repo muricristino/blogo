@@ -87,16 +87,32 @@ defmodule BlogoWeb.SEO do
   """
   def person(author, base_url) do
     %{
+      # Anchored on the site, not on `/autor/:slug`: that address has answered a
+      # 302 since the About page became an article, and an entity identified by
+      # a redirect is one a search engine follows and does not find.
       "@type" => "Person",
-      "@id" => "#{base_url}/autor/#{author.slug}#person",
+      "@id" => "#{base_url}/#person",
       "name" => author.name,
-      "url" => "#{base_url}/autor/#{author.slug}",
+      "url" => person_url(base_url),
       "image" => BlogoWeb.AuthorPhotoController.url(author, base_url),
       "jobTitle" => author.headline,
       "description" => author.bio,
+      # What the person writes about, taken from the topics of what they
+      # published. Claimed expertise is worth less than demonstrated, and this
+      # is the demonstrated kind.
+      "knowsAbout" => Blogo.Content.list_topics() |> Enum.map(& &1.name) |> Enum.take(12),
       "sameAs" => author.same_as
     }
     |> drop_empty()
+  end
+
+  # The About page when there is one, because that is the page about the person.
+  # The home page otherwise — somewhere that serves content beats nowhere.
+  defp person_url(base_url) do
+    case Blogo.Content.list_pages() do
+      [page | _] -> "#{base_url}/#{page.slug}"
+      [] -> "#{base_url}/"
+    end
   end
 
   @doc """
@@ -181,7 +197,12 @@ defmodule BlogoWeb.SEO do
       "name" => Blogo.Content.site_name(site),
       "description" => site.description,
       "url" => "#{base_url}/",
-      "inLanguage" => Blogo.Content.site_language()
+      "inLanguage" => Blogo.Content.site_language(),
+      # The arc that says the site and the person are one story. Without it the
+      # two entities sit side by side and nothing states the relation.
+      "author" => %{"@id" => "#{base_url}/#person"},
+      "publisher" => %{"@id" => "#{base_url}/#person"},
+      "copyrightHolder" => %{"@id" => "#{base_url}/#person"}
     }
     |> drop_empty()
   end
@@ -199,8 +220,66 @@ defmodule BlogoWeb.SEO do
       "@type" => "ProfilePage",
       "mainEntity" => person(author, base_url)
     }
+    |> put_faq(author, base_url)
     |> drop_empty()
   end
+
+  # "Who is X?" with an answer, which is the shape both a search engine and a
+  # model can quote. The page's prose is the author's to write; this states in
+  # one sentence what the record already knows, and it is absent when the record
+  # does not know enough to make a sentence — a FAQ answering "X is." helps
+  # nobody.
+  defp put_faq(page, author, base_url) do
+    case who_is(author) do
+      nil ->
+        page
+
+      answer ->
+        Map.put(page, "mainEntityOfPage", %{
+          "@type" => "FAQPage",
+          "mainEntity" => [
+            %{
+              "@type" => "Question",
+              "name" => "Quem é #{author.name}?",
+              "acceptedAnswer" => %{"@type" => "Answer", "text" => answer}
+            }
+          ],
+          "about" => %{"@id" => "#{base_url}/#person"}
+        })
+    end
+  end
+
+  defp who_is(author) do
+    role = present(author.headline)
+    city = present(author.city)
+    bio = present(author.bio)
+
+    opening =
+      cond do
+        role && city -> "#{author.name} é #{downcase_first(role)} em #{city}."
+        role -> "#{author.name} é #{downcase_first(role)}."
+        true -> nil
+      end
+
+    case Enum.reject([opening, bio], &is_nil/1) do
+      [] -> nil
+      parts -> Enum.join(parts, " ")
+    end
+  end
+
+  defp present(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp present(_), do: nil
+
+  # "Engenheiro de software" is written to start a line; mid-sentence it is a
+  # common noun.
+  defp downcase_first(<<first::utf8, rest::binary>>),
+    do: String.downcase(<<first::utf8>>) <> rest
 
   @doc """
   A topic page as a collection of the articles filed under it.

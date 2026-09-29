@@ -19,29 +19,31 @@ defmodule Blogo.Content.LanguageTest do
     assert "is invalid" in errors_on(changeset).language
   end
 
-  test "the blog's own language is the one most of its posts are in" do
-    assert Content.site_language() == "pt-BR"
+  describe "the language the blog writes in" do
+    # It used to be counted from the published posts. With the same number of
+    # articles in three languages the count ties, and it answered English — so
+    # every page told a search engine that a Portuguese blog is English, and
+    # `x-default` pointed at the English version of everything. A tie in a
+    # derived number is not a decision anyone made.
+    test "is declared, not counted" do
+      author = Fixtures.author()
+      for _ <- 1..5, do: Fixtures.post(%{author: author, language: "en"})
+      Fixtures.post(%{author: author, language: "pt-BR"})
 
-    author = Fixtures.author()
-    Fixtures.post(%{author: author, language: "en"})
-    Fixtures.post(%{author: author, language: "en"})
-    Fixtures.post(%{author: author, language: "pt-BR"})
+      assert Content.site_language() == "pt-BR"
+    end
 
-    assert Content.site_language() == "en"
-  end
+    test "and the interface's default is the same decision" do
+      assert BlogoWeb.Locale.tag(BlogoWeb.Locale.default()) == Content.site_language()
+    end
 
-  test "a draft does not decide what language the blog writes in" do
-    author = Fixtures.author()
-    Fixtures.post(%{author: author, language: "pt-BR"})
+    test "an installation that declares another one gets it" do
+      original = Application.get_env(:blogo, :default_language)
+      Application.put_env(:blogo, :default_language, "en")
+      on_exit(fn -> Application.put_env(:blogo, :default_language, original) end)
 
-    Fixtures.post(%{
-      author: author,
-      language: "en",
-      status: "draft",
-      hero: nil,
-      published_at: nil
-    })
-
-    assert Content.site_language() == "pt-BR"
+      assert Content.site_language() == "en"
+      assert BlogoWeb.Locale.default() == "en"
+    end
   end
 end
