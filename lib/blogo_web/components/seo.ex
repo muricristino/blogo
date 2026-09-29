@@ -237,11 +237,15 @@ defmodule BlogoWeb.SEO do
     |> Map.new()
   end
 
-  # The site's own language when it is among the versions, otherwise the first.
-  # Something has to be `x-default`, and pointing it at a language nobody
-  # configured would be a guess.
+  # `x-default` is where a reader whose language we do not have should land, so
+  # it is the installation's own language — not `Content.site_language/0`, which
+  # derives from whichever language has the most published posts. That was fine
+  # while everything was Portuguese and wrong the moment the translations landed:
+  # with eight articles in each of three languages it picked English, and every
+  # article told search engines that English was the default of a Portuguese
+  # blog. A tie in a derived number is not a decision anyone made.
   defp default_alternate(alternates) do
-    site = Blogo.Content.site_language()
+    site = BlogoWeb.Locale.tag(BlogoWeb.Locale.default())
 
     case Enum.find(alternates, fn {tag, _} -> tag == site end) do
       {_tag, url} -> url
