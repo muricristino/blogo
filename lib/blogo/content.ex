@@ -203,23 +203,18 @@ defmodule Blogo.Content do
   @doc """
   The language this blog writes in: the one most of its published posts are in.
 
-  Counted rather than configured. A post already says which language it is in,
-  and a second place to declare the same fact is a second place for it to be
-  wrong — an install that starts publishing in English says so here without
-  anyone remembering to flip a setting. `pt-BR` while nothing is published,
-  because that is what the first posts here were written in.
+  It used to be counted: whichever language had the most published posts. That
+  held while everything was Portuguese, and broke the day the translations
+  landed — with the same number of articles in three languages the count ties,
+  and it answered English. Every page then told a search engine that a
+  Portuguese blog is written in English, and `x-default` pointed at the English
+  version of everything.
+
+  A tie in a derived number is not a decision anyone made, and the language a
+  blog writes in is a decision. It is the installation's, and it is declared in
+  one place.
   """
-  def site_language do
-    from(p in Post,
-      where: p.status == "published",
-      group_by: p.language,
-      order_by: [desc: count(p.id)],
-      limit: 1,
-      select: p.language
-    )
-    |> Repo.one()
-    |> Kernel.||("pt-BR")
-  end
+  def site_language, do: Application.get_env(:blogo, :default_language, "pt-BR")
 
   defp default_site_name do
     BlogoWeb.Endpoint.url() |> URI.parse() |> Map.get(:host) || "blog"

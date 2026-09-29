@@ -11,6 +11,11 @@ config :blogo,
   ecto_repos: [Blogo.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# The language this installation writes in. `Content.site_language/0` and the
+# interface's default both read it, so `inLanguage`, `x-default`, the feed and
+# the menu cannot disagree about it.
+config :blogo, :default_language, "pt-BR"
+
 # Configures the endpoint
 config :blogo, BlogoWeb.Endpoint,
   url: [host: "localhost"],

@@ -48,7 +48,16 @@ defmodule BlogoWeb.Locale do
     {"es", "es", "Español", "ES"}
   ]
 
-  @default "pt_BR"
+  # Derived from the one place the language is declared, so the interface's
+  # default and `Content.site_language/0` cannot drift apart.
+  def default do
+    tag = Application.get_env(:blogo, :default_language, "pt-BR")
+
+    case Enum.find(@locales, fn {_locale, t, _, _} -> t == tag end) do
+      {locale, _, _, _} -> locale
+      nil -> "pt_BR"
+    end
+  end
 
   @choice_key "locale"
   @detected_key "detected_locale"
@@ -56,14 +65,11 @@ defmodule BlogoWeb.Locale do
   @doc "The interface languages, in the order the selector offers them."
   def supported, do: Enum.map(@locales, &elem(&1, 0))
 
-  @doc "The language the site falls back to when nothing else decides."
-  def default, do: @default
-
   @doc "The BCP 47 tag for a locale: what `lang` and `inLanguage` take."
   def tag(locale) do
     case Enum.find(@locales, &(elem(&1, 0) == locale)) do
       {_locale, tag, _label, _short} -> tag
-      nil -> tag(@default)
+      nil -> tag("pt_BR")
     end
   end
 
@@ -117,7 +123,7 @@ defmodule BlogoWeb.Locale do
   The socket's half of the same job. See the moduledoc.
   """
   def on_mount(:set_locale, _params, session, socket) do
-    locale = known(session[@choice_key]) || known(session[@detected_key]) || @default
+    locale = known(session[@choice_key]) || known(session[@detected_key]) || "pt_BR"
     Gettext.put_locale(BlogoWeb.Gettext, locale)
     {:cont, Phoenix.Component.assign(socket, locale: locale, locale_tag: tag(locale))}
   end
@@ -129,7 +135,7 @@ defmodule BlogoWeb.Locale do
   `en-GB` is served by `en`, and `pt-PT` by the only Portuguese here. `*` means
   "anything", which is what the default already is.
   """
-  def negotiate([]), do: @default
+  def negotiate([]), do: "pt_BR"
   def negotiate([header | _]), do: negotiate(header)
 
   def negotiate(header) when is_binary(header) do
@@ -138,10 +144,10 @@ defmodule BlogoWeb.Locale do
     |> Enum.map(&parse_range/1)
     |> Enum.reject(&is_nil/1)
     |> Enum.sort_by(fn {_tag, q} -> -q end)
-    |> Enum.find_value(@default, fn {tag, _q} -> match_language(tag) end)
+    |> Enum.find_value(default(), fn {tag, _q} -> match_language(tag) end)
   end
 
-  def negotiate(_header), do: @default
+  def negotiate(_header), do: "pt_BR"
 
   defp parse_range(range) do
     case range |> String.trim() |> String.split(";") do
@@ -193,7 +199,7 @@ defmodule BlogoWeb.Locale do
 
   defp find(locale, index) do
     case Enum.find(@locales, &(elem(&1, 0) == locale)) do
-      nil -> find(@default, index)
+      nil -> find(default(), index)
       entry -> elem(entry, index)
     end
   end
