@@ -19,11 +19,20 @@ defmodule BlogoWeb.Endpoint do
   #
   # You should set gzip to true if you are running phx.digest
   # when deploying your static files in production.
+  # `:only` matches the first path segment **exactly**, and for a file at the
+  # root of priv/static that segment is the whole filename. `phx.digest` renames
+  # those files, so `~p"/favicon.ico"` resolves to `favicon-<digest>.ico` and
+  # this plug then refuses precisely that name — every icon the page declared
+  # answered 404 while `/favicon.ico` answered 200. `assets/…` escaped it
+  # because there the first segment is `assets` and everything below passes.
+  #
+  # `:only_matching` matches by prefix, which is what a digested filename needs.
   plug Plug.Static,
     at: "/",
     from: :blogo,
     gzip: false,
-    only: BlogoWeb.static_paths()
+    only: BlogoWeb.static_paths(),
+    only_matching: BlogoWeb.static_prefixes()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

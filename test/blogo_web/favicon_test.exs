@@ -145,4 +145,85 @@ defmodule BlogoWeb.FaviconTest do
       assert html =~ "/icon-192.png"
     end
   end
+
+  # The test that was missing through three PRs. The others opened the file on
+  # disk and asked for `/favicon.ico` — the canonical path, which works. A
+  # browser never asks for that one: it asks for what the page declares, and
+  # every one of those answered 404 because `phx.digest` renames the file and
+  # `Plug.Static`'s `:only` matches the first segment exactly.
+  #
+  # So this asserts the address, not the file. Checking the bytes is not
+  # checking that anyone can reach them.
+  describe "the addresses the page actually declares" do
+    test "every icon the head points at is served", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      declared =
+        Regex.scan(~r{(?:href|content)="(/(?:favicon|icon-|apple-touch)[^"]*)"}, html,
+          capture: :all_but_first
+        )
+        |> List.flatten()
+        |> Enum.uniq()
+
+      assert length(declared) >= 4, "the head stopped declaring icons"
+
+      for path <- declared do
+        # The query string is `phx.digest`'s cache buster, not part of the file.
+        clean = path |> String.split("?") |> List.first()
+
+        assert %{status: 200} = build_conn() |> get(clean),
+               "#{path} is declared in the head and does not answer 200"
+      end
+    end
+
+    test "the manifest it points at is served too", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      [path] =
+        Regex.run(~r{rel="manifest" href="([^"]*)"}, html, capture: :all_but_first)
+
+      assert %{status: 200} = build_conn() |> get(String.split(path, "?") |> List.first())
+    end
+  end
+
+  # The test above passes in dev for the wrong reason: `phx.digest` does not run
+  # here, so the head declares `/favicon.ico` and that path was never broken.
+  # The defect only exists once the files are renamed, which is a property of
+  # the build, not of the code — so this asks the question directly.
+  describe "a digested filename" do
+    setup do
+      # A file with the shape `phx.digest` produces: same stem, hash, same
+      # extension. It shares no exact name with anything in `static_paths/0`.
+      path = Path.join([File.cwd!(), "priv/static", "favicon-deadbeef0123456789.ico"])
+      File.write!(path, read(@ico))
+      on_exit(fn -> File.rm(path) end)
+      :ok
+    end
+
+    test "is served, because :only alone would refuse it" do
+      assert %{status: 200} = build_conn() |> get("/favicon-deadbeef0123456789.ico")
+    end
+
+    test "and a name outside the prefixes still is not" do
+      path = Path.join([File.cwd!(), "priv/static", "segredo-deadbeef.ico"])
+      File.write!(path, read(@ico))
+      on_exit(fn -> File.rm(path) end)
+
+      assert %{status: 404} = build_conn() |> get("/segredo-deadbeef.ico")
+    end
+  end
+
+  # Whoever adds the next root-level static file will not remember this, and the
+  # symptom — an icon that answers 404 only in production — took three PRs to
+  # find the first time.
+  test "every root file in static_paths has a prefix that can serve it digested" do
+    arquivos = Enum.filter(BlogoWeb.static_paths(), &String.contains?(&1, "."))
+
+    for arquivo <- arquivos do
+      stem = arquivo |> Path.rootname()
+
+      assert Enum.any?(BlogoWeb.static_prefixes(), &String.starts_with?(stem, &1)),
+             "#{arquivo} is served at its plain name but would 404 once digested"
+    end
+  end
 end

@@ -25,6 +25,16 @@ defmodule BlogoWeb do
     do:
       ~w(assets fonts images favicon.ico favicon.svg apple-touch-icon.png icon-192.png icon-512.png)
 
+  @doc """
+  Prefixes for the files that `phx.digest` renames.
+
+  A digested `favicon-<hash>.ico` shares no exact name with `favicon.ico`, so
+  `:only` cannot serve it; these are matched by prefix instead. Only the files
+  at the root need this — anything under `assets/` is already covered by its
+  directory.
+  """
+  def static_prefixes, do: ~w(favicon apple-touch-icon icon-192 icon-512)
+
   def router do
     quote do
       use Phoenix.Router, helpers: false
