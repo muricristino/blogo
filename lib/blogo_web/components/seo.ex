@@ -215,37 +215,40 @@ defmodule BlogoWeb.SEO do
   the writing.
   """
   def profile_page(author, base_url) do
-    %{
-      "@context" => "https://schema.org",
-      "@type" => "ProfilePage",
-      "mainEntity" => person(author, base_url)
-    }
-    |> put_faq(author, base_url)
-    |> drop_empty()
+    profile =
+      %{
+        "@type" => "ProfilePage",
+        "@id" => "#{base_url}/#profile",
+        "mainEntity" => person(author, base_url)
+      }
+      |> drop_empty()
+
+    %{"@context" => "https://schema.org", "@graph" => [profile | faq(author, base_url)]}
   end
 
-  # "Who is X?" with an answer, which is the shape both a search engine and a
-  # model can quote. The page's prose is the author's to write; this states in
-  # one sentence what the record already knows, and it is absent when the record
-  # does not know enough to make a sentence — a FAQ answering "X is." helps
-  # nobody.
-  defp put_faq(page, author, base_url) do
+  # Two entities in one document are siblings under `@graph`, not one nested in
+  # the other's `mainEntityOfPage` — that field names the page an entity is the
+  # subject of, and Search Console reports anything else as unrecognised.
+  defp faq(author, base_url) do
     case who_is(author) do
       nil ->
-        page
+        []
 
       answer ->
-        Map.put(page, "mainEntityOfPage", %{
-          "@type" => "FAQPage",
-          "mainEntity" => [
-            %{
-              "@type" => "Question",
-              "name" => "Quem é #{author.name}?",
-              "acceptedAnswer" => %{"@type" => "Answer", "text" => answer}
-            }
-          ],
-          "about" => %{"@id" => "#{base_url}/#person"}
-        })
+        [
+          %{
+            "@type" => "FAQPage",
+            "@id" => "#{base_url}/#faq",
+            "about" => %{"@id" => "#{base_url}/#person"},
+            "mainEntity" => [
+              %{
+                "@type" => "Question",
+                "name" => "Quem é #{author.name}?",
+                "acceptedAnswer" => %{"@type" => "Answer", "text" => answer}
+              }
+            ]
+          }
+        ]
     end
   end
 
