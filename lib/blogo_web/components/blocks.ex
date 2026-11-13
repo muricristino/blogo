@@ -96,10 +96,24 @@ defmodule BlogoWeb.Blocks do
   end
 
   def block(%{block: %{"type" => "diagram"}} = assigns) do
+    assigns =
+      assign(
+        assigns,
+        :stacks,
+        assigns.block["form"] == "fluxo" and BlogoWeb.Diagrams.flow_stacks?(assigns.block["data"])
+      )
+
     ~H"""
     <figure>
-      <div class="card dg-wrap">
+      <div class={["card dg-wrap", @stacks && "dg-flow"]}>
         <.diagram form={@block["form"]} data={@block["data"] || %{}} label={@block["alt"] || ""} />
+        <.diagram
+          :if={@stacks}
+          form="fluxo"
+          orientation="v"
+          data={@block["data"]}
+          label={@block["alt"] || ""}
+        />
       </div>
       <figcaption :if={@block["caption"]} class="cap">{@block["caption"]}</figcaption>
     </figure>
