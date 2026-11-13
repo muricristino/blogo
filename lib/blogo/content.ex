@@ -371,6 +371,44 @@ defmodule Blogo.Content do
 
   def delete_draft(%Post{} = post), do: Repo.delete(post)
 
+  def get_post_by_slug(slug) when is_binary(slug) do
+    Post |> Repo.get_by(slug: slug) |> Repo.preload(:author)
+  end
+
+  @doc """
+  Writes a post by its address, as the API does: a new address starts a draft,
+  an existing one is saved through `save_post/2`.
+
+  The status is never touched here. Updating a published article keeps it
+  published, the same as saving it in the editor; going back to draft is
+  `unpublish_post/1`, a decision with a step of its own.
+  """
+  def put_post_by_slug(slug, attrs) when is_binary(slug) do
+    attrs = Map.put(attrs, :slug, slug)
+
+    case get_post_by_slug(slug) do
+      nil -> create_draft(attrs)
+      post -> save_post(post, attrs)
+    end
+  end
+
+  defp create_draft(attrs) do
+    case the_author() do
+      nil ->
+        {:error, :no_author}
+
+      author ->
+        attrs
+        |> Map.merge(%{status: "draft", author_id: author.id})
+        |> Map.put(:reading_minutes, reading_minutes(attrs, %Post{}))
+        |> create_post()
+        |> case do
+          {:ok, post} -> {:ok, %{post | author: author}}
+          other -> other
+        end
+    end
+  end
+
   # ── addresses an article used to have ─────────────────────────────────────
 
   @doc """
