@@ -44,6 +44,7 @@ defmodule BlogoWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug BlogoWeb.ApiAuth
   end
 
   # The reading beacon. It is anonymous by design and carries a token signed
@@ -75,6 +76,16 @@ defmodule BlogoWeb.Router do
     post "/auth/login", AuthController, :password
     post "/auth/session", AuthController, :session
     delete "/auth/logout", AuthController, :delete
+  end
+
+  scope "/api", BlogoWeb.Api do
+    pipe_through :api
+
+    get "/posts", PostController, :index
+    get "/posts/:slug", PostController, :show
+    put "/posts/:slug", PostController, :update
+    post "/posts/:slug/publish", PostController, :publish
+    post "/posts/:slug/unpublish", PostController, :unpublish
   end
 
   scope "/", BlogoWeb do
@@ -113,11 +124,6 @@ defmodule BlogoWeb.Router do
 
     get "/:slug", PostController, :show
   end
-
-  # Other scopes may use custom stacks.
-  # scope "/api", BlogoWeb do
-  #   pipe_through :api
-  # end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:blogo, :dev_routes) do
