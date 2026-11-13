@@ -68,6 +68,7 @@ defmodule BlogoWeb.Router do
     get "/busca", SearchController, :show
     get "/autor/:slug", PageController, :author
     get "/autor/:slug/foto", AuthorPhotoController, :show
+    get "/midia/:file", PostImageController, :show
     get "/imagem/:slug", CardController, :show
     post "/idioma", LocaleController, :update
 
@@ -86,6 +87,10 @@ defmodule BlogoWeb.Router do
     put "/posts/:slug", PostController, :update
     post "/posts/:slug/publish", PostController, :publish
     post "/posts/:slug/unpublish", PostController, :unpublish
+    get "/posts/:slug/images", PostImageController, :index
+    get "/posts/:slug/images/*name", PostImageController, :show
+    put "/posts/:slug/images/*name", PostImageController, :update
+    delete "/posts/:slug/images/*name", PostImageController, :delete
   end
 
   scope "/", BlogoWeb do

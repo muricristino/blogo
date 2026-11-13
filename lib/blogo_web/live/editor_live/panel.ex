@@ -48,7 +48,7 @@ defmodule BlogoWeb.EditorLive.Panel do
         <span class="micro" style="color:var(--accent)">{@fields.kind}</span>
         <h1 class="pv-h1">{@fields.title}</h1>
         <p class="pv-dek">{BlogoWeb.Blocks.inline(@fields.subtitle)}</p>
-        <BlogoWeb.Blocks.render_blocks blocks={clean_blocks(@blocks)} />
+        <BlogoWeb.Blocks.render_blocks blocks={clean_blocks(@blocks)} images={@images} />
       </div>
     </div>
     """

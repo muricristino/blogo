@@ -253,6 +253,9 @@ a{color:var(--accent);text-underline-offset:.2em}
    abaixo do que carrega, e a caixa que deveria rolar empurra a página. */
 .row > figure, .row > div, .stack > figure { min-width: 0; }
 
+.img-block { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); }
+.img-missing { display: flex; flex-direction: column; gap: 6px; padding: 28px 22px; border: 1px dashed var(--line); border-radius: 10px; overflow-wrap: anywhere; }
+
 .d-defs { position: absolute; width: 0; height: 0; }
 .d-dot { fill: var(--ink3); }
 .d-dot--accent { fill: var(--accent); }

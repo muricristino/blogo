@@ -89,7 +89,7 @@
       <p :if={@summary["note"]} class="small resumo-note">{@summary["note"]}</p>
     </section>
 
-    <.render_blocks blocks={@blocks} />
+    <.render_blocks blocks={@blocks} images={@images} />
 
     <.author_note
       :if={@post.kind != "pagina"}

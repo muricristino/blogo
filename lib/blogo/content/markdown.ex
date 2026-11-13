@@ -8,7 +8,9 @@ defmodule Blogo.Content.Markdown do
 
   ## The dialect
 
-  Standard markdown covers five of the eleven blocks. The other six use a fence
+  Standard markdown covers six of the twelve blocks — an image is
+  `![alt](name.png)` on a line of its own, `name` being the image as the post
+  stores it. The other six use a fence
   of three colons with the block's name:
 
       :::aviso bad O antídoto
@@ -31,12 +33,23 @@ defmodule Blogo.Content.Markdown do
     "diagrama" => "diagram"
   }
 
+  @image ~r/\A!\[(.*)\]\(([^()\s]*)\)\s*\z/
+
   @fence_of Map.new(@block_fences, fn {k, v} -> {v, k} end)
 
-  @doc "Renders a post as the text a writer edits."
-  def to_markdown(post) do
+  @doc """
+  Renders a post as the text a writer edits.
+
+  `image_url:` rewrites each image's name into an address, for a reader of the
+  text who is not going to have the post's folder beside it.
+  """
+  def to_markdown(post, opts \\ []) do
     front = front_matter(post)
-    body = (get_in(post, [Access.key(:body), "blocks"]) || []) |> Enum.map(&block_to_md/1)
+
+    body =
+      (get_in(post, [Access.key(:body), "blocks"]) || [])
+      |> Enum.map(&image_address(&1, opts[:image_url]))
+      |> Enum.map(&block_to_md/1)
 
     ([front] ++ body)
     |> Enum.reject(&(&1 in [nil, ""]))
@@ -58,6 +71,11 @@ defmodule Blogo.Content.Markdown do
        |> Map.put(:body, %{"blocks" => blocks})}
     end
   end
+
+  defp image_address(%{"type" => "image", "src" => src} = block, fun) when is_function(fun, 1),
+    do: Map.put(block, "src", fun.(src))
+
+  defp image_address(block, _fun), do: block
 
   # ── front matter ──────────────────────────────────────────────────────────
 
@@ -152,10 +170,18 @@ defmodule Blogo.Content.Markdown do
   defp note_of(%{"note" => n}) when is_binary(n) and n != "", do: "^ " <> n
   defp note_of(_), do: nil
 
+  # Several paragraphs carrying a note, a caption or a drop cap are one block,
+  # but written plainly they would come back as one block per paragraph with
+  # the note on the last. The fence keeps them together; everything else stays
+  # plain markdown.
   defp body_of(%{"type" => "text"} = b) do
     paragraphs = b["paragraphs"] || []
     text = Enum.join(paragraphs, "\n\n")
-    if b["drop"], do: "@capitular\n" <> text, else: text
+    text = if b["drop"], do: "@capitular\n" <> text, else: text
+
+    if length(paragraphs) > 1 and Enum.any?(~w(drop note caption), &b[&1]),
+      do: fence("texto", text),
+      else: text
   end
 
   defp body_of(%{"type" => "section"} = b) do
@@ -172,8 +198,12 @@ defmodule Blogo.Content.Markdown do
     |> Enum.join("\n")
   end
 
+  defp body_of(%{"type" => "image"} = b) do
+    "![" <> to_string(b["alt"]) <> "](" <> to_string(b["src"]) <> ")"
+  end
+
   defp body_of(%{"type" => "code"} = b) do
-    "```" <> to_string(b["lang"] || "") <> "\n" <> to_string(b["source"]) <> "\n```"
+    "```" <> to_string(b["lang"] || "") <> "\n" <> to_string(b["source"] || b["code"]) <> "\n```"
   end
 
   defp body_of(%{"type" => "quote"} = b) do
@@ -199,7 +229,9 @@ defmodule Blogo.Content.Markdown do
   defp body_of(%{"type" => "keynumbers"} = b) do
     body =
       (b["items"] || [])
-      |> Enum.map_join("\n", fn i -> "#{i["value"]} | #{i["label"]}" end)
+      |> Enum.map_join("\n", fn i ->
+        "#{i["value"]} | #{i["label"]}" <> if(i["accent"], do: " | destaque", else: "")
+      end)
 
     fence("numeros", body)
   end
@@ -328,6 +360,23 @@ defmodule Blogo.Content.Markdown do
 
   defp lines_to_block([]), do: {:ok, nil}
 
+  defp lines_to_block([":::texto" | rest]) do
+    {drop, rest} =
+      case rest do
+        ["@capitular" | rest] -> {true, rest}
+        rest -> {false, rest}
+      end
+
+    paragraphs =
+      rest
+      |> Enum.chunk_by(&(String.trim(&1) == ""))
+      |> Enum.reject(fn lines -> Enum.all?(lines, &(String.trim(&1) == "")) end)
+      |> Enum.map(&Enum.join(&1, " "))
+
+    block = %{"type" => "text", "paragraphs" => paragraphs}
+    {:ok, if(drop, do: Map.put(block, "drop", true), else: block)}
+  end
+
   defp lines_to_block([":::" <> head | rest]) do
     body = Enum.join(rest, "\n")
 
@@ -385,6 +434,16 @@ defmodule Blogo.Content.Markdown do
     case rows do
       [headers | body] -> {:ok, %{"type" => "table", "headers" => headers, "rows" => body}}
       [] -> {:ok, nil}
+    end
+  end
+
+  defp lines_to_block(["![" <> _ = line]) do
+    case Regex.run(@image, line) do
+      [_, alt, src] ->
+        {:ok, drop_empty(%{"type" => "image", "src" => src, "alt" => alt}, ["alt"])}
+
+      nil ->
+        {:ok, paragraphs([line])}
     end
   end
 
@@ -449,9 +508,15 @@ defmodule Blogo.Content.Markdown do
       body
       |> String.split("\n", trim: true)
       |> Enum.map(fn line ->
-        case String.split(line, "|", parts: 2) do
-          [value, label] -> %{"value" => String.trim(value), "label" => String.trim(label)}
-          [value] -> %{"value" => String.trim(value), "label" => ""}
+        case line |> String.split("|") |> Enum.map(&String.trim/1) do
+          [value, label, "destaque"] ->
+            %{"value" => value, "label" => label, "accent" => true}
+
+          [value, label | rest] ->
+            %{"value" => value, "label" => Enum.join([label | rest], " | ")}
+
+          [value] ->
+            %{"value" => value, "label" => ""}
         end
       end)
 
@@ -519,6 +584,7 @@ defmodule Blogo.Content.Markdown do
       {"text", "Texto", "/t"},
       {"section", "Título de seção", "/h"},
       {"table", "Tabela", "/tb"},
+      {"image", "Imagem", "/i"},
       {"diagram", "Diagrama", "/d"},
       {"callout", "Aviso", "/a"},
       {"code", "Código", "/c"},

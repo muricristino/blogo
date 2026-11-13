@@ -64,6 +64,7 @@ defmodule Blogo.Content.Metrics do
   # it as words inflates the estimate; the flat figure charge covers it.
   defp readable_strings(%{"type" => "code"} = b), do: extras(b)
   defp readable_strings(%{"type" => "diagram"} = b), do: extras(b)
+  defp readable_strings(%{"type" => "image"} = b), do: extras(b)
   defp readable_strings(_), do: []
 
   defp extras(b), do: [b["caption"], b["note"]]
@@ -77,6 +78,6 @@ defmodule Blogo.Content.Metrics do
   defp count(_), do: 0
 
   defp count_figures(blocks) do
-    Enum.count(blocks, &(&1["type"] in ~w(diagram table code)))
+    Enum.count(blocks, &(&1["type"] in ~w(diagram table code image)))
   end
 end

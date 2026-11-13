@@ -15,11 +15,12 @@ defmodule BlogoWeb.Blocks do
   import BlogoWeb.Diagrams, only: [diagram: 1]
 
   attr :blocks, :list, required: true
+  attr :images, :map, default: %{}, doc: "image name → served address"
 
   def render_blocks(assigns) do
     ~H"""
     <div :for={block <- @blocks} class="row">
-      <.block block={block} />
+      <.block block={block} images={@images} />
       <aside :if={block["note"]} class="mnote">{inline(block["note"])}</aside>
       <span :if={is_nil(block["note"])}></span>
     </div>
@@ -27,6 +28,7 @@ defmodule BlogoWeb.Blocks do
   end
 
   attr :block, :map, required: true
+  attr :images, :map, default: %{}
 
   def block(%{block: %{"type" => "text"}} = assigns) do
     ~H"""
@@ -82,6 +84,31 @@ defmodule BlogoWeb.Blocks do
     <figure>
       <div class="card dg-wrap">
         <.diagram form={@block["form"]} data={@block["data"] || %{}} label={@block["alt"] || ""} />
+      </div>
+      <figcaption :if={@block["caption"]} class="cap">{@block["caption"]}</figcaption>
+    </figure>
+    """
+  end
+
+  # An image the post does not have yet still takes its place, showing what it
+  # was meant to show: a missing figure that left no trace would read as an
+  # article that never had one.
+  def block(%{block: %{"type" => "image"}} = assigns) do
+    assigns = assign(assigns, :src, Map.get(assigns.images, assigns.block["src"]))
+
+    ~H"""
+    <figure>
+      <img
+        :if={@src}
+        class="img-block"
+        src={@src}
+        alt={@block["alt"] || ""}
+        loading="lazy"
+        decoding="async"
+      />
+      <div :if={is_nil(@src)} class="img-missing" role="img" aria-label={@block["alt"] || ""}>
+        <span class="micro">imagem ausente · {@block["src"]}</span>
+        <span :if={@block["alt"]} class="small">{@block["alt"]}</span>
       </div>
       <figcaption :if={@block["caption"]} class="cap">{@block["caption"]}</figcaption>
     </figure>
