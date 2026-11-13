@@ -201,4 +201,56 @@ defmodule Blogo.Content.Photo do
     do: {"VP8X", head <> <<flags &&& 0xF3>> <> rest}
 
   defp forget_dropped(chunk), do: chunk
+
+  # ── dimensions ────────────────────────────────────────────────────────────
+
+  @doc """
+  The width and height an image declares in its header, or nil.
+
+  Read so the page can reserve the image's space before it loads: without
+  them a lazy image is two pixels tall until it arrives, and the paragraph
+  under it sits where the image is about to be.
+  """
+  @spec dimensions(binary) :: {pos_integer, pos_integer} | nil
+  def dimensions(<<0x89, "PNG\r\n", 0x1A, 0x0A, _len::32, "IHDR", w::32, h::32, _::binary>>),
+    do: positive(w, h)
+
+  def dimensions(<<0xFF, 0xD8, rest::binary>>), do: jpeg_size(rest)
+
+  def dimensions(<<"RIFF", _size::little-32, "WEBP", rest::binary>>), do: webp_size(rest)
+
+  def dimensions(_), do: nil
+
+  defp jpeg_size(<<0xFF, 0xFF, rest::binary>>), do: jpeg_size(<<0xFF, rest::binary>>)
+
+  defp jpeg_size(<<0xFF, marker, _len::16, _precision, h::16, w::16, _::binary>>)
+       when marker in 0xC0..0xCF and marker not in [0xC4, 0xC8, 0xCC],
+       do: positive(w, h)
+
+  defp jpeg_size(<<0xFF, marker, len::16, rest::binary>>)
+       when marker not in [0xD8, 0xD9, 0xDA] and len >= 2 do
+    case rest do
+      <<_::binary-size(len - 2), tail::binary>> -> jpeg_size(tail)
+      _ -> nil
+    end
+  end
+
+  defp jpeg_size(_), do: nil
+
+  defp webp_size(<<"VP8X", _len::little-32, _flags::32, w::little-24, h::little-24, _::binary>>),
+    do: positive(w + 1, h + 1)
+
+  defp webp_size(
+         <<"VP8 ", _len::little-32, _tag::24, 0x9D, 0x01, 0x2A, w::little-16, h::little-16,
+           _::binary>>
+       ),
+       do: positive(w &&& 0x3FFF, h &&& 0x3FFF)
+
+  defp webp_size(<<"VP8L", _len::little-32, 0x2F, bits::little-32, _::binary>>),
+    do: positive((bits &&& 0x3FFF) + 1, (bits >>> 14 &&& 0x3FFF) + 1)
+
+  defp webp_size(_), do: nil
+
+  defp positive(w, h) when w > 0 and h > 0, do: {w, h}
+  defp positive(_, _), do: nil
 end

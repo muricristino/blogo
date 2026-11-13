@@ -124,7 +124,14 @@ defmodule BlogoWeb.Blocks do
   # was meant to show: a missing figure that left no trace would read as an
   # article that never had one.
   def block(%{block: %{"type" => "image"}} = assigns) do
-    assigns = assign(assigns, :src, Map.get(assigns.images, assigns.block["src"]))
+    image =
+      case Map.get(assigns.images, assigns.block["src"]) do
+        %{src: _} = image -> image
+        src when is_binary(src) -> %{src: src, width: nil, height: nil}
+        nil -> %{src: nil, width: nil, height: nil}
+      end
+
+    assigns = assign(assigns, src: image.src, width: image.width, height: image.height)
 
     ~H"""
     <figure>
@@ -132,6 +139,8 @@ defmodule BlogoWeb.Blocks do
         :if={@src}
         class="img-block"
         src={@src}
+        width={@width}
+        height={@height}
         alt={@block["alt"] || ""}
         loading="lazy"
         decoding="async"
