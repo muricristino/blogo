@@ -401,6 +401,25 @@ defmodule Blogo.Content.MarkdownTest do
     end
   end
 
+  describe "links in running text" do
+    test "survive the round trip in every block that holds prose" do
+      link = "Os prédios vieram do [OpenStreetMap](https://www.openstreetmap.org/copyright)."
+
+      blocks = [
+        %{
+          "type" => "text",
+          "paragraphs" => [link],
+          "note" => "Dado do [GeoSampa](https://geosampa.prefeitura.sp.gov.br)."
+        },
+        %{"type" => "callout", "variant" => "note", "text" => link},
+        %{"type" => "quote", "text" => link},
+        %{"type" => "image", "src" => "a.png", "caption" => link}
+      ]
+
+      assert roundtrip(blocks) == blocks
+    end
+  end
+
   describe "source" do
     test "writes its description once, inside the fence" do
       md =

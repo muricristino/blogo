@@ -277,18 +277,32 @@ defmodule BlogoWeb.Blocks do
 
   def inline(nil), do: ""
 
+  @link ~r/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/
+
+  # Addresses are set aside before emphasis runs: an `*` or a backtick inside a
+  # URL used to open an <em> that swallowed the rest of the sentence.
   def inline(text) when is_binary(text) do
-    text
-    |> Phoenix.HTML.html_escape()
-    |> Phoenix.HTML.safe_to_string()
-    |> String.replace(~r/\*\*(.+?)\*\*/s, "<b>\\1</b>")
-    |> String.replace(~r/(?<!\*)\*([^*]+?)\*(?!\*)/s, "<em>\\1</em>")
-    |> String.replace(~r/`(.+?)`/s, "<code class=\"mono\" style=\"font-size:.9em\">\\1</code>")
-    |> String.replace(~r/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/, &anchor/1)
+    escaped = text |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+    urls = @link |> Regex.scan(escaped) |> Enum.map(&List.last/1)
+
+    masked = Regex.replace(@link, escaped, fn _, label, _url -> "[" <> label <> "](\u0000)" end)
+
+    urls
+    |> Enum.reduce(emphasis(masked), fn url, acc ->
+      String.replace(acc, "(\u0000)", "(" <> url <> ")", global: false)
+    end)
+    |> String.replace(@link, &anchor/1)
     |> Phoenix.HTML.raw()
   end
 
   def inline(other), do: to_string(other)
+
+  defp emphasis(text) do
+    text
+    |> String.replace(~r/\*\*(.+?)\*\*/s, "<b>\\1</b>")
+    |> String.replace(~r/(?<!\*)\*([^*]+?)\*(?!\*)/s, "<em>\\1</em>")
+    |> String.replace(~r/`(.+?)`/s, "<code class=\"mono\" style=\"font-size:.9em\">\\1</code>")
+  end
 
   # A link to another site gets `rel="noopener"`, and nothing else: `nofollow`
   # on an editorial link tells search engines the citation is not an

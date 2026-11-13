@@ -13,6 +13,28 @@ defmodule BlogoWeb.BlocksTest do
     rendered_to_string(~H"<Blocks.render_blocks blocks={@blocks} />")
   end
 
+  describe "inline links" do
+    test "a link in running text is an anchor to the address" do
+      assert inline("Veja o [OpenStreetMap](https://www.openstreetmap.org).") ==
+               ~s(Veja o <a href="https://www.openstreetmap.org" rel="noopener">OpenStreetMap</a>.)
+    end
+
+    test "an asterisk or underscore inside the address does not start emphasis" do
+      html = inline("Um [link](https://x.com/a*b*c) e *isto*.")
+      assert html =~ ~s(href="https://x.com/a*b*c")
+      assert html =~ "<em>isto</em>"
+      refute html =~ "<em>b</em>"
+    end
+
+    test "emphasis inside the link text still applies" do
+      assert inline("[**Godot**](https://godotengine.org)") =~ "<b>Godot</b></a>"
+    end
+
+    test "a site-relative link carries no rel" do
+      assert inline("[tag](/tag/godot)") == ~s(<a href="/tag/godot">tag</a>)
+    end
+  end
+
   describe "source" do
     test "shows its description once, never again as a margin note" do
       html =
