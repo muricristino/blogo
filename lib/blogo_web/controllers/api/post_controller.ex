@@ -37,13 +37,16 @@ defmodule BlogoWeb.Api.PostController do
     with {:ok, attrs} <- markdown_attrs(params),
          {:ok, attrs} <- put_hero(attrs, params),
          {:ok, attrs} <- put_language(attrs, params) do
-      created? = is_nil(Content.get_post_by_slug(slug))
+      before = Content.get_post_by_slug(slug)
+      created? = is_nil(before)
 
       case Content.put_post_by_slug(slug, attrs) do
         {:ok, post} ->
+          changed? = created? or post.lock_version != before.lock_version
+
           conn
           |> put_status(if created?, do: 201, else: 200)
-          |> json(%{ok: true, created: created?, post: render_post(post)})
+          |> json(%{ok: true, created: created?, changed: changed?, post: render_post(post)})
 
         error ->
           fail(conn, error)

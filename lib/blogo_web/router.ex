@@ -87,6 +87,10 @@ defmodule BlogoWeb.Router do
     put "/posts/:slug", PostController, :update
     post "/posts/:slug/publish", PostController, :publish
     post "/posts/:slug/unpublish", PostController, :unpublish
+    get "/posts/:slug/images", PostImageController, :index
+    get "/posts/:slug/images/*name", PostImageController, :show
+    put "/posts/:slug/images/*name", PostImageController, :update
+    delete "/posts/:slug/images/*name", PostImageController, :delete
   end
 
   scope "/", BlogoWeb do
