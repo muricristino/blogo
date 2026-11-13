@@ -325,10 +325,19 @@ defmodule Blogo.Content do
   def save_post(%Post{} = post, attrs) do
     attrs = Map.put(attrs, :reading_minutes, reading_minutes(attrs, post))
 
+    changeset = Post.changeset(post, attrs)
+
     try do
-      case post |> Post.changeset(attrs) |> Repo.update() do
-        {:ok, saved} -> {:ok, remember_slug(post, saved)}
-        other -> other
+      # `optimistic_lock/2` makes every update a write, so a save that changes
+      # nothing would still bump the version and the timestamp. `blogo push`
+      # of an untouched folder has to leave the row as it was.
+      if changeset.changes == %{} do
+        {:ok, post}
+      else
+        case Repo.update(changeset) do
+          {:ok, saved} -> {:ok, remember_slug(post, saved)}
+          other -> other
+        end
       end
     rescue
       # The row moved under us — someone else saved between our read and our
