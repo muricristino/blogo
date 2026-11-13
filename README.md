@@ -102,6 +102,48 @@ through Clerk (Google), verified locally against the instance's JWKS;
 without the other is refused at boot, and with neither there is no way in at
 all — the failure that is safe. See `deploy/.env.example`.
 
+## The API and the CLI
+
+`/api` lets a post be written from a file instead of the editor. It is off
+unless `BLOGO_API_TOKEN` is set: with the variable unset or empty every request
+is refused with 403, and with it set every request needs
+`Authorization: Bearer <token>` (compared in constant time).
+
+| | |
+|---|---|
+| `GET /api/posts` | every post: slug, title, status, language, published_at, updated |
+| `GET /api/posts/:slug` | one post as markdown, with its hero and status |
+| `PUT /api/posts/:slug` | `{"markdown": "...", "hero": {...}, "language": "pt-BR"}` |
+| `POST /api/posts/:slug/publish` | publishes; refused without a hero |
+| `POST /api/posts/:slug/unpublish` | back to draft, keeping the address |
+
+The markdown is the editor's markdown mode (`Blogo.Content.Markdown`), front
+matter included. The slug in the URL wins over `endereco`. A new slug starts a
+**draft**; an existing one is updated in place and keeps its status, so pushing
+an edit to a published article updates the live article, the same as saving it
+in the editor. `hero` is a diagram block (`form`, `alt`, `data`, `caption`) in
+one of the seven forms; leaving it out keeps the current one and `null` clears
+it. Every response carries `preview_url`, the editor's preview of the saved
+post. Errors are `{"ok": false, "error": {"code", "message"}}`, with 422 for a
+document or a changeset that was refused.
+
+`cli/` holds `blogo`, a small Rust client for it:
+
+```sh
+cd cli && cargo build --release && cp target/release/blogo ~/.local/bin/
+
+blogo list
+blogo get <slug>
+blogo push post.md [--hero hero.json] [--slug s]
+blogo publish <slug>
+blogo unpublish <slug>
+```
+
+It reads `~/.config/blogo/config` (`url = https://...` and `token = ...`, one
+per line), and `BLOGO_URL` / `BLOGO_TOKEN` override either. Output is JSON,
+`{"ok": true, ...}` or `{"ok": false, "error": {...}}`, with a non-zero exit on
+failure.
+
 ## Not built yet
 
 Comments and the admin panel. The design for both exists; the code does not.
