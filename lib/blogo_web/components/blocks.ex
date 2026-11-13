@@ -268,9 +268,9 @@ defmodule BlogoWeb.Blocks do
 
   def block(%{block: %{"type" => "source"}} = assigns) do
     ~H"""
-    <aside style="border-top:1px solid var(--line);padding-top:14px">
+    <aside class="source">
       <span class="micro">Origem dos dados</span>
-      <p class="small" style="margin-top:6px">
+      <p class="small source-line">
         <a :if={@block["url"]} href={@block["url"]} rel="nofollow noopener">{@block["title"]}</a>
         <span :if={is_nil(@block["url"])} style="color:var(--ink2)">{@block["title"]}</span>
         <span :if={@block["note"]}> — {@block["note"]}</span>

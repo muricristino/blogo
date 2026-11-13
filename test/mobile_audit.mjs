@@ -48,7 +48,8 @@ const audit = (comEstilo) => {
     if (cs.visibility === "hidden" || cs.opacity === "0" || el.getAttribute("aria-hidden") === "true")
       continue
     // 44px para navegação e ação; 32px para link secundário em linha.
-    const secundario = el.classList.contains("tag")
+    const secundario =
+      el.classList.contains("tag") || !!el.closest(".prose, .ctext, .cap, .mnote, .pull")
     const min = secundario ? 32 : 44
     if (r.height < min - 0.5) {
       const txt = (el.textContent || "").trim().slice(0, 24)

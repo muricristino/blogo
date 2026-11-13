@@ -719,3 +719,20 @@ ol.list li::marker { font-family: 'IBM Plex Mono', monospace; font-size: .85em; 
   .resumo .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
   .resumo .statn { font-size: 26px; }
 }
+
+/* A link in a sentence cannot be 44px tall without spreading the lines, so it
+   takes the 32px the rule allows an inline link. Padding on an inline box
+   grows what the finger hits and leaves the line where it was. */
+@media (pointer: coarse) {
+  .prose a, .ctext a, .cap a, .mnote a, .pull a {
+    padding-block: 5px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}
+@media (pointer: coarse) {
+  .mnote a { padding-block: 9px; }
+}
+
+.source { border-top: 1px solid var(--line); padding-top: 14px; }
+.source-line { margin-top: 6px; }
