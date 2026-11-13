@@ -508,6 +508,9 @@ defmodule Blogo.Content.Markdown do
     end)
   end
 
+  @doc "The seven diagram forms, by the names the dialect writes them with."
+  def forms, do: @forms
+
   @doc """
   The block names the slash palette offers, in the order the design lists them.
   """
