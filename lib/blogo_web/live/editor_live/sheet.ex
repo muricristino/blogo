@@ -182,6 +182,31 @@ defmodule BlogoWeb.EditorLive.Sheet do
     """
   end
 
+  defp block_body(%{block: %{"type" => "list"}} = assigns) do
+    ~H"""
+    <div class="ed-listblk">
+      <select
+        class="ed-variant"
+        phx-change="block_input"
+        phx-value-uid={@block["_uid"]}
+        phx-value-field="ordered"
+        name="value"
+        aria-label="Tipo da lista"
+      >
+        <option value="false" selected={!@block["ordered"]}>com marcadores</option>
+        <option value="true" selected={@block["ordered"] == true}>numerada</option>
+      </select>
+      <.rich_text
+        uid={@block["_uid"]}
+        field="items"
+        class={"prose ed-list #{if @block["ordered"], do: "ed-list--ol"}"}
+        paragraphs={@block["items"] || [""]}
+        placeholder="Um item por linha"
+      />
+    </div>
+    """
+  end
+
   defp block_body(%{block: %{"type" => "section"}} = assigns) do
     ~H"""
     <div class="sechead" style="margin-top:6px">
@@ -563,6 +588,8 @@ defmodule BlogoWeb.EditorLive.Sheet do
           <path d="M4 7h16M4 12h16M4 17h10" />
         <% "section" -> %>
           <path d="M5 5v14M5 12h9M19 8v8" />
+        <% "list" -> %>
+          <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
         <% "table" -> %>
           <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M9 10v9" />
         <% "diagram" -> %>

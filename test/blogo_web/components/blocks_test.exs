@@ -35,6 +35,24 @@ defmodule BlogoWeb.BlocksTest do
     end
   end
 
+  describe "list" do
+    test "a numbered list is an ol, a bulleted one a ul" do
+      html =
+        render([
+          %{"type" => "list", "ordered" => true, "items" => ["um", "dois"]},
+          %{"type" => "list", "ordered" => false, "items" => ["solto"]}
+        ])
+
+      assert html =~ ~r/<ol class="prose list">\s*<li>um<\/li>\s*<li>dois<\/li>/
+      assert html =~ ~r/<ul class="prose list">\s*<li>solto<\/li>/
+    end
+
+    test "keeps where a numbered list starts" do
+      html = render([%{"type" => "list", "ordered" => true, "start" => 4, "items" => ["x"]}])
+      assert html =~ ~s(start="4")
+    end
+  end
+
   describe "source" do
     test "shows its description once, never again as a margin note" do
       html =

@@ -35,6 +35,17 @@ defmodule BlogoWeb.Blocks do
   attr :block, :map, required: true
   attr :images, :map, default: %{}
 
+  def block(%{block: %{"type" => "list"}} = assigns) do
+    ~H"""
+    <ol :if={@block["ordered"]} class="prose list" start={@block["start"]}>
+      <li :for={item <- @block["items"] || []}>{inline(item)}</li>
+    </ol>
+    <ul :if={!@block["ordered"]} class="prose list">
+      <li :for={item <- @block["items"] || []}>{inline(item)}</li>
+    </ul>
+    """
+  end
+
   def block(%{block: %{"type" => "text"}} = assigns) do
     ~H"""
     <div class={"prose #{if @block["drop"], do: "drop"}"}>

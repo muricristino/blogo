@@ -401,6 +401,83 @@ defmodule Blogo.Content.MarkdownTest do
     end
   end
 
+  describe "list" do
+    test "a numbered list is written one item per line" do
+      md =
+        Markdown.to_markdown(%{
+          body: %{"blocks" => [%{"type" => "list", "ordered" => true, "items" => ["um", "dois"]}]}
+        })
+
+      assert md =~ "1. um\n2. dois"
+    end
+
+    test "lines that start with a marker become a list, not a run-on paragraph" do
+      {:ok, attrs} =
+        Markdown.from_markdown("Em ordem:\n\n1. o calçadão;\n2. a rua;\n3. os casarões.\n")
+
+      assert [
+               %{"type" => "text", "paragraphs" => ["Em ordem:"]},
+               %{
+                 "type" => "list",
+                 "ordered" => true,
+                 "items" => ["o calçadão;", "a rua;", "os casarões."]
+               }
+             ] = attrs.body["blocks"]
+    end
+
+    test "a bulleted list may start right under a paragraph" do
+      {:ok, attrs} =
+        Markdown.from_markdown("Três defeitos:\n- o vértice treme;\n- a textura entorta.\n")
+
+      assert [
+               %{"type" => "text", "paragraphs" => ["Três defeitos:"]},
+               %{
+                 "type" => "list",
+                 "ordered" => false,
+                 "items" => ["o vértice treme;", "a textura entorta."]
+               }
+             ] = attrs.body["blocks"]
+    end
+
+    test "an indented line continues the item above it" do
+      {:ok, attrs} = Markdown.from_markdown("- um item\n  que continua\n- outro\n")
+      assert [%{"items" => ["um item que continua", "outro"]}] = attrs.body["blocks"]
+    end
+
+    test "a numbered list that does not start at one keeps where it starts" do
+      block = %{"type" => "list", "ordered" => true, "start" => 4, "items" => ["quatro", "cinco"]}
+      assert [^block] = roundtrip([block])
+    end
+
+    test "keeps bold, italic and links inside items" do
+      block = %{
+        "type" => "list",
+        "ordered" => false,
+        "items" => ["**Laboratórios.** Uma cena por parte, no [Godot](https://godotengine.org)."]
+      }
+
+      assert [^block] = roundtrip([block])
+    end
+
+    test "a paragraph that opens like a list item stays a paragraph" do
+      for p <- [
+            "- não é lista, é um travessão de diálogo.",
+            "1984. Foi o ano.",
+            "1. Isto era um parágrafo."
+          ] do
+        assert [%{"type" => "text", "paragraphs" => [^p]}] =
+                 roundtrip([%{"type" => "text", "paragraphs" => [p]}])
+      end
+    end
+
+    test "a numbered line in the middle of a sentence does not break the paragraph" do
+      {:ok, attrs} = Markdown.from_markdown("Nasceu em\n1984. E depois.\n")
+
+      assert [%{"type" => "text", "paragraphs" => ["Nasceu em 1984. E depois."]}] =
+               attrs.body["blocks"]
+    end
+  end
+
   describe "links in running text" do
     test "survive the round trip in every block that holds prose" do
       link = "Os prédios vieram do [OpenStreetMap](https://www.openstreetmap.org/copyright)."
@@ -454,7 +531,18 @@ defmodule Blogo.Content.MarkdownTest do
     [
       %{"type" => "text", "paragraphs" => ["Abertura."], "drop" => true},
       %{"type" => "section", "n" => "01", "title" => "Uma seção"},
+      %{
+        "type" => "list",
+        "ordered" => true,
+        "items" => ["Um [link](https://exemplo.com).", "Dois."]
+      },
       %{"type" => "text", "paragraphs" => ["Com nota."], "note" => "A nota."},
+      %{
+        "type" => "list",
+        "ordered" => false,
+        "items" => ["Solto.", "Outro."],
+        "note" => "Uma nota."
+      },
       %{"type" => "text", "paragraphs" => ["Dois", "parágrafos."], "caption" => "Juntos."},
       %{"type" => "table", "headers" => ["a", "b"], "rows" => [["1", "2"]]},
       %{

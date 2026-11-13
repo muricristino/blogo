@@ -43,6 +43,7 @@ defmodule Blogo.Content.Metrics do
   end
 
   defp readable_strings(%{"type" => "text"} = b), do: (b["paragraphs"] || []) ++ extras(b)
+  defp readable_strings(%{"type" => "list"} = b), do: (b["items"] || []) ++ extras(b)
   defp readable_strings(%{"type" => "section"} = b), do: [b["title"]] ++ extras(b)
 
   defp readable_strings(%{"type" => "table"} = b) do

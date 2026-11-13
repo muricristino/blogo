@@ -667,6 +667,17 @@ a{color:var(--accent);text-underline-offset:.2em}
   }
 }
 
+/* Lists inside an article. The global reset takes their indent away, and
+   without it the markers hang outside the text column. */
+.list { padding-left: 1.35em; }
+.list li + li { margin-top: 8px; }
+.list li::marker { color: var(--accent); }
+ol.list li::marker { font-family: 'IBM Plex Mono', monospace; font-size: .85em; }
+.ed-list { list-style: disc; }
+.ed-list--ol { list-style: decimal; }
+.ed-list p { display: list-item; margin-left: 1.35em; }
+.ed-list p + p { margin-top: 8px; }
+
 /* A link inside prose names something outside the article — a tool, a
    dataset, a pack. It reads as a name in the accent colour, underlined
    always, because a touch screen has no hover to reveal it. */
