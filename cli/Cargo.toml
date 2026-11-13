@@ -1,0 +1,13 @@
+[package]
+name = "blogo"
+version = "0.1.0"
+edition = "2024"
+description = "Push, list and publish blogo posts from the command line"
+repository = "https://github.com/muricristino/blogo"
+
+[dependencies]
+serde_json = "1.0.154"
+ureq = "3.4.2"
+
+[profile.release]
+strip = true
