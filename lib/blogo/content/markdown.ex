@@ -152,10 +152,18 @@ defmodule Blogo.Content.Markdown do
   defp note_of(%{"note" => n}) when is_binary(n) and n != "", do: "^ " <> n
   defp note_of(_), do: nil
 
+  # Several paragraphs carrying a note, a caption or a drop cap are one block,
+  # but written plainly they would come back as one block per paragraph with
+  # the note on the last. The fence keeps them together; everything else stays
+  # plain markdown.
   defp body_of(%{"type" => "text"} = b) do
     paragraphs = b["paragraphs"] || []
     text = Enum.join(paragraphs, "\n\n")
-    if b["drop"], do: "@capitular\n" <> text, else: text
+    text = if b["drop"], do: "@capitular\n" <> text, else: text
+
+    if length(paragraphs) > 1 and Enum.any?(~w(drop note caption), &b[&1]),
+      do: fence("texto", text),
+      else: text
   end
 
   defp body_of(%{"type" => "section"} = b) do
@@ -173,7 +181,7 @@ defmodule Blogo.Content.Markdown do
   end
 
   defp body_of(%{"type" => "code"} = b) do
-    "```" <> to_string(b["lang"] || "") <> "\n" <> to_string(b["source"]) <> "\n```"
+    "```" <> to_string(b["lang"] || "") <> "\n" <> to_string(b["source"] || b["code"]) <> "\n```"
   end
 
   defp body_of(%{"type" => "quote"} = b) do
@@ -199,7 +207,9 @@ defmodule Blogo.Content.Markdown do
   defp body_of(%{"type" => "keynumbers"} = b) do
     body =
       (b["items"] || [])
-      |> Enum.map_join("\n", fn i -> "#{i["value"]} | #{i["label"]}" end)
+      |> Enum.map_join("\n", fn i ->
+        "#{i["value"]} | #{i["label"]}" <> if(i["accent"], do: " | destaque", else: "")
+      end)
 
     fence("numeros", body)
   end
@@ -328,6 +338,23 @@ defmodule Blogo.Content.Markdown do
 
   defp lines_to_block([]), do: {:ok, nil}
 
+  defp lines_to_block([":::texto" | rest]) do
+    {drop, rest} =
+      case rest do
+        ["@capitular" | rest] -> {true, rest}
+        rest -> {false, rest}
+      end
+
+    paragraphs =
+      rest
+      |> Enum.chunk_by(&(String.trim(&1) == ""))
+      |> Enum.reject(fn lines -> Enum.all?(lines, &(String.trim(&1) == "")) end)
+      |> Enum.map(&Enum.join(&1, " "))
+
+    block = %{"type" => "text", "paragraphs" => paragraphs}
+    {:ok, if(drop, do: Map.put(block, "drop", true), else: block)}
+  end
+
   defp lines_to_block([":::" <> head | rest]) do
     body = Enum.join(rest, "\n")
 
@@ -449,9 +476,15 @@ defmodule Blogo.Content.Markdown do
       body
       |> String.split("\n", trim: true)
       |> Enum.map(fn line ->
-        case String.split(line, "|", parts: 2) do
-          [value, label] -> %{"value" => String.trim(value), "label" => String.trim(label)}
-          [value] -> %{"value" => String.trim(value), "label" => ""}
+        case line |> String.split("|") |> Enum.map(&String.trim/1) do
+          [value, label, "destaque"] ->
+            %{"value" => value, "label" => label, "accent" => true}
+
+          [value, label | rest] ->
+            %{"value" => value, "label" => Enum.join([label | rest], " | ")}
+
+          [value] ->
+            %{"value" => value, "label" => ""}
         end
       end)
 

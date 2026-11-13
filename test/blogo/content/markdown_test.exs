@@ -283,6 +283,47 @@ defmodule Blogo.Content.MarkdownTest do
     end
   end
 
+  describe "a text block that is more than one paragraph" do
+    test "keeps its note, caption and drop cap on the whole block" do
+      block = %{
+        "type" => "text",
+        "drop" => true,
+        "note" => "Sobre os números.",
+        "paragraphs" => ["Primeiro.", "Segundo."]
+      }
+
+      assert [^block] = roundtrip([block])
+    end
+
+    test "without attachments stays plain markdown" do
+      md =
+        Markdown.to_markdown(%{
+          body: %{"blocks" => [%{"type" => "text", "paragraphs" => ["Um.", "Dois."]}]}
+        })
+
+      refute md =~ ":::"
+    end
+
+    test "a code block saved under the old key keeps its source" do
+      assert [%{"source" => "puts 1"}] =
+               roundtrip([%{"type" => "code", "lang" => "ruby", "code" => "puts 1"}])
+    end
+  end
+
+  describe "key numbers" do
+    test "keep which one is highlighted, because the summary card draws it" do
+      block = %{
+        "type" => "keynumbers",
+        "items" => [
+          %{"value" => "0,956", "label" => "AUC", "accent" => true},
+          %{"value" => "0,508", "label" => "AUC do outro"}
+        ]
+      }
+
+      assert [^block] = roundtrip([block])
+    end
+  end
+
   describe "a document with all eleven blocks" do
     test "survives the round trip with every type intact" do
       blocks = [
