@@ -21,11 +21,16 @@ defmodule BlogoWeb.Blocks do
     ~H"""
     <div :for={block <- @blocks} class="row">
       <.block block={block} images={@images} />
-      <aside :if={block["note"]} class="mnote">{inline(block["note"])}</aside>
-      <span :if={is_nil(block["note"])}></span>
+      <aside :if={margin_note(block)} class="mnote">{inline(block["note"])}</aside>
+      <span :if={!margin_note(block)}></span>
     </div>
     """
   end
+
+  # A source keeps its description under the same key every block uses for its
+  # margin note, and already prints it in its own line.
+  defp margin_note(%{"type" => "source"}), do: false
+  defp margin_note(block), do: block["note"] not in [nil, ""]
 
   attr :block, :map, required: true
   attr :images, :map, default: %{}

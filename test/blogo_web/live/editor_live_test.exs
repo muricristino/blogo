@@ -88,6 +88,33 @@ defmodule BlogoWeb.EditorLiveTest do
       assert %{"paragraphs" => ["Texto novo."]} = first_block(live)
     end
 
+    test "a source's description is edited in the block and saved once", %{conn: conn} do
+      post =
+        draft(%{
+          body: %{
+            "blocks" => [
+              %{"type" => "source", "title" => "Skill", "url" => "https://exemplo.com"}
+            ]
+          }
+        })
+
+      {:ok, live, html} = live(conn, ~p"/editor/#{post.id}")
+      refute html =~ ~s(aria-label="Nota de margem")
+
+      render_hook(live, "block_input", %{
+        "uid" => first_uid(live),
+        "field" => "note",
+        "value" => "Passo a passo."
+      })
+
+      render_click(live, "save", %{})
+
+      assert [%{"type" => "source", "note" => "Passo a passo."}] =
+               Content.get_post!(post.id).body["blocks"]
+
+      refute Markdown.to_markdown(Content.get_post!(post.id)) =~ "^ "
+    end
+
     test "a blank line inside a block becomes a second paragraph", %{conn: conn, post: post} do
       {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
 

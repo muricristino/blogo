@@ -401,6 +401,36 @@ defmodule Blogo.Content.MarkdownTest do
     end
   end
 
+  describe "source" do
+    test "writes its description once, inside the fence" do
+      md =
+        Markdown.to_markdown(%{
+          body: %{
+            "blocks" => [
+              %{
+                "type" => "source",
+                "url" => "https://exemplo.com",
+                "title" => "Skill",
+                "note" => "Passo a passo."
+              }
+            ]
+          }
+        })
+
+      assert md =~ ":::origem https://exemplo.com\nSkill\nPasso a passo.\n:::"
+      refute md =~ "^ "
+    end
+
+    test "a file saved with the description repeated as a note reads back as one source" do
+      {:ok, attrs} =
+        Markdown.from_markdown(
+          ":::origem https://exemplo.com\nSkill\nPasso a passo.\n:::\n^ Passo a passo.\n"
+        )
+
+      assert [%{"type" => "source", "note" => "Passo a passo."}] = attrs.body["blocks"]
+    end
+  end
+
   defp every_block do
     [
       %{"type" => "text", "paragraphs" => ["Abertura."], "drop" => true},
@@ -426,6 +456,12 @@ defmodule Blogo.Content.MarkdownTest do
       },
       %{"type" => "question", "text" => "E depois?"},
       %{"type" => "source", "title" => "Uma fonte", "url" => "https://exemplo.com"},
+      %{
+        "type" => "source",
+        "title" => "Outra fonte",
+        "url" => "https://exemplo.com/b",
+        "note" => "Com descrição."
+      },
       %{
         "type" => "image",
         "src" => "prints/rua.png",

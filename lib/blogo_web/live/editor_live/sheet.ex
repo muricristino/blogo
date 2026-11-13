@@ -153,6 +153,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
         uid={@block["_uid"]}
       />
       <.attachment
+        :if={@block["type"] != "source"}
         label="Nota de margem"
         field="note"
         value={@block["note"]}
@@ -369,6 +370,20 @@ defmodule BlogoWeb.EditorLive.Sheet do
         placeholder="https://…"
         aria-label="Endereço da fonte"
       />
+      <textarea
+        id={"src-#{@block["_uid"]}-note"}
+        phx-hook="Grow"
+        class="small ed-inline-input ed-attach-input"
+        rows="1"
+        phx-blur="block_input"
+        phx-keyup="block_input"
+        phx-debounce="400"
+        phx-value-uid={@block["_uid"]}
+        phx-value-field="note"
+        name="value"
+        placeholder="O que tem lá, em uma frase"
+        aria-label="Descrição da fonte"
+      >{@block["note"]}</textarea>
     </aside>
     """
   end

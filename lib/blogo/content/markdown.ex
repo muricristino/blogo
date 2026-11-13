@@ -167,6 +167,9 @@ defmodule Blogo.Content.Markdown do
   defp caption_of(%{"caption" => c}) when is_binary(c) and c != "", do: "+ " <> c
   defp caption_of(_), do: nil
 
+  # A source writes its description inside its own fence; the same text again
+  # as `^` drew it a second time in the margin.
+  defp note_of(%{"type" => "source"}), do: nil
   defp note_of(%{"note" => n}) when is_binary(n) and n != "", do: "^ " <> n
   defp note_of(_), do: nil
 
