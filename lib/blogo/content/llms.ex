@@ -23,8 +23,10 @@ defmodule Blogo.Content.Llms do
   The article as the text a model reads, canonical address included.
   """
   def document(%Post{} = post, base_url) do
+    images = Map.new(Content.list_post_images(post), &{&1.name, &1})
+
     post
-    |> Markdown.to_markdown()
+    |> Markdown.to_markdown(image_url: &image_url(images, &1, base_url))
     |> put_front_matter(
       [
         "canonical: #{base_url}/#{post.slug}",
@@ -33,6 +35,13 @@ defmodule Blogo.Content.Llms do
       ]
       |> Enum.reject(&is_nil/1)
     )
+  end
+
+  defp image_url(images, name, base_url) do
+    case images do
+      %{^name => image} -> base_url <> Blogo.Content.PostImage.path(image)
+      _ -> name
+    end
   end
 
   defp author_name(%Post{author: %{name: name}}), do: name

@@ -28,6 +28,7 @@ defmodule Blogo.Content.Checklist do
     [
       hero(post),
       diagram_alts(blocks),
+      image_alts(blocks),
       figure_captions(blocks),
       summary_numbers(blocks),
       address(post)
@@ -75,8 +76,25 @@ defmodule Blogo.Content.Checklist do
     end
   end
 
+  defp image_alts(blocks) do
+    images = Enum.filter(blocks, &(&1["type"] == "image"))
+    missing = Enum.count(images, &(&1["alt"] in [nil, ""]))
+
+    cond do
+      images == [] ->
+        nil
+
+      missing == 0 ->
+        {:ok, "Todas as imagens têm texto alternativo"}
+
+      true ->
+        {:warn,
+         contagem(missing, "uma imagem sem texto alternativo", "imagens sem texto alternativo")}
+    end
+  end
+
   defp figure_captions(blocks) do
-    figures = Enum.filter(blocks, &(&1["type"] in ~w(diagram table code)))
+    figures = Enum.filter(blocks, &(&1["type"] in ~w(diagram table code image)))
     missing = Enum.count(figures, &(&1["caption"] in [nil, ""]))
 
     cond do

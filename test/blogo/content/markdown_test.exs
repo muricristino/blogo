@@ -230,6 +230,9 @@ defmodule Blogo.Content.MarkdownTest do
       | Espaço Vida | 0,5570 |
       + Duas linhas bastam para mostrar a ordem.
 
+      ![A rua à noite, com a neblina do PS1](prints/rua.png)
+      + A neblina esconde o fim do mapa.
+
       ```bash
       $ classificar "quer cancelar?"
       ```
@@ -324,27 +327,70 @@ defmodule Blogo.Content.MarkdownTest do
     end
   end
 
-  describe "a document with all eleven blocks" do
+  describe "image" do
+    test "keeps its name, its alt text and its caption" do
+      image = %{
+        "type" => "image",
+        "src" => "prints/rua.png",
+        "alt" => "A rua à noite",
+        "caption" => "A neblina esconde o fim do mapa."
+      }
+
+      assert [^image] = roundtrip([image])
+    end
+
+    test "is written as standard markdown on a line of its own" do
+      md =
+        Markdown.to_markdown(%{
+          body: %{"blocks" => [%{"type" => "image", "src" => "a.png", "alt" => "Uma tela"}]}
+        })
+
+      assert md =~ "![Uma tela](a.png)"
+    end
+
+    test "without alt text does not invent one" do
+      assert [block] = roundtrip([%{"type" => "image", "src" => "a.png"}])
+      refute Map.has_key?(block, "alt")
+    end
+
+    test "an alt text with brackets survives" do
+      image = %{"type" => "image", "src" => "a.png", "alt" => "O menu [pausa] aberto"}
+      assert [^image] = roundtrip([image])
+    end
+
+    test "inside a paragraph stays text, because only a line of its own is a block" do
+      assert [%{"type" => "text"}] =
+               roundtrip([%{"type" => "text", "paragraphs" => ["Veja ![x](a.png) aqui."]}])
+    end
+
+    test "image_url rewrites the name into an address and nothing else" do
+      post = %{body: %{"blocks" => [%{"type" => "image", "src" => "a.png", "alt" => "x"}]}}
+      md = Markdown.to_markdown(post, image_url: &("https://exemplo.com/midia/" <> &1))
+      assert md =~ "![x](https://exemplo.com/midia/a.png)"
+    end
+  end
+
+  describe "a document with every block" do
+    test "the text written for a post parses back to exactly the same text" do
+      post = %{
+        title: "Jogo da Paulista",
+        subtitle: "Uma noite, um jogo.",
+        slug: "jogo-da-paulista",
+        kind: "artigo",
+        topics: ["godot", "claude code"],
+        meta_description: "Como foi.",
+        body: %{"blocks" => every_block()}
+      }
+
+      md = Markdown.to_markdown(post)
+      assert stable?(md) == md
+    end
+
     test "survives the round trip with every type intact" do
-      blocks = [
-        %{"type" => "text", "paragraphs" => ["Abertura."], "drop" => true},
-        %{"type" => "section", "n" => "01", "title" => "Uma seção"},
-        %{"type" => "text", "paragraphs" => ["Com nota."], "note" => "A nota."},
-        %{"type" => "table", "headers" => ["a", "b"], "rows" => [["1", "2"]]},
-        %{
-          "type" => "diagram",
-          "form" => "fluxo",
-          "data" => %{"steps" => []},
-          "alt" => "Um fluxo"
-        },
-        %{"type" => "callout", "variant" => "warn", "title" => "Cuidado", "text" => "Um aviso."},
-        %{"type" => "code", "lang" => "elixir", "source" => "IO.puts(:ok)"},
-        %{"type" => "quote", "text" => "Uma frase.", "cite" => "Alguém"},
-        %{"type" => "keynumbers", "items" => [%{"value" => "42", "label" => "casos"}]},
-        %{"type" => "question", "text" => "E depois?"},
-        %{"type" => "source", "title" => "Uma fonte", "url" => "https://exemplo.com"},
-        %{"type" => "marginnote", "text" => "Sozinha na margem."}
-      ]
+      blocks = every_block()
+
+      assert Enum.map(blocks, & &1["type"]) |> Enum.uniq() |> length() ==
+               length(Markdown.palette())
 
       assert roundtrip(blocks) == blocks
     end
@@ -353,5 +399,40 @@ defmodule Blogo.Content.MarkdownTest do
       assert [%{"drop" => true, "paragraphs" => ["Abertura."]}] =
                roundtrip([%{"type" => "text", "paragraphs" => ["Abertura."], "drop" => true}])
     end
+  end
+
+  defp every_block do
+    [
+      %{"type" => "text", "paragraphs" => ["Abertura."], "drop" => true},
+      %{"type" => "section", "n" => "01", "title" => "Uma seção"},
+      %{"type" => "text", "paragraphs" => ["Com nota."], "note" => "A nota."},
+      %{"type" => "text", "paragraphs" => ["Dois", "parágrafos."], "caption" => "Juntos."},
+      %{"type" => "table", "headers" => ["a", "b"], "rows" => [["1", "2"]]},
+      %{
+        "type" => "diagram",
+        "form" => "fluxo",
+        "data" => %{"steps" => []},
+        "alt" => "Um fluxo"
+      },
+      %{"type" => "callout", "variant" => "warn", "title" => "Cuidado", "text" => "Um aviso."},
+      %{"type" => "code", "lang" => "elixir", "source" => "IO.puts(:ok)"},
+      %{"type" => "quote", "text" => "Uma frase.", "cite" => "Alguém"},
+      %{
+        "type" => "keynumbers",
+        "items" => [
+          %{"value" => "42", "label" => "casos"},
+          %{"value" => "0,956", "label" => "AUC", "accent" => true}
+        ]
+      },
+      %{"type" => "question", "text" => "E depois?"},
+      %{"type" => "source", "title" => "Uma fonte", "url" => "https://exemplo.com"},
+      %{
+        "type" => "image",
+        "src" => "prints/rua.png",
+        "alt" => "A rua",
+        "caption" => "A neblina."
+      },
+      %{"type" => "marginnote", "text" => "Sozinha na margem."}
+    ]
   end
 end

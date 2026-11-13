@@ -431,6 +431,41 @@ defmodule BlogoWeb.EditorLiveTest do
 
   # ── reading the live view's state ──────────────────────────────────────────
 
+  describe "an image block" do
+    setup %{conn: conn} do
+      %{conn: sign_in(conn), post: draft()}
+    end
+
+    test "is in the palette, and an upload fills it and reaches the database",
+         %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      live |> element(".pitem[phx-value-type=image]") |> render_click()
+      [_text, image] = blocks(live)
+      assert image["type"] == "image"
+
+      live |> element("[phx-click=select][phx-value-uid=#{image["_uid"]}]") |> render_click()
+
+      bytes = Fixtures.png(metadata: [{"tEXt", "GPS\0-23.5"}])
+
+      file =
+        file_input(live, "#img-#{image["_uid"]}", :imagem, [
+          %{name: "Tela Inicial.png", content: bytes, type: "image/png"}
+        ])
+
+      live |> form("#img-#{image["_uid"]}", %{"uid" => image["_uid"]}) |> render_change()
+      render_upload(file, "Tela Inicial.png")
+      render_click(live, "save", %{})
+
+      saved = Content.get_post!(post.id)
+      assert [_, %{"type" => "image", "src" => "tela-inicial.png"}] = saved.body["blocks"]
+
+      stored = Content.get_post_image(saved, "tela-inicial.png")
+      refute stored.data =~ "GPS"
+      assert render(live) =~ Blogo.Content.PostImage.path(stored)
+    end
+  end
+
   defp blocks(live), do: :sys.get_state(live.pid).socket.assigns.blocks
   defp flash_of(live), do: :sys.get_state(live.pid).socket.assigns.flash
   defp first_block(live), do: blocks(live) |> List.first()

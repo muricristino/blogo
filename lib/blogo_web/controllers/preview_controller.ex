@@ -29,6 +29,7 @@ defmodule BlogoWeb.PreviewController do
     |> render(:show,
       post: post,
       blocks: blocks,
+      images: BlogoWeb.PostImageController.addresses(post),
       summary: summary,
       sections: Enum.filter(blocks, &(&1["type"] == "section")),
       page_title: post.title

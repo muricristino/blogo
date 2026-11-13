@@ -68,6 +68,7 @@ defmodule BlogoWeb.Router do
     get "/busca", SearchController, :show
     get "/autor/:slug", PageController, :author
     get "/autor/:slug/foto", AuthorPhotoController, :show
+    get "/midia/:file", PostImageController, :show
     get "/imagem/:slug", CardController, :show
     post "/idioma", LocaleController, :update
 

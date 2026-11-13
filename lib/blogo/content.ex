@@ -3,7 +3,7 @@ defmodule Blogo.Content do
 
   import Ecto.Query, warn: false
   alias Blogo.Repo
-  alias Blogo.Content.{Author, Post, PostSlug, Site}
+  alias Blogo.Content.{Author, Post, PostImage, PostSlug, Site}
 
   @doc """
   The published articles, newest first.
@@ -509,5 +509,61 @@ defmodule Blogo.Content do
       end
 
     Blogo.Content.Metrics.reading_minutes(blocks)
+  end
+
+  # ── images inside a post ──────────────────────────────────────────────────
+
+  @doc "The post's images, by name, without their bytes."
+  def list_post_images(%Post{id: id}) do
+    from(i in PostImage, where: i.post_id == ^id, order_by: i.name) |> Repo.all()
+  end
+
+  @doc "One image with its bytes, or nil."
+  def get_post_image(%Post{id: id}, name) do
+    from(i in PostImage,
+      where: i.post_id == ^id and i.name == ^name,
+      select: %{i | data: i.data}
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  Stores an image under `name`, replacing whatever had that name. Sending the
+  same file again changes nothing and says so, which is what lets `blogo push`
+  be run twice without writing twice.
+  """
+  def put_post_image(%Post{} = post, name, bytes) when is_binary(bytes) do
+    existing = Repo.get_by(PostImage, post_id: post.id, name: name)
+    sent = PostImage.sha256(bytes)
+
+    if existing && sent in [existing.digest, existing.source_digest] do
+      {:ok, existing, :unchanged}
+    else
+      (existing || %PostImage{})
+      |> PostImage.changeset(post.id, name, bytes)
+      |> Repo.insert_or_update()
+      |> case do
+        {:ok, image} -> {:ok, %{image | data: nil}, if(existing, do: :replaced, else: :created)}
+        error -> error
+      end
+    end
+  end
+
+  @doc "Removes an image by name. Returns `{:error, :not_found}` when there was none."
+  def delete_post_image(%Post{id: id}, name) do
+    case from(i in PostImage, where: i.post_id == ^id and i.name == ^name) |> Repo.delete_all() do
+      {0, _} -> {:error, :not_found}
+      {_, _} -> :ok
+    end
+  end
+
+  @doc "The bytes behind a served address, found by their digest."
+  def image_by_digest(digest) when is_binary(digest) do
+    from(i in PostImage,
+      where: i.digest == ^digest,
+      limit: 1,
+      select: %{data: i.data, type: i.content_type, digest: i.digest}
+    )
+    |> Repo.one()
   end
 end

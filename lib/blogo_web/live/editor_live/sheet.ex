@@ -53,6 +53,9 @@ defmodule BlogoWeb.EditorLive.Sheet do
           <.editable_block
             :for={block <- @blocks}
             block={block}
+            images={@images}
+            uploads={@uploads}
+            image_error={@image_for == block["_uid"] && @image_error}
             selected={@selected}
             slash_for={@slash_for}
             slash_query={@slash_query}
@@ -74,6 +77,9 @@ defmodule BlogoWeb.EditorLive.Sheet do
   end
 
   attr :block, :map, required: true
+  attr :images, :map, default: %{}
+  attr :uploads, :map, default: nil
+  attr :image_error, :any, default: nil
   attr :selected, :string, default: nil
   attr :slash_for, :string, default: nil
   attr :slash_query, :string, default: ""
@@ -120,8 +126,16 @@ defmodule BlogoWeb.EditorLive.Sheet do
 
       <.block_body
         block={@block}
+        images={@images}
         slash_open={@slash_for == @block["_uid"]}
         selected={@selected == @block["_uid"]}
+      />
+
+      <.image_upload
+        :if={@block["type"] == "image" and @selected == @block["_uid"] and @uploads}
+        uid={@block["_uid"]}
+        upload={@uploads.imagem}
+        error={@image_error}
       />
 
       <.slash_menu
@@ -132,7 +146,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
       />
 
       <.attachment
-        :if={@block["type"] in ~w(diagram table code)}
+        :if={@block["type"] in ~w(diagram table code image)}
         label="Legenda"
         field="caption"
         value={@block["caption"]}
@@ -149,6 +163,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
   end
 
   attr :block, :map, required: true
+  attr :images, :map, default: %{}
   attr :slash_open, :boolean, default: false
   attr :selected, :boolean, default: false
 
@@ -362,7 +377,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
   # markdown — the same text markdown mode uses, so there is no third
   # representation to learn.
   defp block_body(%{block: %{"type" => type}} = assigns)
-       when type in ~w(table diagram keynumbers) do
+       when type in ~w(table diagram keynumbers image) do
     assigns = assign(assigns, :source, block_markdown(assigns.block))
 
     ~H"""
@@ -370,7 +385,7 @@ defmodule BlogoWeb.EditorLive.Sheet do
       <div class="ed-structured-render">
         <%!-- Without the caption: the field below is where it is edited, and
               showing it twice reads as a templating accident. --%>
-        <BlogoWeb.Blocks.block block={Map.drop(@block, ["_uid", "caption"])} />
+        <BlogoWeb.Blocks.block block={Map.drop(@block, ["_uid", "caption"])} images={@images} />
       </div>
       <%!-- The source is shown only while the block is selected. Leaving it
             open under every figure doubled the length of the document on a
@@ -392,6 +407,39 @@ defmodule BlogoWeb.EditorLive.Sheet do
   end
 
   defp block_body(assigns), do: ~H""
+
+  attr :uid, :string, required: true
+  attr :upload, :any, required: true
+  attr :error, :any, default: nil
+
+  defp image_upload(assigns) do
+    ~H"""
+    <form
+      id={"img-#{@uid}"}
+      class="ed-image-upload"
+      phx-change="image_pick"
+      phx-submit="image_pick"
+    >
+      <input type="hidden" name="uid" value={@uid} />
+      <.live_file_input upload={@upload} class="pn-foto-input" />
+      <span class="small">
+        PNG, JPEG ou WebP, até {div(Blogo.Content.PostImage.max_bytes(), 1_000_000)} MB. Os metadados,
+        inclusive o GPS, são apagados antes de gravar.
+      </span>
+      <span :if={@error} class="small ed-warn">{@error}</span>
+      <span :for={msg <- upload_errors(@upload)} class="small ed-warn">{upload_error(msg)}</span>
+      <span :for={entry <- @upload.entries} class="small">
+        {entry.client_name} · {entry.progress}%
+        <span :for={msg <- upload_errors(@upload, entry)} class="ed-warn">{upload_error(msg)}</span>
+      </span>
+    </form>
+    """
+  end
+
+  defp upload_error(:too_large), do: "A imagem passa do limite."
+  defp upload_error(:not_accepted), do: "Precisa ser PNG, JPEG ou WebP."
+  defp upload_error(:too_many_files), do: "Uma imagem por vez."
+  defp upload_error(_), do: "Não deu para subir a imagem."
 
   # `phx-update="ignore"` is what makes this safe: without it LiveView would
   # replace the node on the next patch and take the caret with it.
@@ -516,6 +564,8 @@ defmodule BlogoWeb.EditorLive.Sheet do
           <path d="M4 6h10M4 12h10M4 18h6M19 6v12" />
         <% "question" -> %>
           <circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3 2.4v1M12 16h.01" />
+        <% "image" -> %>
+          <rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="m21 16-5-5-8 8" />
         <% "source" -> %>
           <path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1" />
         <% _ -> %>

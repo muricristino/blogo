@@ -8,7 +8,9 @@ defmodule Blogo.Content.Markdown do
 
   ## The dialect
 
-  Standard markdown covers five of the eleven blocks. The other six use a fence
+  Standard markdown covers six of the twelve blocks — an image is
+  `![alt](name.png)` on a line of its own, `name` being the image as the post
+  stores it. The other six use a fence
   of three colons with the block's name:
 
       :::aviso bad O antídoto
@@ -31,12 +33,23 @@ defmodule Blogo.Content.Markdown do
     "diagrama" => "diagram"
   }
 
+  @image ~r/\A!\[(.*)\]\(([^()\s]*)\)\s*\z/
+
   @fence_of Map.new(@block_fences, fn {k, v} -> {v, k} end)
 
-  @doc "Renders a post as the text a writer edits."
-  def to_markdown(post) do
+  @doc """
+  Renders a post as the text a writer edits.
+
+  `image_url:` rewrites each image's name into an address, for a reader of the
+  text who is not going to have the post's folder beside it.
+  """
+  def to_markdown(post, opts \\ []) do
     front = front_matter(post)
-    body = (get_in(post, [Access.key(:body), "blocks"]) || []) |> Enum.map(&block_to_md/1)
+
+    body =
+      (get_in(post, [Access.key(:body), "blocks"]) || [])
+      |> Enum.map(&image_address(&1, opts[:image_url]))
+      |> Enum.map(&block_to_md/1)
 
     ([front] ++ body)
     |> Enum.reject(&(&1 in [nil, ""]))
@@ -58,6 +71,11 @@ defmodule Blogo.Content.Markdown do
        |> Map.put(:body, %{"blocks" => blocks})}
     end
   end
+
+  defp image_address(%{"type" => "image", "src" => src} = block, fun) when is_function(fun, 1),
+    do: Map.put(block, "src", fun.(src))
+
+  defp image_address(block, _fun), do: block
 
   # ── front matter ──────────────────────────────────────────────────────────
 
@@ -178,6 +196,10 @@ defmodule Blogo.Content.Markdown do
     ([row_to_md(headers), row_to_md(Enum.map(headers, fn _ -> "---" end))] ++
        Enum.map(rows, &row_to_md/1))
     |> Enum.join("\n")
+  end
+
+  defp body_of(%{"type" => "image"} = b) do
+    "![" <> to_string(b["alt"]) <> "](" <> to_string(b["src"]) <> ")"
   end
 
   defp body_of(%{"type" => "code"} = b) do
@@ -415,6 +437,16 @@ defmodule Blogo.Content.Markdown do
     end
   end
 
+  defp lines_to_block(["![" <> _ = line]) do
+    case Regex.run(@image, line) do
+      [_, alt, src] ->
+        {:ok, drop_empty(%{"type" => "image", "src" => src, "alt" => alt}, ["alt"])}
+
+      nil ->
+        {:ok, paragraphs([line])}
+    end
+  end
+
   defp lines_to_block(["@capitular" | rest]),
     do: {:ok, rest |> paragraphs() |> Map.put("drop", true)}
 
@@ -552,6 +584,7 @@ defmodule Blogo.Content.Markdown do
       {"text", "Texto", "/t"},
       {"section", "Título de seção", "/h"},
       {"table", "Tabela", "/tb"},
+      {"image", "Imagem", "/i"},
       {"diagram", "Diagrama", "/d"},
       {"callout", "Aviso", "/a"},
       {"code", "Código", "/c"},

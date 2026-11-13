@@ -11,7 +11,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   use BlogoWeb, :live_view
 
   alias Blogo.Content
-  alias Blogo.Content.{Checklist, Markdown, Metrics}
+  alias Blogo.Content.{Checklist, Markdown, Metrics, PostImage}
   alias BlogoWeb.EditorLive.{Panel, Sheet, Topbar}
 
   @autosave_after 1_500
@@ -40,7 +40,17 @@ defmodule BlogoWeb.EditorLive.Edit do
        hero_error: nil,
        undo: nil,
        now: DateTime.utc_now(),
-       markdown: Markdown.to_markdown(post)
+       markdown: Markdown.to_markdown(post),
+       images: BlogoWeb.PostImageController.addresses(post),
+       image_for: nil,
+       image_error: nil
+     )
+     |> allow_upload(:imagem,
+       accept: ~w(.png .jpg .jpeg .webp),
+       max_entries: 1,
+       max_file_size: PostImage.max_bytes(),
+       auto_upload: true,
+       progress: &handle_progress/3
      )
      |> put_blocks(post.body["blocks"] || [])
      |> assign_derived()}
@@ -77,6 +87,14 @@ defmodule BlogoWeb.EditorLive.Edit do
 
     {:noreply, socket |> put_blocks(blocks) |> touched()}
   end
+
+  # The file input lives inside the block it fills, and this is the only moment
+  # the browser says which block that was.
+  def handle_event("image_pick", %{"uid" => uid}, socket) do
+    {:noreply, assign(socket, image_for: uid, image_error: nil)}
+  end
+
+  def handle_event("image_pick", _params, socket), do: {:noreply, socket}
 
   def handle_event("insert", %{"type" => type} = params, socket) do
     insert_block(socket, type, params["after"])
@@ -530,6 +548,7 @@ defmodule BlogoWeb.EditorLive.Edit do
   defp defaults("question"), do: %{"text" => ""}
   defp defaults("source"), do: %{"title" => "", "url" => ""}
   defp defaults("marginnote"), do: %{"text" => ""}
+  defp defaults("image"), do: %{"src" => ""}
   defp defaults(_), do: %{}
 
   defp assign_derived(socket) do
@@ -542,6 +561,52 @@ defmodule BlogoWeb.EditorLive.Edit do
       checklist: Checklist.run(post),
       search: Checklist.search_preview(post)
     )
+  end
+
+  # The temporary file belongs to the request, so the bytes go to the database
+  # now, and the block takes the stored name in the same step: an image that
+  # arrived but is referenced by nothing would be an upload the writer believes
+  # is in the article.
+  defp handle_progress(:imagem, entry, socket) do
+    if entry.done? do
+      bytes =
+        consume_uploaded_entry(socket, entry, fn %{path: path} -> {:ok, File.read!(path)} end)
+
+      name = image_name(entry.client_name)
+
+      case Content.put_post_image(socket.assigns.post, name, bytes) do
+        {:ok, _image, _outcome} ->
+          blocks =
+            update_block(socket.assigns.blocks, socket.assigns.image_for, fn block ->
+              Map.put(block, "src", name)
+            end)
+
+          {:noreply,
+           socket
+           |> assign(images: BlogoWeb.PostImageController.addresses(socket.assigns.post))
+           |> put_blocks(blocks)
+           |> touched()}
+
+        {:error, changeset} ->
+          {_field, {message, _}} = hd(changeset.errors)
+          {:noreply, assign(socket, image_error: "A imagem " <> message <> ".")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp image_name(client_name) do
+    base =
+      client_name
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9._-]+/, "-")
+      |> String.trim_leading(".")
+      |> String.trim("-")
+
+    if PostImage.valid_name?(base),
+      do: base,
+      else: "imagem-#{System.unique_integer([:positive])}.png"
   end
 
   # ── render ────────────────────────────────────────────────────────────────
