@@ -36,7 +36,8 @@ defmodule BlogoWeb.Api.PostController do
   def update(conn, %{"slug" => slug} = params) do
     with {:ok, attrs} <- markdown_attrs(params),
          {:ok, attrs} <- put_hero(attrs, params),
-         {:ok, attrs} <- put_language(attrs, params) do
+         {:ok, attrs} <- put_language(attrs, params),
+         {:ok, attrs} <- put_translation(attrs, slug) do
       before = Content.get_post_by_slug(slug)
       created? = is_nil(before)
 
@@ -90,6 +91,26 @@ defmodule BlogoWeb.Api.PostController do
 
   defp markdown_attrs(_), do: {:error, {:invalid, "markdown is required (a string)"}}
 
+  # `traducao_de: <slug>` is an instruction, not a field: it puts this post in
+  # the original's translation group, which is what the language selector and
+  # `hreflang` read. It is never written back by `get`, because a group has no
+  # original to name.
+  defp put_translation(attrs, slug) do
+    case Map.pop(attrs, :translation_of) do
+      {nil, attrs} ->
+        {:ok, attrs}
+
+      {^slug, _attrs} ->
+        {:error, {:invalid, "traducao_de names this same post"}}
+
+      {of, attrs} ->
+        case Content.get_post_by_slug(of) do
+          nil -> {:error, {:invalid, "traducao_de: no post at /#{of}"}}
+          original -> {:ok, Map.put(attrs, :translation_group, original.translation_group)}
+        end
+    end
+  end
+
   defp put_hero(attrs, %{"hero" => nil}), do: {:ok, Map.put(attrs, :hero, nil)}
 
   defp put_hero(attrs, %{"hero" => %{} = hero}) do
@@ -129,6 +150,7 @@ defmodule BlogoWeb.Api.PostController do
       updated: post.updated_at,
       markdown: Markdown.to_markdown(post),
       hero: post.hero,
+      translations: Content.translations_of(post),
       preview_url: preview_url(post),
       url: if(post.status == "published", do: url(~p"/#{post.slug}"))
     }

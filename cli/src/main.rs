@@ -20,6 +20,7 @@ Images are written in the markdown as ![alt](name.png) on a line of their own, t
 name being a path relative to the markdown file. push uploads the ones whose bytes
 the server does not have yet; --prune deletes server images the markdown no longer uses.
 A cover photograph behind the title is `capa: name.png` in the front matter, uploaded the same way.
+A translation names its original with `traducao_de: <slug>` in the front matter, and --language says its own.
 
 config: ~/.config/blogo/config (url = ..., token = ...), overridden by BLOGO_URL / BLOGO_TOKEN";
 
