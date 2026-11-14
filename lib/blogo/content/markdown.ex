@@ -8,9 +8,10 @@ defmodule Blogo.Content.Markdown do
 
   ## The dialect
 
-  Standard markdown covers six of the twelve blocks — an image is
+  Standard markdown covers seven of the thirteen blocks — an image is
   `![alt](name.png)` on a line of its own, `name` being the image as the post
-  stores it. The other six use a fence
+  stores it, and a list is lines starting with `- ` or `1. `. The other six use
+  a fence
   of three colons with the block's name:
 
       :::aviso bad O antídoto
@@ -34,6 +35,10 @@ defmodule Blogo.Content.Markdown do
   }
 
   @image ~r/\A!\[(.*)\]\(([^()\s]*)\)\s*\z/
+
+  @bullet ~r/\A- (.*)\z/
+  @ordered ~r/\A(\d{1,9})\. (.*)\z/
+  @list_start ~r/\A(- |\d{1,9}\. )/
 
   @fence_of Map.new(@block_fences, fn {k, v} -> {v, k} end)
 
@@ -167,6 +172,9 @@ defmodule Blogo.Content.Markdown do
   defp caption_of(%{"caption" => c}) when is_binary(c) and c != "", do: "+ " <> c
   defp caption_of(_), do: nil
 
+  # A source writes its description inside its own fence; the same text again
+  # as `^` drew it a second time in the margin.
+  defp note_of(%{"type" => "source"}), do: nil
   defp note_of(%{"note" => n}) when is_binary(n) and n != "", do: "^ " <> n
   defp note_of(_), do: nil
 
@@ -176,12 +184,26 @@ defmodule Blogo.Content.Markdown do
   # plain markdown.
   defp body_of(%{"type" => "text"} = b) do
     paragraphs = b["paragraphs"] || []
-    text = Enum.join(paragraphs, "\n\n")
+    text = paragraphs |> Enum.map(&escape_list_start/1) |> Enum.join("\n\n")
     text = if b["drop"], do: "@capitular\n" <> text, else: text
 
     if length(paragraphs) > 1 and Enum.any?(~w(drop note caption), &b[&1]),
       do: fence("texto", text),
       else: text
+  end
+
+  defp body_of(%{"type" => "list"} = b) do
+    items = b["items"] || []
+
+    if b["ordered"] do
+      start = list_start(b["start"])
+
+      items
+      |> Enum.with_index(start)
+      |> Enum.map_join("\n", fn {item, n} -> "#{n}. #{one_line(item)}" end)
+    else
+      Enum.map_join(items, "\n", &("- " <> one_line(&1)))
+    end
   end
 
   defp body_of(%{"type" => "section"} = b) do
@@ -249,6 +271,20 @@ defmodule Blogo.Content.Markdown do
 
   defp body_of(_), do: nil
 
+  defp list_start(n) when is_integer(n) and n >= 0, do: n
+  defp list_start(_), do: 1
+
+  defp one_line(item), do: item |> to_string() |> String.replace(~r/\s*\n\s*/, " ")
+
+  # A paragraph that happens to open with "- " or "1. " would come back as a
+  # list; the backslash is the escape markdown itself uses for that.
+  defp escape_list_start(p) do
+    case Regex.run(~r/\A(\d{1,9})\. /, p) do
+      [_, n] -> n <> "\\. " <> String.replace_prefix(p, n <> ". ", "")
+      nil -> if String.starts_with?(p, "- "), do: "\\" <> p, else: p
+    end
+  end
+
   defp fence(head, body), do: ":::" <> head <> "\n" <> body <> "\n:::"
 
   defp row_to_md(cells), do: "| " <> Enum.join(cells, " | ") <> " |"
@@ -315,9 +351,30 @@ defmodule Blogo.Content.Markdown do
         {block, rest} = take_until(rest, &String.starts_with?(&1, "```"))
         chunk(rest, [], [[line | block] ++ ["```"] | flush(current, acc)])
 
+      interrupts_paragraph?(line, current) ->
+        chunk(rest, [line], flush(current, acc))
+
       true ->
         chunk(rest, [line | current], acc)
     end
+  end
+
+  # A list may start right under a paragraph without a blank line, as it does in
+  # every other markdown; an ordered one only from 1, so a sentence that wraps
+  # onto a line starting with a year and a period stays a sentence.
+  defp interrupts_paragraph?(_line, []), do: false
+
+  defp interrupts_paragraph?(line, current) do
+    first = List.last(current)
+
+    paragraph? =
+      not Regex.match?(@list_start, first) and
+        not Enum.any?(
+          ["> ", "| ", "## ", ":::", "```", "+ ", "^ ", "!["],
+          &String.starts_with?(first, &1)
+        )
+
+    paragraph? and (String.starts_with?(line, "- ") or String.starts_with?(line, "1. "))
   end
 
   defp flush([], acc), do: acc
@@ -371,7 +428,7 @@ defmodule Blogo.Content.Markdown do
       rest
       |> Enum.chunk_by(&(String.trim(&1) == ""))
       |> Enum.reject(fn lines -> Enum.all?(lines, &(String.trim(&1) == "")) end)
-      |> Enum.map(&Enum.join(&1, " "))
+      |> Enum.map(fn [first | rest] -> Enum.join([unescape_list_start(first) | rest], " ") end)
 
     block = %{"type" => "text", "paragraphs" => paragraphs}
     {:ok, if(drop, do: Map.put(block, "drop", true), else: block)}
@@ -447,14 +504,51 @@ defmodule Blogo.Content.Markdown do
     end
   end
 
-  defp lines_to_block(["@capitular" | rest]),
+  defp lines_to_block([first | _] = lines) do
+    if Regex.match?(@list_start, first), do: {:ok, list(lines)}, else: plain_block(lines)
+  end
+
+  defp plain_block(["@capitular" | rest]),
     do: {:ok, rest |> paragraphs() |> Map.put("drop", true)}
 
-  defp lines_to_block(lines), do: {:ok, paragraphs(lines)}
+  defp plain_block(lines), do: {:ok, paragraphs(lines)}
 
-  defp paragraphs(lines) do
-    %{"type" => "text", "paragraphs" => [Enum.join(lines, " ")]}
+  defp paragraphs([first | rest]) do
+    %{"type" => "text", "paragraphs" => [Enum.join([unescape_list_start(first) | rest], " ")]}
   end
+
+  defp paragraphs([]), do: %{"type" => "text", "paragraphs" => [""]}
+
+  defp unescape_list_start("\\- " <> rest), do: "- " <> rest
+
+  defp unescape_list_start(line) do
+    case Regex.run(~r/\A(\d{1,9})\\\. (.*)\z/, line) do
+      [_, n, rest] -> n <> ". " <> rest
+      nil -> line
+    end
+  end
+
+  # Each line with the list's own marker opens an item; any other line
+  # continues the item above it, which is how a long item wraps in an editor.
+  defp list([first | _] = lines) do
+    ordered = Regex.match?(@ordered, first)
+    marker = if ordered, do: @ordered, else: @bullet
+
+    {items, start} =
+      Enum.reduce(lines, {[], nil}, fn line, {items, start} ->
+        case Regex.run(marker, line) do
+          [_, n, text] -> {[String.trim(text) | items], start || String.to_integer(n)}
+          [_, text] -> {[String.trim(text) | items], start}
+          nil -> {continue_item(items, line), start}
+        end
+      end)
+
+    block = %{"type" => "list", "ordered" => ordered, "items" => Enum.reverse(items)}
+    if ordered and start != 1, do: Map.put(block, "start", start), else: block
+  end
+
+  defp continue_item([last | rest], line),
+    do: [String.trim(last <> " " <> String.trim(line)) | rest]
 
   defp section(n, title) do
     {:ok, drop_empty(%{"type" => "section", "n" => n, "title" => String.trim(title)}, ["n"])}
@@ -583,6 +677,7 @@ defmodule Blogo.Content.Markdown do
     [
       {"text", "Texto", "/t"},
       {"section", "Título de seção", "/h"},
+      {"list", "Lista", "/l"},
       {"table", "Tabela", "/tb"},
       {"image", "Imagem", "/i"},
       {"diagram", "Diagrama", "/d"},

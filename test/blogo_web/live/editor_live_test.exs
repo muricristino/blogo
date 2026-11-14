@@ -88,6 +88,66 @@ defmodule BlogoWeb.EditorLiveTest do
       assert %{"paragraphs" => ["Texto novo."]} = first_block(live)
     end
 
+    test "a list typed in rich mode is saved as a list", %{conn: conn, post: post} do
+      {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
+
+      uid = first_uid(live)
+      live |> element("[phx-click=select][phx-value-uid=#{uid}]") |> render_click()
+      live |> element(".pitem[phx-value-type=list]") |> render_click()
+
+      list_uid = Enum.find(blocks(live), &(&1["type"] == "list"))["_uid"]
+
+      render_hook(live, "block_input", %{
+        "uid" => list_uid,
+        "field" => "ordered",
+        "value" => "true"
+      })
+
+      render_hook(live, "block_input", %{
+        "uid" => list_uid,
+        "field" => "items",
+        "value" => "o calçadão;\n\na [rua](https://exemplo.com);\n\nos casarões."
+      })
+
+      render_click(live, "save", %{})
+
+      assert [
+               %{"type" => "text"},
+               %{
+                 "type" => "list",
+                 "ordered" => true,
+                 "items" => ["o calçadão;", "a [rua](https://exemplo.com);", "os casarões."]
+               }
+             ] = Content.get_post!(post.id).body["blocks"]
+    end
+
+    test "a source's description is edited in the block and saved once", %{conn: conn} do
+      post =
+        draft(%{
+          body: %{
+            "blocks" => [
+              %{"type" => "source", "title" => "Skill", "url" => "https://exemplo.com"}
+            ]
+          }
+        })
+
+      {:ok, live, html} = live(conn, ~p"/editor/#{post.id}")
+      refute html =~ ~s(aria-label="Nota de margem")
+
+      render_hook(live, "block_input", %{
+        "uid" => first_uid(live),
+        "field" => "note",
+        "value" => "Passo a passo."
+      })
+
+      render_click(live, "save", %{})
+
+      assert [%{"type" => "source", "note" => "Passo a passo."}] =
+               Content.get_post!(post.id).body["blocks"]
+
+      refute Markdown.to_markdown(Content.get_post!(post.id)) =~ "^ "
+    end
+
     test "a blank line inside a block becomes a second paragraph", %{conn: conn, post: post} do
       {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
 

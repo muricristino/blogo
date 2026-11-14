@@ -491,6 +491,18 @@ defmodule BlogoWeb.EditorLive.Edit do
     Map.put(block, "paragraphs", String.split(value, ~r/\n{2,}/, trim: true))
   end
 
+  defp put_field(block, "items", value) do
+    items =
+      value
+      |> String.split(~r/\n{2,}/, trim: true)
+      |> Enum.map(&(&1 |> String.replace(~r/\s*\n\s*/, " ") |> String.trim()))
+      |> Enum.reject(&(&1 == ""))
+
+    Map.put(block, "items", items)
+  end
+
+  defp put_field(block, "ordered", value), do: Map.put(block, "ordered", value == "true")
+
   # Parsed with the same reader markdown mode uses; a broken edit keeps the
   # previous block rather than replacing it with nothing.
   defp put_field(block, "_markdown", value) do
@@ -539,6 +551,7 @@ defmodule BlogoWeb.EditorLive.Edit do
 
   defp defaults("text"), do: %{"paragraphs" => [""]}
   defp defaults("section"), do: %{"title" => "Nova seção"}
+  defp defaults("list"), do: %{"ordered" => false, "items" => [""]}
   defp defaults("table"), do: %{"headers" => ["Coluna", "Valor"], "rows" => [["", ""]]}
   defp defaults("diagram"), do: %{"form" => "fluxo", "data" => %{"steps" => []}, "alt" => ""}
   defp defaults("callout"), do: %{"variant" => "note", "title" => "", "text" => ""}
