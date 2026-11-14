@@ -139,7 +139,8 @@ defmodule Blogo.Content.Markdown do
        kind: kind_from(meta["tipo"]),
        meta_description: meta["busca"],
        topics: parse_list(meta["marcadores"]),
-       cover: meta["capa"]
+       cover: meta["capa"],
+       translation_of: meta["traducao_de"]
      }
      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
      |> Map.new()}

@@ -140,6 +140,45 @@ defmodule BlogoWeb.Api.PostControllerTest do
       assert saved.published_at == post.published_at
     end
 
+    test "traducao_de puts the post in the original's translation group", %{conn: conn} do
+      conn
+      |> authed()
+      |> put(~p"/api/posts/original", %{"markdown" => @markdown, "hero" => @hero})
+
+      build_conn() |> authed() |> post(~p"/api/posts/original/publish")
+
+      english = String.replace(@markdown, "marcadores:", "traducao_de: original\nmarcadores:")
+
+      conn =
+        build_conn()
+        |> authed()
+        |> put(~p"/api/posts/the-original", %{
+          "markdown" => english,
+          "hero" => @hero,
+          "language" => "en"
+        })
+
+      assert %{"created" => true} = json_response(conn, 201)
+
+      original = Content.get_post_by_slug("original")
+      english = Content.get_post_by_slug("the-original")
+      assert english.translation_group == original.translation_group
+      assert english.language == "en"
+
+      {:ok, _} = Content.publish_post(english)
+
+      conn = build_conn() |> authed() |> get(~p"/api/posts/original")
+      assert %{"translations" => %{"en" => "the-original"}} = json_response(conn, 200)["post"]
+      refute json_response(conn, 200)["post"]["markdown"] =~ "traducao_de"
+    end
+
+    test "traducao_de naming no post is a readable 422", %{conn: conn} do
+      md = String.replace(@markdown, "marcadores:", "traducao_de: nada-aqui\nmarcadores:")
+      conn = conn |> authed() |> put(~p"/api/posts/x", %{"markdown" => md})
+      assert json_response(conn, 422)["error"]["message"] =~ "nada-aqui"
+      refute Content.get_post_by_slug("x")
+    end
+
     test "a markdown the dialect refuses comes back as 422 with its message", %{conn: conn} do
       bad = @markdown <> "\n:::diagrama nove\n{}\n:::\n"
       conn = conn |> authed() |> put(~p"/api/posts/pela-api", %{"markdown" => bad})
