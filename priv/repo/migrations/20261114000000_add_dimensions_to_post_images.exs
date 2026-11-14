@@ -21,8 +21,13 @@ defmodule Blogo.Repo.Migrations.AddDimensionsToPostImages do
     |> repo().all()
     |> Enum.each(fn {id, data} ->
       case Blogo.Content.Photo.dimensions(data) do
-        {w, h} -> repo().update_all(from(i in "post_images", where: i.id == ^id), set: [width: w, height: h])
-        nil -> :ok
+        {w, h} ->
+          repo().update_all(from(i in "post_images", where: i.id == ^id),
+            set: [width: w, height: h]
+          )
+
+        nil ->
+          :ok
       end
     end)
   end
