@@ -155,6 +155,30 @@ defmodule BlogoWeb.Api.PostImageControllerTest do
     assert html =~ ~s(src="#{PostImage.path(image)}")
   end
 
+  test "the cover photograph sits behind the article's header", %{post: post} do
+    {:ok, image, _} =
+      Content.put_post_image(post, "prints/fundo.png", Fixtures.png(width: 40, height: 20))
+
+    {:ok, post} = Content.save_post(post, %{cover: "prints/fundo.png"})
+    {:ok, post} = Content.publish_post(post)
+
+    assert Content.get_post!(post.id).cover == "prints/fundo.png"
+
+    html = build_conn() |> get("/#{post.slug}") |> html_response(200)
+    assert html =~ "art-head--cover"
+
+    assert html =~
+             ~r/<img[^>]*class="cover-img"[^>]*src="#{Regex.escape(PostImage.path(image))}"/s
+  end
+
+  test "a cover naming an image the post does not have draws the plain header", %{post: post} do
+    {:ok, post} = Content.save_post(post, %{cover: "prints/nada.png"})
+    {:ok, post} = Content.publish_post(post)
+
+    html = build_conn() |> get("/#{post.slug}") |> html_response(200)
+    refute html =~ "art-head--cover"
+  end
+
   test "the article reserves the image's place before it loads", %{post: post} do
     {:ok, _image, _} =
       Content.put_post_image(post, "prints/rua.png", Fixtures.png(width: 32, height: 24))

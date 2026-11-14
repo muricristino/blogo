@@ -92,6 +92,7 @@ defmodule Blogo.Content.Markdown do
         {"endereco", get(post, :slug)},
         {"tipo", get(post, :kind)},
         {"marcadores", format_list(get(post, :topics))},
+        {"capa", get(post, :cover)},
         {"busca", get(post, :meta_description)}
       ]
       |> Enum.reject(fn {_k, v} -> v in [nil, ""] end)
@@ -137,7 +138,8 @@ defmodule Blogo.Content.Markdown do
        slug: meta["endereco"],
        kind: kind_from(meta["tipo"]),
        meta_description: meta["busca"],
-       topics: parse_list(meta["marcadores"])
+       topics: parse_list(meta["marcadores"]),
+       cover: meta["capa"]
      }
      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
      |> Map.new()}

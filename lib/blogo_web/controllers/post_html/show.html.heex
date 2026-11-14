@@ -26,7 +26,18 @@
         so `<html lang>` already says it and the menu around it is what carries
         an exception. --%>
   <article class="stack" style="gap:26px">
-    <header class="stack art-head">
+    <% cover = cover_image(@post, assigns[:images]) %>
+    <header class={["stack art-head", cover && "art-head--cover"]}>
+      <img
+        :if={cover}
+        class="cover-img"
+        src={cover.src}
+        width={cover.width}
+        height={cover.height}
+        alt=""
+        fetchpriority="high"
+        decoding="async"
+      />
       <span :if={@post.kind != "pagina"} class="kicker">
         {kind_label(@post.kind)}
         <span :for={topic <- @post.topics}>

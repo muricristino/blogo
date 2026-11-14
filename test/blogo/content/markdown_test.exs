@@ -50,6 +50,16 @@ defmodule Blogo.Content.MarkdownTest do
       assert back.meta_description == post.meta_description
     end
 
+    test "carries the cover photograph by the image's name" do
+      md = Markdown.to_markdown(%{title: "x", cover: "prints/fundo.png", body: %{"blocks" => []}})
+      assert md =~ "capa: prints/fundo.png"
+      assert {:ok, %{cover: "prints/fundo.png"}} = Markdown.from_markdown(md)
+    end
+
+    test "an empty cover line clears it" do
+      assert {:ok, %{cover: ""}} = Markdown.from_markdown("---\ntitulo: x\ncapa:\n---\n")
+    end
+
     test "a document without front matter is still readable" do
       assert {:ok, attrs} = Markdown.from_markdown("Só um parágrafo.\n")
       assert [%{"type" => "text", "paragraphs" => ["Só um parágrafo."]}] = attrs.body["blocks"]

@@ -99,6 +99,23 @@ defmodule BlogoWeb.EditorLive.Panel do
           </select>
         </label>
 
+        <label class="ed-field" style="margin-bottom:12px">
+          <span class="micro">Imagem de fundo</span>
+          <select class="input" name="cover">
+            <option value="" selected={is_nil(@fields.cover)}>nenhuma</option>
+            <option
+              :for={name <- @images |> Map.keys() |> Enum.sort()}
+              value={name}
+              selected={@fields.cover == name}
+            >
+              {name}
+            </option>
+          </select>
+          <span class="small">
+            Fica atrás do título, no topo do artigo. Escolha entre as imagens do post.
+          </span>
+        </label>
+
         <div class="ed-field">
           <span class="micro">Marcadores</span>
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">

@@ -19,6 +19,7 @@ push reads <dir>/post.md, or the file given; hero.json beside it is sent when pr
 Images are written in the markdown as ![alt](name.png) on a line of their own, the
 name being a path relative to the markdown file. push uploads the ones whose bytes
 the server does not have yet; --prune deletes server images the markdown no longer uses.
+A cover photograph behind the title is `capa: name.png` in the front matter, uploaded the same way.
 
 config: ~/.config/blogo/config (url = ..., token = ...), overridden by BLOGO_URL / BLOGO_TOKEN";
 
@@ -388,7 +389,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 fn image_refs(markdown: &str) -> Vec<String> {
-    let mut refs = vec![];
+    let mut refs: Vec<String> = front_matter_value(markdown, "capa").into_iter().collect();
     let mut in_code = false;
     let mut in_fence = false;
     let mut lines = markdown.lines().peekable();
@@ -439,13 +440,18 @@ fn image_line(line: &str) -> Option<String> {
 }
 
 fn front_matter_slug(markdown: &str) -> Option<String> {
+    front_matter_value(markdown, "endereco")
+}
+
+fn front_matter_value(markdown: &str, key: &str) -> Option<String> {
     let mut lines = markdown.lines();
     if lines.next()?.trim() != "---" {
         return None;
     }
+    let prefix = format!("{key}:");
     lines
         .take_while(|l| l.trim() != "---")
-        .find_map(|l| l.strip_prefix("endereco:"))
+        .find_map(|l| l.strip_prefix(prefix.as_str()))
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
 }
@@ -582,6 +588,12 @@ mod tests {
     fn finds_images_on_their_own_line() {
         let md = "---\ntitulo: x\nendereco: x\n---\n\nTexto.\n\n![A rua](prints/rua.png)\n+ legenda\n\n![](b.png)\n";
         assert_eq!(image_refs(md), vec!["prints/rua.png", "b.png"]);
+    }
+
+    #[test]
+    fn the_cover_in_the_front_matter_is_uploaded_like_any_image() {
+        let md = "---\ntitulo: x\ncapa: prints/fundo.png\n---\n\n![A rua](prints/rua.png)\n";
+        assert_eq!(image_refs(md), vec!["prints/fundo.png", "prints/rua.png"]);
     }
 
     #[test]
