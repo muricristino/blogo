@@ -4,6 +4,21 @@ defmodule BlogoWeb.PostHTML do
   embed_templates "post_html/*"
 
   @doc """
+  The photograph behind the header, when the post names one it actually has.
+  A name the post has no image for draws a plain header rather than an empty
+  frame, since the cover is atmosphere and not content.
+  """
+  def cover_image(%{cover: name}, images) when is_binary(name) and is_map(images) do
+    case Map.get(images, name) do
+      %{src: _} = image -> image
+      src when is_binary(src) -> %{src: src, width: nil, height: nil}
+      nil -> nil
+    end
+  end
+
+  def cover_image(_post, _images), do: nil
+
+  @doc """
   A date in the interface's language.
 
   The parts are translated as a pattern and not glued together here, because

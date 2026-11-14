@@ -48,6 +48,8 @@ defmodule Blogo.Content.Post do
     # The article's key diagram, shaped like a diagram block: card figure and
     # list thumbnail.
     field :hero, :map
+    # A photograph behind the header, by the name of one of the post's images.
+    field :cover, :string
 
     # Checked by the database: two tabs used to overwrite each other silently.
     field :lock_version, :integer, default: 1
@@ -79,6 +81,7 @@ defmodule Blogo.Content.Post do
       :translation_group,
       :body,
       :hero,
+      :cover,
       :author_id
     ])
     |> optimistic_lock(:lock_version)

@@ -736,3 +736,42 @@ ol.list li::marker { font-family: 'IBM Plex Mono', monospace; font-size: .85em; 
 
 .source { border-top: 1px solid var(--line); padding-top: 14px; }
 .source-line { margin-top: 6px; }
+
+/* An article with a cover photograph sets its header over it. The words keep
+   their own colours whatever the theme, because they sit on the photograph,
+   not on the page, and the shade under them is what makes them readable. */
+.art-head--cover {
+  position: relative;
+  isolation: isolate;
+  justify-content: flex-end;
+  min-height: 320px;
+  padding: 22px 18px;
+  border-radius: var(--r);
+  --ink: #fff;
+  --ink2: rgb(255 255 255 / .92);
+  --ink3: rgb(255 255 255 / .8);
+  --ink4: rgb(255 255 255 / .62);
+  --link: #bfdbfe;
+}
+.art-head--cover > * { position: relative; min-width: 0; }
+.art-head--cover > .cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  z-index: -2;
+}
+.art-head--cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  background: linear-gradient(180deg, rgb(6 10 20 / .05) 0%, rgb(6 10 20 / .45) 40%, rgb(6 10 20 / .86) 100%);
+}
+.art-head--cover .kicker, .art-head--cover .kicker-link { color: #bfdbfe; }
+@media (min-width: 560px) {
+  .art-head--cover { min-height: 420px; padding: 36px 34px; }
+}

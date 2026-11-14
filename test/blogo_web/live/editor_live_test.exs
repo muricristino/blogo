@@ -148,6 +148,20 @@ defmodule BlogoWeb.EditorLiveTest do
       refute Markdown.to_markdown(Content.get_post!(post.id)) =~ "^ "
     end
 
+    test "the cover is picked among the post's images and saved", %{conn: conn, post: post} do
+      {:ok, _, _} = Content.put_post_image(post, "prints/fundo.png", Fixtures.png())
+      {:ok, live, html} = live(conn, ~p"/editor/#{post.id}")
+      assert html =~ ~s(<option value="prints/fundo.png")
+
+      live |> form("#ed-publish") |> render_change(%{"cover" => "prints/fundo.png"})
+      render_click(live, "save", %{})
+      assert Content.get_post!(post.id).cover == "prints/fundo.png"
+
+      live |> form("#ed-publish") |> render_change(%{"cover" => ""})
+      render_click(live, "save", %{})
+      assert Content.get_post!(post.id).cover == nil
+    end
+
     test "a blank line inside a block becomes a second paragraph", %{conn: conn, post: post} do
       {:ok, live, _html} = live(conn, ~p"/editor/#{post.id}")
 
