@@ -14,6 +14,7 @@ defmodule BlogoWeb.Diagrams do
   attr :form, :string, required: true
   attr :data, :map, required: true
   attr :label, :string, default: ""
+  attr :orientation, :string, default: "h", doc: "\"v\" stacks a flow into a column"
 
   def diagram(%{form: form} = assigns) do
     case form do
@@ -28,44 +29,130 @@ defmodule BlogoWeb.Diagrams do
     end
   end
 
+  @flow_h 42
+  @flow_gap 20
+  @flow_width 470
+  @flow_v_gap 22
+  @flow_v_width 200
+  @flow_v_min 150
+
   # 01 — where a case travels. The dashed branch is always the unwanted path.
-  defp fluxo(assigns) do
+  #
+  # Boxes are as wide as their words: an even split of the width put "Street
+  # View" across the border of an 80px box. The height is only what is drawn,
+  # because a fixed 150 left a blank band under every flow without a branch.
+  defp fluxo(%{orientation: "v"} = assigns) do
+    steps = flow_boxes(assigns.data["steps"])
+    box_w = steps |> Enum.map(& &1.w) |> Enum.max(fn -> 0 end) |> max(@flow_v_min)
+    width = max(box_w + 2, @flow_v_width)
+    x = div(width - box_w, 2)
+    height = max(length(steps) * (@flow_h + @flow_v_gap) - @flow_v_gap + 2, @flow_h)
+
     assigns =
-      assigns
-      |> assign(:steps, assigns.data["steps"] || [])
-      |> assign(:branch, assigns.data["branch"])
+      assign(assigns,
+        steps: Enum.with_index(steps),
+        box_w: box_w,
+        x: x,
+        width: width,
+        height: height,
+        last: length(steps) - 1,
+        flow_h: @flow_h,
+        flow_v_gap: @flow_v_gap
+      )
 
     ~H"""
-    <svg class="dg" viewBox="0 0 470 150" role="img" aria-label={@label}>
-      <%= for {step, i} <- Enum.with_index(@steps) do %>
-        <% w = div(400, max(length(@steps), 1))
-        x = i * (w + 14) %>
+    <svg class="dg dg--v" viewBox={"0 0 #{@width} #{@height}"} role="img" aria-label={@label}>
+      <%= for {step, i} <- @steps do %>
+        <% y = 1 + i * (@flow_h + @flow_v_gap) %>
         <rect
-          class={["d-node", step["accent"] && "d-node--a"]}
-          x={x}
-          y="26"
-          width={w}
-          height="38"
+          class={["d-node", step.accent && "d-node--a"]}
+          x={@x}
+          y={y}
+          width={@box_w}
+          height={@flow_h}
           rx="10"
         />
         <text
-          class={if step["mono"], do: "d-num", else: "d-lab"}
-          x={x + div(w, 2)}
-          y={if step["note"], do: 46, else: 50}
+          class={if step.mono, do: "d-num", else: "d-lab"}
+          x={@x + div(@box_w, 2)}
+          y={if step.note, do: y + 18, else: y + 25}
           text-anchor="middle"
         >
-          {step["label"]}
+          {step.label}
         </text>
-        <text :if={step["note"]} class="d-labm" x={x + div(w, 2)} y="60" text-anchor="middle">
-          {step["note"]}
+        <text :if={step.note} class="d-labm" x={@x + div(@box_w, 2)} y={y + 33} text-anchor="middle">
+          {step.note}
         </text>
         <line
-          :if={i < length(@steps) - 1}
+          :if={i < @last}
           class="d-edge"
-          x1={x + w + 2}
-          y1="45"
-          x2={x + w + 12}
-          y2="45"
+          x1={div(@width, 2)}
+          y1={y + @flow_h + 2}
+          x2={div(@width, 2)}
+          y2={y + @flow_h + @flow_v_gap - 4}
+          marker-end="url(#d-arrow)"
+        />
+      <% end %>
+    </svg>
+    """
+  end
+
+  defp fluxo(assigns) do
+    steps = flow_boxes(assigns.data["steps"])
+    branch = flow_branch(assigns.data["branch"])
+    drawn = Enum.sum(Enum.map(steps, & &1.w)) + @flow_gap * max(length(steps) - 1, 0)
+    width = max(drawn, @flow_width)
+    top = if branch, do: 26, else: 1
+
+    xs =
+      steps
+      |> Enum.scan(div(width - drawn, 2) - @flow_gap, fn step, prev_end ->
+        prev_end + @flow_gap + step.w
+      end)
+      |> Enum.zip(steps)
+      |> Enum.map(fn {right, step} -> right - step.w end)
+
+    assigns =
+      assign(assigns,
+        steps: Enum.zip([steps, xs, 0..max(length(steps) - 1, 0)]),
+        branch: branch,
+        width: width,
+        top: top,
+        height: if(branch, do: 150, else: @flow_h + 2),
+        last: length(steps) - 1,
+        flow_h: @flow_h,
+        flow_gap: @flow_gap
+      )
+
+    ~H"""
+    <svg class="dg dg--h" viewBox={"0 0 #{@width} #{@height}"} role="img" aria-label={@label}>
+      <%= for {step, x, i} <- @steps do %>
+        <rect
+          class={["d-node", step.accent && "d-node--a"]}
+          x={x}
+          y={@top}
+          width={step.w}
+          height={@flow_h}
+          rx="10"
+        />
+        <text
+          class={if step.mono, do: "d-num", else: "d-lab"}
+          x={x + div(step.w, 2)}
+          y={if step.note, do: @top + 18, else: @top + 25}
+          text-anchor="middle"
+        >
+          {step.label}
+        </text>
+        <text :if={step.note} class="d-labm" x={x + div(step.w, 2)} y={@top + 33} text-anchor="middle">
+          {step.note}
+        </text>
+        <line
+          :if={i < @last}
+          class="d-edge"
+          x1={x + step.w + 2}
+          y1={@top + div(@flow_h, 2)}
+          x2={x + step.w + @flow_gap - 2}
+          y2={@top + div(@flow_h, 2)}
           marker-end="url(#d-arrow)"
         />
       <% end %>
@@ -73,19 +160,66 @@ defmodule BlogoWeb.Diagrams do
       <%= if @branch do %>
         <path
           class="d-edge"
-          d={"M#{@branch["x"]} 66 L#{@branch["x"]} 104"}
+          d={"M#{@branch.x} 66 L#{@branch.x} 104"}
           stroke-dasharray="4 4"
           marker-end="url(#d-arrow)"
         />
-        <rect class="d-node d-node--m" x={@branch["x"] - 70} y="108" width="140" height="32" rx="10" />
-        <text class="d-labm" x={@branch["x"]} y="128" text-anchor="middle">{@branch["label"]}</text>
-        <text :if={@branch["note"]} class="d-labm" x={@branch["x"] + 80} y="128">
-          {@branch["note"]}
+        <rect class="d-node d-node--m" x={@branch.x - 70} y="108" width="140" height="32" rx="10" />
+        <text class="d-labm" x={@branch.x} y="128" text-anchor="middle">{@branch.label}</text>
+        <text :if={@branch.note} class="d-labm" x={@branch.x + 80} y="128">
+          {@branch.note}
         </text>
       <% end %>
     </svg>
     """
   end
+
+  @doc """
+  Whether a flow is drawn better as a column on a narrow screen: a row of
+  boxes scaled into a phone's width shrinks its labels below reading size.
+  A branch is positioned in the row's own coordinates, so a flow with one keeps
+  its row.
+  """
+  def flow_stacks?(%{"steps" => steps} = data) when is_list(steps),
+    do: length(steps) > 2 and is_nil(data["branch"])
+
+  def flow_stacks?(_), do: false
+
+  defp flow_boxes(steps) when is_list(steps) do
+    steps
+    |> Enum.filter(&is_map/1)
+    |> Enum.map(fn step ->
+      label = text_of(step["label"])
+      note = if step["note"] in [nil, ""], do: nil, else: text_of(step["note"])
+      mono = step["mono"] == true
+      label_w = text_width(label, if(mono, do: 7.6, else: 6.8))
+      note_w = if note, do: text_width(note, 5.7), else: 0
+
+      %{
+        label: label,
+        note: note,
+        mono: mono,
+        accent: step["accent"] == true,
+        w: max(round(max(label_w, note_w)) + 24, 64)
+      }
+    end)
+  end
+
+  defp flow_boxes(_), do: []
+
+  defp flow_branch(%{"x" => x} = branch) when is_number(x),
+    do: %{x: x, label: text_of(branch["label"]), note: branch["note"]}
+
+  defp flow_branch(_), do: nil
+
+  defp text_of(nil), do: ""
+  defp text_of(v), do: to_string(v)
+
+  # No font metrics outside a browser, and the card is rasterised without one.
+  # An average advance per character, measured on IBM Plex Sans at the sizes
+  # the classes set, errs a little wide, which costs padding rather than a
+  # label crossing its border.
+  defp text_width(text, per_char), do: String.length(text) * per_char
 
   # 02 — how much two groups overlap: the densities behind a single AUC.
   defp distribuicao(assigns) do

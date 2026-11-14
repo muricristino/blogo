@@ -692,3 +692,47 @@ ol.list li::marker { font-family: 'IBM Plex Mono', monospace; font-size: .85em; 
 .prose a:hover, .ctext a:hover, .cap a:hover, .mnote a:hover, .pull a:hover {
   text-decoration-color: var(--link);
 }
+
+/* A flow of several steps stands as a column on a phone and lies as a row
+   from 560px, where the row still draws its labels near their real size. */
+.dg-flow .dg--h { display: none; }
+.dg--v { max-width: 260px; margin-inline: auto; }
+@media (min-width: 560px) {
+  .dg-flow .dg--h { display: block; }
+  .dg-flow .dg--v { display: none; }
+}
+
+/* The article's header on a phone. Author, date and reading time stay on one
+   line with the short date, so the text starts on the first screen. */
+.art-head { gap: 16px; }
+.art-byline { flex-wrap: wrap; row-gap: 4px; }
+.art-byline .date-long { display: none; }
+@media (min-width: 560px) {
+  .art-byline .date-long { display: inline; }
+  .art-byline .date-short { display: none; }
+}
+@media (max-width: 559px) {
+  .art-head { gap: 12px; }
+  .art-head .h1 { font-size: 30px; }
+  .art-head .dek { font-size: 16px; }
+  .resumo { padding: 16px 18px; gap: 12px; }
+  .resumo .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+  .resumo .statn { font-size: 26px; }
+}
+
+/* A link in a sentence cannot be 44px tall without spreading the lines, so it
+   takes the 32px the rule allows an inline link. Padding on an inline box
+   grows what the finger hits and leaves the line where it was. */
+@media (pointer: coarse) {
+  .prose a, .ctext a, .cap a, .mnote a, .pull a {
+    padding-block: 5px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}
+@media (pointer: coarse) {
+  .mnote a { padding-block: 9px; }
+}
+
+.source { border-top: 1px solid var(--line); padding-top: 14px; }
+.source-line { margin-top: 6px; }

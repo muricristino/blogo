@@ -96,10 +96,24 @@ defmodule BlogoWeb.Blocks do
   end
 
   def block(%{block: %{"type" => "diagram"}} = assigns) do
+    assigns =
+      assign(
+        assigns,
+        :stacks,
+        assigns.block["form"] == "fluxo" and BlogoWeb.Diagrams.flow_stacks?(assigns.block["data"])
+      )
+
     ~H"""
     <figure>
-      <div class="card dg-wrap">
+      <div class={["card dg-wrap", @stacks && "dg-flow"]}>
         <.diagram form={@block["form"]} data={@block["data"] || %{}} label={@block["alt"] || ""} />
+        <.diagram
+          :if={@stacks}
+          form="fluxo"
+          orientation="v"
+          data={@block["data"]}
+          label={@block["alt"] || ""}
+        />
       </div>
       <figcaption :if={@block["caption"]} class="cap">{@block["caption"]}</figcaption>
     </figure>
@@ -110,7 +124,14 @@ defmodule BlogoWeb.Blocks do
   # was meant to show: a missing figure that left no trace would read as an
   # article that never had one.
   def block(%{block: %{"type" => "image"}} = assigns) do
-    assigns = assign(assigns, :src, Map.get(assigns.images, assigns.block["src"]))
+    image =
+      case Map.get(assigns.images, assigns.block["src"]) do
+        %{src: _} = image -> image
+        src when is_binary(src) -> %{src: src, width: nil, height: nil}
+        nil -> %{src: nil, width: nil, height: nil}
+      end
+
+    assigns = assign(assigns, src: image.src, width: image.width, height: image.height)
 
     ~H"""
     <figure>
@@ -118,6 +139,8 @@ defmodule BlogoWeb.Blocks do
         :if={@src}
         class="img-block"
         src={@src}
+        width={@width}
+        height={@height}
         alt={@block["alt"] || ""}
         loading="lazy"
         decoding="async"
@@ -245,9 +268,9 @@ defmodule BlogoWeb.Blocks do
 
   def block(%{block: %{"type" => "source"}} = assigns) do
     ~H"""
-    <aside style="border-top:1px solid var(--line);padding-top:14px">
+    <aside class="source">
       <span class="micro">Origem dos dados</span>
-      <p class="small" style="margin-top:6px">
+      <p class="small source-line">
         <a :if={@block["url"]} href={@block["url"]} rel="nofollow noopener">{@block["title"]}</a>
         <span :if={is_nil(@block["url"])} style="color:var(--ink2)">{@block["title"]}</span>
         <span :if={@block["note"]}> — {@block["note"]}</span>

@@ -12,9 +12,15 @@ defmodule BlogoWeb.PostImageController do
   alias Blogo.Content
   alias Blogo.Content.{Post, PostImage}
 
-  @doc "The post's images as name → served address, which is what the renderer needs."
-  def addresses(%Post{id: id} = post) when not is_nil(id),
-    do: Map.new(Content.list_post_images(post), &{&1.name, PostImage.path(&1)})
+  @doc """
+  The post's images as name → served address and declared size, which is what
+  the renderer needs to reserve each image's place before it loads.
+  """
+  def addresses(%Post{id: id} = post) when not is_nil(id) do
+    Map.new(Content.list_post_images(post), fn image ->
+      {image.name, %{src: PostImage.path(image), width: image.width, height: image.height}}
+    end)
+  end
 
   def addresses(_), do: %{}
 

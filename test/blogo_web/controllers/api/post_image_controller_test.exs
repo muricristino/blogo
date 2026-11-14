@@ -155,6 +155,18 @@ defmodule BlogoWeb.Api.PostImageControllerTest do
     assert html =~ ~s(src="#{PostImage.path(image)}")
   end
 
+  test "the article reserves the image's place before it loads", %{post: post} do
+    {:ok, _image, _} =
+      Content.put_post_image(post, "prints/rua.png", Fixtures.png(width: 32, height: 24))
+
+    {:ok, post} = Content.publish_post(post)
+
+    assert %{width: 32, height: 24} = Content.list_post_images(post) |> hd()
+
+    html = build_conn() |> get("/#{post.slug}") |> html_response(200)
+    assert html =~ ~r/<img[^>]*width="32"[^>]*height="24"/s
+  end
+
   test "get then push with no edits changes nothing in the row", %{conn: conn, post: post} do
     {:ok, _} = Content.save_post(post, %{})
 

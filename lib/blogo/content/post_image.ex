@@ -22,6 +22,8 @@ defmodule Blogo.Content.PostImage do
     field :digest, :string
     field :source_digest, :string
     field :byte_size, :integer
+    field :width, :integer
+    field :height, :integer
     field :data, :binary, load_in_query: false
 
     belongs_to :post, Blogo.Content.Post
@@ -65,6 +67,7 @@ defmodule Blogo.Content.PostImage do
     |> force_change(:data, bytes)
     |> force_change(:content_type, type)
     |> force_change(:byte_size, byte_size(bytes))
+    |> put_dimensions(Photo.dimensions(bytes))
     |> force_change(:digest, sha256(bytes))
     |> force_change(:source_digest, sha256(source))
   end
@@ -74,6 +77,11 @@ defmodule Blogo.Content.PostImage do
 
   defp store(changeset, _source, {:error, :malformed}),
     do: add_error(changeset, :data, "está corrompida: não deu para ler a imagem inteira")
+
+  defp put_dimensions(changeset, {w, h}),
+    do: changeset |> force_change(:width, w) |> force_change(:height, h)
+
+  defp put_dimensions(changeset, nil), do: changeset
 
   @doc "The hex SHA-256 the CLI compares against."
   def sha256(bytes), do: Base.encode16(:crypto.hash(:sha256, bytes), case: :lower)

@@ -33,6 +33,15 @@ defmodule BlogoWeb.PostControllerTest do
       assert html =~ "/#person"
     end
 
+    test "names each topic once, as a link in the kicker", %{conn: conn} do
+      p = post(%{topics: ["claude code", "godot"]})
+      html = conn |> get(~p"/#{p.slug}") |> html_response(200)
+
+      assert html =~ ~s(class="kicker-link">claude code</a>)
+      refute html =~ ~s(class="tag">claude code<)
+      assert html =~ ~s(class="date-short")
+    end
+
     test "a draft is not reachable by slug", %{conn: conn} do
       p = post(%{status: "draft"})
       assert conn |> get(~p"/#{p.slug}") |> response(404)

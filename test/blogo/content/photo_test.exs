@@ -234,4 +234,22 @@ defmodule Blogo.Content.PhotoTest do
       assert Photo.clean("") == {:error, :unsupported}
     end
   end
+
+  describe "dimensions" do
+    test "are read from the header of each format" do
+      assert Photo.dimensions(Fixtures.png(width: 12, height: 7)) == {12, 7}
+      assert Photo.dimensions(Fixtures.jpeg(width: 1280, height: 960)) == {1280, 960}
+      assert Photo.dimensions(Fixtures.webp(width: 640, height: 480)) == {640, 480}
+    end
+
+    test "a JPEG with metadata before its frame header is still measured" do
+      jpeg = Fixtures.jpeg(width: 30, height: 20, metadata: [{0xE1, "Exif" <> <<0, 0>> <> "x"}])
+      assert Photo.dimensions(jpeg) == {30, 20}
+    end
+
+    test "anything else has none" do
+      assert Photo.dimensions("não é imagem") == nil
+      assert Photo.dimensions(<<0xFF, 0xD8, 0xFF>>) == nil
+    end
+  end
 end
